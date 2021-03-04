@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+set -Eeo pipefail
+
+# Clone CLM5
+git clone -b release-clm5.0 https://github.com/ESCOMP/CTSM.git clm5.0 
+(
+    cd clm5.0
+    git checkout dc5ea974c3 # most recent commit as of 2020-03-04
+    ./manage_externals/checkout_externals
+)
+
+# Create src dirs
+CLM5_ROOT=`realpath clm5.0`
+SRC_ROOT=src
+mkdir $SRC_ROOT
+cd $SRC_ROOT
+mkdir -p externals/{gptl,mct,pio1} csm_share \
+      clm5 stub_comps datm mosart cesm
+
+# GPTL 
+cp $CLM5_ROOT/cime/src/share/timing/* externals/gptl
+echo "Imported GPTL source files"
+
+# MCT 
+cp -rf $CLM5_ROOT/cime/src/externals/mct/* externals/mct
+echo "Imported MCT source files"
+
+# PIO 
+cp -rf $CLM5_ROOT/cime/src/externals/pio1/pio/* externals/pio1
+echo "Imported PIO1 source files"
+
+# CSM share
+(
+    cd csm_share
+    mkdir esmf_wrf_timemgr mct streams util
+    cp -rf $CLM5_ROOT/cime/src/share/esmf_wrf_timemgr/* esmf_wrf_timemgr
+    cp -rf $CLM5_ROOT/cime/src/drivers/mct/shr/* mct
+    cp -rf $CLM5_ROOT/cime/src/share/streams/* streams
+    cp -rf $CLM5_ROOT/cime/src/share/util/* util
+)
+echo "Imported CSM share source files"
+
+# CLM5 
+clm_dirs=(
+    main
+    biogeophys
+    biogeochem
+    soilbiogeochem
+    dyn_subgrid
+    init_interp
+    fates/main
+    fates/biogeophys
+    fates/biogeochem
+    fates/fire
+    fates/parteh
+    utils
+    cpl
+)
+for src_dir in ${clm_dirs[*]}; do
+    dest_dir=clm5/$src_dir
+    mkdir -p $dest_dir
+    cp -rf $CLM5_ROOT/src/$src_dir/* $dest_dir
+done
+echo "Imported CLM source files"
+
+# Stub components 
+cp $CLM5_ROOT/cime/src/components/stub_comps/sglc/cpl/glc_comp_mct.F90 stub_comps
+cp $CLM5_ROOT/cime/src/components/stub_comps/socn/cpl/ocn_comp_mct.F90 stub_comps
+cp $CLM5_ROOT/cime/src/components/stub_comps/sesp/cpl/esp_comp_mct.F90 stub_comps
+cp $CLM5_ROOT/cime/src/components/stub_comps/sice/cpl/ice_comp_mct.F90 stub_comps
+cp $CLM5_ROOT/cime/src/components/stub_comps/swav/cpl/wav_comp_mct.F90 stub_comps
+echo "Imported stub components source files"
+
+# DATM 
+cp $CLM5_ROOT/cime/src/components/data_comps/datm/datm_shr_mod.F90 datm
+cp $CLM5_ROOT/cime/src/components/data_comps/datm/datm_comp_mod.F90 datm
+cp $CLM5_ROOT/cime/src/components/data_comps/datm/mct/atm_comp_mct.F90 datm
+echo "Imported DATM source files"
+
+# MOSART
+cp -rf $CLM5_ROOT/components/mosart/* mosart
+rm -rf mosart/cime_config
+echo "Imported MOSART source files"
+
+# CESM 
+cp $CLM5_ROOT/cime/src/drivers/mct/main/* cesm
+echo "Imported CESM source files"
+
+# Copy LICENSE file
+cp $CLM5_ROOT/LICENSE .
