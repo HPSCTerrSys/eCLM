@@ -1,1 +1,8 @@
 outputs/*
+src/externals/mct/*/*.o
+src/externals/mct/*/*.mod
+src/externals/mct/*/*.a
+src/externals/mct/Makefile.conf
+src/externals/mct/config.h
+src/externals/mct/config.log
+src/externals/mct/config.status

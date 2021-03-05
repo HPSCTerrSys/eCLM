@@ -16,5 +16,6 @@ cmake -S "$CLM5_TSMP_ROOT/src" \
       -DCMAKE_C_COMPILER=mpicc \
       -DCMAKE_Fortran_COMPILER=mpifort \
       -DGENF90_PATH=$GENF90_PATH \
-      -DNetCDF_ROOT=$NetCDF_ROOT
+      -DNetCDF_PATH=$NetCDF_ROOT \
+      -DPnetCDF_PATH=$NetCDF_ROOT
 cmake --build "$BUILD_FOLDER" --clean-first
