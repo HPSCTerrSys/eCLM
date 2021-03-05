@@ -186,4 +186,5 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../testpio)
   ADD_SUBDIRECTORY(../testpio testpio)
 endif()
 
-
+set_target_properties(pio PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/include)
+install (TARGETS pio ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
