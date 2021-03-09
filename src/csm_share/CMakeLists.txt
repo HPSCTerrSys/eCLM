@@ -18,22 +18,26 @@ target_compile_definitions(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE esmf_wrf_timemgr)
-target_include_directories(${PROJECT_NAME} PRIVATE include)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
-set(PREPROCESSED_F90 shr_assert_mod.F90
-                     shr_frz_mod.F90
-                     shr_infnan_mod.F90)
+set(F90IN_FILES util/shr_assert_mod.F90.in
+                util/shr_frz_mod.F90.in
+                util/shr_infnan_mod.F90.in)
 
-foreach(tempfile IN LISTS PREPROCESSED_F90)
+set(PREPROCESSED_F90_FILES "")
+foreach(f90in_file IN LISTS F90IN_FILES)
+    get_filename_component(filename_noext ${f90in_file} NAME_WE)
+    set(outfile "${CMAKE_CURRENT_BINARY_DIR}/${filename_noext}.F90")
     add_custom_command(
-        OUTPUT ${tempfile}
-        COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/util/${tempfile}.in > ${CMAKE_CURRENT_BINARY_DIR}/${tempfile}
-        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/util/${tempfile}.in
+        OUTPUT ${outfile}
+        COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file} > ${outfile}
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file}
     )
+    list(APPEND PREPROCESSED_F90_FILES ${outfile})
 endforeach()
 
-target_sources(${PROJECT_NAME} PRIVATE ${PREPROCESSED_F90})
+target_sources(${PROJECT_NAME} PRIVATE ${PREPROCESSED_F90_FILES})
 target_sources(${PROJECT_NAME} PRIVATE 
     mct/shr_fire_emis_mod.F90
     mct/shr_ndep_mod.F90
