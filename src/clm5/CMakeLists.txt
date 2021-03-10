@@ -4,6 +4,7 @@ add_library(${PROJECT_NAME} STATIC)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE NDEBUG)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 # Fortran template files transformed through genf90.pl
 set(F90IN_FILES

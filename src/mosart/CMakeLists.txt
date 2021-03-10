@@ -2,6 +2,9 @@ project (mosart LANGUAGES Fortran)
 
 add_library(${PROJECT_NAME} STATIC)
 
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+
 target_sources(${PROJECT_NAME} PRIVATE 
     src/cpl/rof_cpl_indices.F90
     src/cpl/rof_comp_mct.F90

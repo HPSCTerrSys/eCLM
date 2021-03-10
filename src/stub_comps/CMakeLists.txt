@@ -2,6 +2,8 @@ project (stub_comps LANGUAGES Fortran)
 
 foreach(component glc wav ice esp ocn)
     add_library(${component} STATIC)
+    target_include_directories(${component} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+    target_link_directories(${component} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
     if(${component} STREQUAL glc)
         target_sources(glc PRIVATE glc_comp_mct.F90)
     elseif(${component} STREQUAL wav)
