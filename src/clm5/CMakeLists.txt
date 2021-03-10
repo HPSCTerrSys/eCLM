@@ -311,4 +311,8 @@ target_sources(${PROJECT_NAME}
         utils/spmdMod.F90
 )
 
+find_package(LAPACK)
+if(LAPACK_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE LAPACK::LAPACK)
+endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE csm_share)
