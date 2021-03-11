@@ -28,6 +28,8 @@ target_include_directories(gptl INTERFACE ${GPTL_BLD_DIR}/include)
 target_link_directories(gptl INTERFACE ${GPTL_BLD_DIR}/lib)
 target_link_libraries(gptl INTERFACE libgptl.a)
 add_dependencies(gptl gptl_external)
+install (FILES ${GPTL_BLD_DIR}/lib/libgptl.a
+         TYPE LIB)
 
 # ===========
 #     MCT
@@ -51,6 +53,8 @@ target_include_directories(mct INTERFACE ${MCT_BLD_DIR}/include)
 target_link_directories(mct INTERFACE ${MCT_BLD_DIR}/lib)
 target_link_libraries(mct INTERFACE libmct.a libmpeu.a)
 add_dependencies(mct mct_external) 
+install (FILES ${MCT_BLD_DIR}/lib/libmct.a ${MCT_BLD_DIR}/lib/libmpeu.a
+         TYPE LIB)
 
 # ===========
 #     PIO

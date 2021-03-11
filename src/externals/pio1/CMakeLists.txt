@@ -184,3 +184,5 @@ endif()
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../testpio)
   ADD_SUBDIRECTORY(../testpio testpio)
 endif()
+
+install (TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

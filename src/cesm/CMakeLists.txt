@@ -35,3 +35,4 @@ target_sources(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE clm datm mosart ocn wav ice glc esp csm_share)
+install (TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

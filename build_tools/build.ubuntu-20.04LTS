@@ -12,6 +12,7 @@ GENF90_PATH=$(pwd)
 rm -rf $BUILD_FOLDER
 cmake -S "$CLM5_TSMP_ROOT/src" \
       -B "$BUILD_FOLDER" \
+      -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH" \
       -DCMAKE_MODULE_PATH="$(pwd)/cmake" \
       -DCMAKE_C_COMPILER=mpicc \
       -DCMAKE_Fortran_COMPILER=mpifort \
@@ -19,3 +20,4 @@ cmake -S "$CLM5_TSMP_ROOT/src" \
       -DNetCDF_PATH=$NetCDF_ROOT \
       -DPnetCDF_PATH=$NetCDF_ROOT
 cmake --build "$BUILD_FOLDER" --clean-first
+cmake --install "$BUILD_FOLDER"

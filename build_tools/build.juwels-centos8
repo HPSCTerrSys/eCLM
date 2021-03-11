@@ -37,3 +37,4 @@ cmake -S "$CLM5_TSMP_ROOT/src" \
       -DNetCDF_Fortran_PATH=$EBROOTNETCDFMINFORTRAN \
       -DPnetCDF_PATH=$EBROOTPARALLELMINNETCDF
 cmake --build "$BUILD_FOLDER" --clean-first
+cmake --install "$BUILD_FOLDER"
