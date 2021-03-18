@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+"""build-clm5nl - CLM5 namelist generator
+
+Generates CLM5 namelists from  model parameters file and saves
+the outputs to a specified directory. If no directory is
+specified, the namelists are saved to the current directory.
+
+Usage: 
+  build-clm5nl [--out DIR] PARAMFILE
+  build-clm5nl (-h | --help)
+  build-clm5nl (-v | --version)
+
+Arguments:
+  PARAMFILE           model parameters file (.yaml)
+
+Options:
+  -o DIR --out DIR    Save generated namelists to this directory.
+  -h --help           Show this screen.
+  -v --version        Show version.
+"""
+import sys
+from pathlib import Path
+from docopt import docopt
+from ruamel.yaml import YAML
+from clm5nl.generators.gen_lnd_in import build_lnd_in
+
+__version__ = "0.1"
+args = docopt(__doc__, version="build-clm5nl v" + __version__)
+invalid_args = False
+params_file = Path(args["PARAMFILE"]).absolute()
+out_nl_file = "lnd_in"
+
+# Validate input args
+if (not params_file.exists()):
+  print("build-clm5nl error: Model parameter file '{}' not found.".format(params_file), file=sys.stderr)
+  invalid_args = True
+
+if (args["--out"] is None):
+  out_dir = Path.cwd()
+else:
+  out_dir = Path(args["--out"]).absolute()
+  if (not out_dir.is_dir()):
+    print("build-clm5nl error: Directory '{}' does not exist.".format(out_dir), file=sys.stderr)
+    invalid_args = True
+
+if invalid_args: sys.exit(-1)
+
+# Parse model parameters file
+yaml = YAML(typ='safe')
+print("Reading model parameters file from '{}'".format(params_file))
+config = yaml.load(open(params_file, "r"))
+
+opts, nl, drv_flds = {}, {}, {}
+for category in config:
+  if category == "general_options":
+    opts = {k:(v if str(v).lower() != "none" else None) for k, v in config[category].items()}
+  elif category == "lnd_in":
+    nl = {k:v for k, v in config[category].items()}
+  elif category == "drv_flds_in":
+    drv_flds = {k:v for k, v in config[category].items()}
+
+# Build namelists
+build_lnd_in(opts, nl, drv_flds, Path(out_dir, out_nl_file))
+print("Successfully generated '{}'".format(Path(out_dir, out_nl_file)))
