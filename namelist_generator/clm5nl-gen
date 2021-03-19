@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-"""build-clm5nl - CLM5 namelist generator
+"""clm5nl-gen - CLM5 namelist generator
 
 Generates CLM5 namelists from  model parameters file and saves
 the outputs to a specified directory. If no directory is
 specified, the namelists are saved to the current directory.
 
 Usage: 
-  build-clm5nl [--out DIR] PARAMFILE
-  build-clm5nl (-h | --help)
-  build-clm5nl (-v | --version)
+  clm5nl-gen [--out DIR] PARAMFILE
+  clm5nl-gen (-h | --help)
+  clm5nl-gen (-v | --version)
 
 Arguments:
   PARAMFILE           model parameters file (.yaml)
@@ -26,14 +26,14 @@ from ruamel.yaml import YAML
 from clm5nl.generators.gen_lnd_in import build_lnd_in
 
 __version__ = "0.1"
-args = docopt(__doc__, version="build-clm5nl v" + __version__)
+args = docopt(__doc__, version="clm5nl-gen v" + __version__)
 invalid_args = False
 params_file = Path(args["PARAMFILE"]).absolute()
 out_nl_file = "lnd_in"
 
 # Validate input args
 if (not params_file.exists()):
-  print("build-clm5nl error: Model parameter file '{}' not found.".format(params_file), file=sys.stderr)
+  print("clm5nl-gen error: Model parameter file '{}' not found.".format(params_file), file=sys.stderr)
   invalid_args = True
 
 if (args["--out"] is None):
@@ -41,7 +41,7 @@ if (args["--out"] is None):
 else:
   out_dir = Path(args["--out"]).absolute()
   if (not out_dir.is_dir()):
-    print("build-clm5nl error: Directory '{}' does not exist.".format(out_dir), file=sys.stderr)
+    print("clm5nl-gen error: Directory '{}' does not exist.".format(out_dir), file=sys.stderr)
     invalid_args = True
 
 if invalid_args: sys.exit(-1)
