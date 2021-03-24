@@ -36,28 +36,38 @@ general_options:
 
 lnd_in:
   # files
-  finidat: '/p/scratch/nrw_test_case/FSpinup_300x300_NRW.clm2.r.2222-01-01-00000.nc'
-  fsnowaging: '/p/scratch/nrw_test_case/snicar_drdt_bst_fit_60_c070416.nc'
-  fsnowoptics: '/p/scratch/nrw_test_case/snicar_optics_5bnd_c090915.nc'
-  fsurdat: '/p/scratch/nrw_test_case/surfdata_300x300_NRW_hist_78pfts_CMIP6_simyr2000_c190619.nc'
-  paramfile: '/p/scratch/nrw_test_case/clm5_params.c171117.nc'
-  stream_fldfilename_ndep: '/p/scratch/nrw_test_case/fndep_clm_hist_b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.ensmean_1849-2015_monthly_0.9x1.25_c180926.nc'
-  stream_fldfilename_popdens: '/p/scratch/nrw_test_case/clmforc.Li_2017_HYDEv3.2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2016_c180202.nc'
-  stream_fldfilename_urbantv: '/p/scratch/nrw_test_case/CLM50_tbuildmax_Oleson_2016_0.9x1.25_simyr1849-2106_c160923.nc'
-  stream_fldfilename_lightng: '/p/scratch/nrw_test_case/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc'
-  stream_fldfilename_ch4finundated: '/p/scratch/nrw_test_case/finundated_inversiondata_0.9x1.25_c170706.nc'
+  finidat: "/p/scratch/nrw_test_case/FSpinup_300x300_NRW.clm2.r.2222-01-01-00000.nc"
+  fsnowaging: "/p/scratch/nrw_test_case/snicar_drdt_bst_fit_60_c070416.nc"
+  fsnowoptics: "/p/scratch/nrw_test_case/snicar_optics_5bnd_c090915.nc"
+  fsurdat: "/p/scratch/nrw_test_case/surfdata_300x300_NRW_hist_78pfts_CMIP6_simyr2000_c190619.nc"
+  paramfile: "/p/scratch/nrw_test_case/clm5_params.c171117.nc"
+  stream_fldfilename_ndep: "/p/scratch/nrw_test_case/fndep_clm_hist_b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.ensmean_1849-2015_monthly_0.9x1.25_c180926.nc"
+  stream_fldfilename_popdens: "/p/scratch/nrw_test_case/clmforc.Li_2017_HYDEv3.2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2016_c180202.nc"
+  stream_fldfilename_urbantv: "/p/scratch/nrw_test_case/CLM50_tbuildmax_Oleson_2016_0.9x1.25_simyr1849-2106_c160923.nc"
+  stream_fldfilename_lightng: "/p/scratch/nrw_test_case/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc"
+  stream_fldfilename_ch4finundated: "/p/scratch/nrw_test_case/finundated_inversiondata_0.9x1.25_c170706.nc"
 
   #clm_inparm:
   co2_ppmv: 367.0
   hist_empty_htapes: True
-  hist_fincl1: ['TLAI','TSOI','TOTSOMC','TOTVEGC','TOTECOSYSC']
+  hist_fincl1: ["TLAI","TSOI","TOTSOMC","TOTVEGC","TOTECOSYSC"]
   hist_mfilt: 365
   hist_nhtfrq: -24
   use_init_interp: True
 
   #urban
-  urban_hac: 'ON_WASTEHEAT'
+  urban_hac: "ON_WASTEHEAT"
   urban_traffic: False
 
+datm_in:
+  datm_mode: "CLMCRUNCEPv7"
+  datm_presaero: "clim_2010" # DATM prescribed aerosol forcing
+  domainfile: "/p/scratch/nrw_test_case/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
+  stream_year_first: 2017    # first year of the stream data that will be used
+  stream_year_last: 2017     # last  year of the stream data that will be used
+  stream_year_align: 2017    # model year that will be aligned with stream data for year_first
+  stream_root_folder: "/p/scratch/nrw_test_case/COSMOREA6/forcings"
+  stream_files: ["2017-01.nc", "2017-02.nc", "2017-03.nc", "2017-04.nc", "2017-05.nc"]
+  
 drv_flds_in:
-  megan_factors_file: '/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc'
+  megan_factors_file: "/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc"

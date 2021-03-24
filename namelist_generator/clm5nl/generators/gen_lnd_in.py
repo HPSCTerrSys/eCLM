@@ -8,6 +8,7 @@ CLM5 model capabilities.
 
 [CLMBuildNamelist.pm]: https://github.com/ESCOMP/CTSM/blob/03954bf6f697a019f289632636007a29a21e79d2/bld/CLMBuildNamelist.pm
 """
+from pathlib import Path
 from ..structures import lnd_in, drv_in, drv_flds_in
 
 __all__ = ['build_lnd_in']
@@ -45,7 +46,9 @@ def build_lnd_in(opts: dict = None, nl: dict = None, drv_flds: dict = None, nl_f
     process_namelist_inline_logic()                # rest of namelist parameters
 
     # Write to file
-    if nl_file: _nl.write(nl_file, lnd_nl_groups())
+    if nl_file: 
+        _nl.write(nl_file, lnd_nl_groups())
+        print(f"Generated {Path(nl_file).name}")
    
 def process_namelist_commandline_options():
     #setup_cmdl_chk_res()
