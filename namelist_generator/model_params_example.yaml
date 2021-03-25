@@ -68,6 +68,9 @@ datm_in:
   stream_year_align: 2017    # model year that will be aligned with stream data for year_first
   stream_root_folder: "/p/scratch/nrw_test_case/COSMOREA6/forcings"
   stream_files: ["2017-01.nc", "2017-02.nc", "2017-03.nc", "2017-04.nc", "2017-05.nc"]
-  
+
+modelio_nml:
+  run_dir: "/p/scratch/nrw_test_case/run"
+
 drv_flds_in:
   megan_factors_file: "/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc"

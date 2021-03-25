@@ -23,8 +23,7 @@ import sys
 from pathlib import Path
 from docopt import docopt
 from ruamel.yaml import YAML
-from clm5nl.generators.gen_lnd_in import build_lnd_in
-from clm5nl.generators.gen_datm_in import build_datm_in
+from clm5nl.generators import build_lnd_in, build_datm_in, build_modelio_nml
 
 __version__ = "0.1"
 args = docopt(__doc__, version="clm5nl-gen v" + __version__)
@@ -53,6 +52,7 @@ config = yaml.load(open(params_file, "r"))
 
 opts, nl_lnd, nl_drv_flds = {}, {}, {}
 opts_datm, nl_datm = {}, {}
+opts_modelio, nl_modelio = {}, {}
 
 for category in config:
   if category == "general_options":
@@ -60,10 +60,13 @@ for category in config:
   elif category == "lnd_in":
     nl_lnd = {k:v for k, v in config[category].items()}
   elif category == "datm_in":
-    opts_datm = {k:v for k, v in config[category].items()}  
+    opts_datm = {k:v for k, v in config[category].items()}
+  elif category == "modelio_nml":
+    opts_modelio = {k:v for k, v in config[category].items()}
   elif category == "drv_flds_in":
     nl_drv_flds = {k:v for k, v in config[category].items()}
 
 # Build namelists
 build_lnd_in(opts, nl_lnd, nl_drv_flds, nl_file=Path(out_dir, "lnd_in"))
 build_datm_in(opts_datm, nl_datm, nl_file=Path(out_dir, "datm_in"))
+build_modelio_nml(opts_modelio, nl_modelio, out_dir)
