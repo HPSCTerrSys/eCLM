@@ -69,6 +69,9 @@ datm_in:
   stream_root_folder: "/p/scratch/nrw_test_case/COSMOREA6/forcings"
   stream_files: ["2017-01.nc", "2017-02.nc", "2017-03.nc", "2017-04.nc", "2017-05.nc"]
 
+mosart_in:
+  frivinp_rtm: "/p/scratch/nrw_test_case/inputdata"
+  
 modelio_nml:
   run_dir: "/p/scratch/nrw_test_case/run"
 
