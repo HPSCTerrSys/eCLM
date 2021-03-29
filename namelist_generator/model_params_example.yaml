@@ -75,5 +75,11 @@ mosart_in:
 modelio_nml:
   run_dir: "/p/scratch/nrw_test_case/run"
 
+drv_in:
+  STOP_OPTION: "date"
+  RUN_STARTDATE: "2017-01-01"
+  STOP_DATE: "2017-12-31"
+  NTASKS: 96
+
 drv_flds_in:
   megan_factors_file: "/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc"
