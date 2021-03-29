@@ -16,19 +16,18 @@ __all__ = ['build_lnd_in']
 # Module-level variables
 _env = {}
 _in_opts = {}
-_in_nl = {}
+_user_nl = {}
 _nl = lnd_in()
-_nl_drv = drv_in()
 
-def build_lnd_in(opts: dict = None, nl: dict = None, nl_file: str = None):
+def build_lnd_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
 
     # Initialize module level variables
-    global _in_opts, _in_nl
-    global _nl, _nl_drv, _env
+    global _in_opts, _user_nl
+    global _nl, _env
     _in_opts = opts
-    _in_nl = nl
+    _user_nl = user_nl
     _nl = lnd_in()
-    _nl_drv = drv_in()
+
     _env = {"bgc_spinup":None,
             "cnfireson":None,
             "finundation_res":None,
@@ -38,7 +37,6 @@ def build_lnd_in(opts: dict = None, nl: dict = None, nl_file: str = None):
     # Build lnd_in namelist
     process_namelist_commandline_options()         # high-level options (e.g sim year, bgc mode, spinup option, )
     process_namelist_commandline_use_case()        # use case (e.g. 1850, 20th century, 2000, 2010, SSPx-y.z)
-    process_namelist_commandline_clm_start_type()  # CLM start type (startup, branch, or continue) 
     process_namelist_inline_logic()                # rest of namelist parameters
 
     # Write to file
@@ -64,9 +62,6 @@ def process_namelist_commandline_options():
     #setup_cmdl_maxpft()
     _nl.clm_inparm.maxpatch_pft = 79 if _nl.clm_inparm.use_crop else 17
 
-    #setup_cmdl_glc_nec()
-    _nl_drv.seq_cplflds_inparm.glc_nec = 10
- 
     #setup_cmdl_irrigation()
     #_env["irrig"] = False #only for CLM4.0 physics
 
@@ -84,7 +79,6 @@ def process_namelist_commandline_options():
     if _in_opts["vichydro"] == 1:
         _nl.clm_inparm.use_vichydro = True
 
-    setup_cmdl_run_type()
     #setup_cmdl_output_reals()
 
     #setup_logic_lnd_tuning()
@@ -102,12 +96,6 @@ def process_namelist_commandline_use_case():
     _nl.urbantv_streams.stream_year_first_urbantv = 2000
     _nl.urbantv_streams.stream_year_last_urbantv = 2000
     _env["use_case_desc"] = "Conditions to simulate 2000 land-use"
-
-def process_namelist_commandline_clm_start_type():
-    if _in_opts["clm_start_type"] == "cold" or _in_opts["clm_start_type"] == "arb_ic":
-        _nl_drv.seq_infodata_inparm.start_type = "startup"
-    else:
-        _nl_drv.seq_infodata_inparm.start_type = _in_opts["clm_start_type"]
 
 def error(msg):
     raise ValueError(msg)
@@ -392,12 +380,13 @@ def setup_logic_irrigate():
 
 def setup_logic_start_type():
     my_start_type = _in_opts["clm_start_type"]
+    drv_in_start_type = "startup" # TODO: this must be read from drv_in's clm_start_type parameter.
     if not _in_opts["override_nsrest"] == None:
         start_type = {0:"startup", 1:"continue", 3:"branch"}
         my_start_type = start_type.get(_in_opts["override_nsrest"], "Invalid start_type value")
-        if my_start_type == _nl_drv.seq_infodata_inparm.start_type:
+        if my_start_type == drv_in_start_type:
             error("no need to set override_nsrest to same as start_type")
-        if _nl_drv.seq_infodata_inparm.start_type != "startup":
+        if drv_in_start_type != "startup":
             error("can NOT set override_nsrest if driver is NOT a startup type")
         _nl.clm_inparm.override_nsrest = _in_opts["override_nsrest"]
     
@@ -430,12 +419,12 @@ def setup_logic_decomp_performance():
 
 def setup_logic_snow():
     _nl.clm_canopyhydrology_inparm.snowveg_flag = "ON_RAD"
-    if _in_nl["fsnowoptics"] is not None:
-        _nl.clm_inparm.fsnowoptics = _in_nl["fsnowoptics"]
+    if _user_nl["fsnowoptics"] is not None:
+        _nl.clm_inparm.fsnowoptics = _user_nl["fsnowoptics"]
     else:
        _nl.clm_inparm.fsnowoptics = "lnd/clm2/snicardata/snicar_optics_5bnd_c090915.nc"
-    if _in_nl["fsnowaging"] is not None:
-        _nl.clm_inparm.fsnowaging = _in_nl["fsnowaging"]
+    if _user_nl["fsnowaging"] is not None:
+        _nl.clm_inparm.fsnowaging = _user_nl["fsnowaging"]
     else:
         _nl.clm_inparm.fsnowaging = "lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc"
 
@@ -499,8 +488,8 @@ def setup_logic_dynamic_roots():
                 error("Cannot turn use_dynroot on when use_hydrstress is on")
 
 def setup_logic_params_file():
-    if _in_nl["paramfile"] is not None:
-        _nl.clm_inparm.paramfile = _in_nl["paramfile"]
+    if _user_nl["paramfile"] is not None:
+        _nl.clm_inparm.paramfile = _user_nl["paramfile"]
     else:
         _nl.clm_inparm.paramfile = "lnd/clm2/paramdata/clm5_params.c171117.nc"
 
@@ -529,8 +518,8 @@ def setup_logic_surface_dataset():
     if not _nl.dynamic_subgrid.flanduse_timeseries is None:
         if _nl.clm_inparm.use_cndv: error("dynamic PFT's (setting flanduse_timeseries) are incompatible with dynamic vegetation (use_cndv=.true)")
         if _nl.clm_inparm.use_fates: error("dynamic PFT's (setting flanduse_timeseries) are incompatible with ecosystem dynamics (use_fates=.true)")
-    if _in_nl["fsurdat"] is not None:
-        _nl.clm_inparm.fsurdat = _in_nl["fsurdat"]
+    if _user_nl["fsurdat"] is not None:
+        _nl.clm_inparm.fsurdat = _user_nl["fsurdat"]
     else:    
         surface_file = {}
         if _in_opts["sim_year"] == "1850":
@@ -593,22 +582,22 @@ def setup_logic_surface_dataset():
 
 def setup_logic_initial_conditions():
     if _in_opts["clm_start_type"] == "cold":
-        if not _in_nl["finidat"] is None:
+        if not _user_nl["finidat"] is None:
             print("""
             WARNING: setting finidat (either explicitly in your user_nl_clm or by doing a hybrid or branch RUN_TYPE) is 
             incomptable with using a cold start (by setting CLM_FORCE_COLDSTART=on)
             Overridding input finidat file with one specifying that this is a cold start from arbitrary initial conditions.""")
         _in_opts["finidat"] = "' '"
-    elif not _in_nl["finidat"] is None and _in_nl["finidat"] == "' '":
+    elif not _user_nl["finidat"] is None and _user_nl["finidat"] == "' '":
         error("""You are setting finidat to blank which signals arbitrary initial conditions.
         But, CLM_FORCE_COLDSTART is off which is a contradiction. For arbitrary initial conditions just use the CLM_FORCE_COLDSTART option
         To do a cold-start set ./xmlchange CLM_FORCE_COLDSTART=on, and remove the setting of finidat in the user_nl_clm file""")
     
-    if _in_nl["finidat"] is None:
+    if _user_nl["finidat"] is None:
         #TODO
         pass
     else:
-        _nl.clm_inparm.finidat = _in_nl["finidat"]
+        _nl.clm_inparm.finidat = _user_nl["finidat"]
 
 def setup_logic_dynamic_subgrid():
     # Options controlling which parts of flanduse_timeseries to use
@@ -1380,14 +1369,6 @@ def setup_cmdl_fates_mode():
                 not n.use_fates_logging is None or not n.fates_parteh_mode is None):
                 error("is being set, but can ONLY be set when -bgc fates option is used.")
 
-def setup_cmdl_run_type():
-    first_yr = _in_opts["start_ymd"] / 10000
-    if _in_opts["clm_start_type"] == "default":
-        if first_yr == 1850 or first_yr == 2000:
-            _in_opts["clm_start_type"] = "startup"
-        else:
-            _in_opts["clm_start_type"] = "arb_ic"
-
 if __name__ == "__main__":
     """
     For testing purposes. To run gen_lnd_in.py, 
@@ -1397,10 +1378,10 @@ if __name__ == "__main__":
     $ python3 -m clm5nl.generators.gen_lnd_in   
     """
 
-    opts, nl = {}, {}
+    opts, user_nl = {}, {}
     opts["bgc_mode"] = "bgc"
     opts["clm_accelerated_spinup"] = "off"
-    opts["clm_start_type"] = "arb_ic"
+    opts["clm_start_type"] = "startup"
     opts["co2_ppmv"] = 367.0 
     opts["co2_type"] = "constant"
     opts["crop"] = 1
@@ -1426,11 +1407,11 @@ if __name__ == "__main__":
     opts["use_dynroot"] = False
     opts["use_init_interp"] = True
     opts["vichydro"] = 0
-    nl["finidat"] = "/p/scratch/nrw_test_case/FSpinup_300x300_NRW.clm2.r.2222-01-01-00000.nc"
-    nl["fsnowaging"] = "/p/scratch/nrw_test_case/snicar_drdt_bst_fit_60_c070416.nc"
-    nl["fsnowoptics"] = "/p/scratch/nrw_test_case/snicar_optics_5bnd_c090915.nc"
-    nl["fsurdat"] = "/p/scratch/nrw_test_case/surfdata_300x300_NRW_hist_78pfts_CMIP6_simyr2000_c190619.nc"
-    nl["paramfile"] = "/p/scratch/nrw_test_case/clm5_params.c171117.nc"
-    build_lnd_in(opts, nl, "lnd_in_test")
+    user_nl["finidat"] = "/p/scratch/nrw_test_case/FSpinup_300x300_NRW.clm2.r.2222-01-01-00000.nc"
+    user_nl["fsnowaging"] = "/p/scratch/nrw_test_case/snicar_drdt_bst_fit_60_c070416.nc"
+    user_nl["fsnowoptics"] = "/p/scratch/nrw_test_case/snicar_optics_5bnd_c090915.nc"
+    user_nl["fsurdat"] = "/p/scratch/nrw_test_case/surfdata_300x300_NRW_hist_78pfts_CMIP6_simyr2000_c190619.nc"
+    user_nl["paramfile"] = "/p/scratch/nrw_test_case/clm5_params.c171117.nc"
+    build_lnd_in(opts, user_nl, "lnd_in_test")
     print("Successfully generated lnd_in_test")
 

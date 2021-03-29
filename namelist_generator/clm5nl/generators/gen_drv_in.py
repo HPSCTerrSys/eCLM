@@ -18,18 +18,29 @@ BASE_DT = {
     "decade" : 3600 * 24 * 365 * 10
 }
 
-_in_nl = {}
-_in_opts = {}
+_user_nl = {}
+_opts = {}
 _nl = drv_in()
 
-def build_drv_in(opts: dict = None, nl: dict = None, nl_file: str = None):
-    global _in_opts, _in_nl, _nl, _out_dir
+def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
+    global _opts, _user_nl, _nl
 
-    _in_opts = opts
-    _in_nl = nl
+    _opts = opts
+    _user_nl = user_nl
     _nl = drv_in()
 
     # Generate sections of drv_in namelist
+    seq_timemgr_inparm()
+
+    # setup_cmdl_run_type
+    if _opts["clm_start_type"] == "default":
+        first_yr = _nl.seq_timemgr_inparm.start_ymd / 10000
+        if first_yr == 1850 or first_yr == 2000:
+            _opts["clm_start_type"] = "startup"
+        else:
+            _opts["clm_start_type"] = "arb_ic"
+
+    seq_infodata_inparm()
     cime_driver_inst()
     cime_pes()
     esmf_inparm()
@@ -39,9 +50,6 @@ def build_drv_in(opts: dict = None, nl: dict = None, nl_file: str = None):
     seq_cplflds_inparm()
     seq_cplflds_userspec()
     seq_flux_mct_inparm()
-    seq_infodata_inparm()
-    seq_timemgr_inparm()
-
     #Write to file
     if nl_file: 
         _nl.write(nl_file)
@@ -129,48 +137,48 @@ def cime_driver_inst():
 def cime_pes():
     with _nl.cime_pes as n:
         n.atm_layout   = "concurrent"
-        n.atm_ntasks   = _in_opts["NTASKS"]
-        n.atm_nthreads = _in_opts.get("NTHREADS", 1)
+        n.atm_ntasks   = _opts["NTASKS"]
+        n.atm_nthreads = _opts.get("NTHREADS", 1)
         n.atm_pestride = 1
         n.atm_rootpe   = 0
-        n.cpl_ntasks   = _in_opts["NTASKS"]
-        n.cpl_nthreads = _in_opts.get("NTHREADS", 1)
+        n.cpl_ntasks   = _opts["NTASKS"]
+        n.cpl_nthreads = _opts.get("NTHREADS", 1)
         n.cpl_pestride = 1
         n.cpl_rootpe   = 0
         n.esp_layout   = "concurrent"
-        n.esp_ntasks   = _in_opts["NTASKS"]
-        n.esp_nthreads = _in_opts.get("NTHREADS", 1)
+        n.esp_ntasks   = _opts["NTASKS"]
+        n.esp_nthreads = _opts.get("NTHREADS", 1)
         n.esp_pestride = 1
         n.esp_rootpe   = 0
         n.glc_layout   = "concurrent"
-        n.glc_ntasks   = _in_opts["NTASKS"]
-        n.glc_nthreads = _in_opts.get("NTHREADS", 1)
+        n.glc_ntasks   = _opts["NTASKS"]
+        n.glc_nthreads = _opts.get("NTHREADS", 1)
         n.glc_pestride = 1
         n.glc_rootpe   = 0
         n.ice_layout   = "concurrent"
-        n.ice_ntasks   = _in_opts["NTASKS"]
-        n.ice_nthreads = _in_opts.get("NTHREADS", 1)
+        n.ice_ntasks   = _opts["NTASKS"]
+        n.ice_nthreads = _opts.get("NTHREADS", 1)
         n.ice_pestride = 1
         n.ice_rootpe   = 0
         n.lnd_layout   = "concurrent"
-        n.lnd_ntasks   = _in_opts["NTASKS"]
-        n.lnd_nthreads = _in_opts.get("NTHREADS", 1)
+        n.lnd_ntasks   = _opts["NTASKS"]
+        n.lnd_nthreads = _opts.get("NTHREADS", 1)
         n.lnd_pestride = 1
         n.lnd_rootpe   = 0
         n.ocn_layout   = "concurrent"
-        n.ocn_ntasks   = _in_opts["NTASKS"]
-        n.ocn_nthreads = _in_opts.get("NTHREADS", 1)
+        n.ocn_ntasks   = _opts["NTASKS"]
+        n.ocn_nthreads = _opts.get("NTHREADS", 1)
         n.ocn_pestride = 1
         n.ocn_rootpe   = 0
         # TODO: Include logic for compset-dependent parameters
         # n.rof_layout   = "concurrent"
-        # n.rof_ntasks   = _in_opts["NTASKS"]
-        # n.rof_nthreads = _in_opts.get("NTHREADS", 1)
+        # n.rof_ntasks   = _opts["NTASKS"]
+        # n.rof_nthreads = _opts.get("NTHREADS", 1)
         # n.rof_pestride = 1
         # n.rof_rootpe   = 0
         # n.wav_layout   = "concurrent"
-        # n.wav_ntasks   = _in_opts["NTASKS"]
-        # n.wav_nthreads = _in_opts.get("NTHREADS", 1)
+        # n.wav_ntasks   = _opts["NTASKS"]
+        # n.wav_nthreads = _opts.get("NTHREADS", 1)
         # n.wav_pestride = 1
         # n.wav_rootpe   = 0
 
@@ -222,7 +230,7 @@ def seq_cplflds_inparm():
         n.flds_co2b = False
         n.flds_co2c = False
         n.flds_wiso = False
-        n.glc_nec = 10
+        n.glc_nec = 10 # TODO: check dependency with maxpatch_glcmec parameter from lnd_in 
         n.ice_ncat = 1
         n.nan_check_component_fields = True
         n.seq_flds_i2o_per_cat = False
@@ -238,6 +246,11 @@ def seq_flux_mct_inparm():
 
 def seq_infodata_inparm():
     with _nl.seq_infodata_inparm as n:
+        # process_namelist_commandline_clm_start_type
+        if _opts["clm_start_type"] == "cold" or _opts["clm_start_type"] == "arb_ic":
+            n.start_type = "startup"
+        else:
+            n.start_type = _opts["clm_start_type"]
         n.aoflux_grid = "ocn"
         n.aqua_planet = False
         n.aqua_planet_sst = 1
@@ -251,7 +264,7 @@ def seq_infodata_inparm():
         n.budget_ltend = 0
         n.budget_month = 1
         n.case_desc = "UNSET"
-        n.case_name = _in_opts.get("CASE","UNSET")
+        n.case_name = _opts.get("CASE","UNSET")
         n.cime_model = "cesm"
         n.coldair_outbreak_mod = True
         n.cpl_decomp = 0
@@ -293,7 +306,7 @@ def seq_infodata_inparm():
         n.histavg_rof = True
         n.histavg_wav = True
         n.histavg_xao = True
-        n.hostname = _in_opts.get("HOSTNAME","MACHINE")
+        n.hostname = _opts.get("HOSTNAME","MACHINE")
         n.ice_gnam = "null"
         n.info_debug = 1
         n.lnd_gnam = "CLM_USRDAT"
@@ -321,7 +334,6 @@ def seq_infodata_inparm():
         n.scmlon = -999.
         n.shr_map_dopole = True
         n.single_column = False
-        n.start_type = "startup"
         n.tchkpt_dir = "timing/checkpoints"
         n.tfreeze_option = "mushy"
         n.timing_dir = "timing"
@@ -336,23 +348,23 @@ def seq_infodata_inparm():
 
         # Overwrite brnch_retain_casename
         if n.start_type != 'startup':
-            if (_in_opts.get("CASE","UNSET") == _in_opts.get("RUN_REFCASE","case.std")):
+            if (_opts.get("CASE","UNSET") == _opts.get("RUN_REFCASE","case.std")):
                 n.brnch_retain_casename = True
 
 def seq_timemgr_inparm():
     with _nl.seq_timemgr_inparm as n:
         # Important time parameters
-        n.stop_option = _in_opts["STOP_OPTION"]
-        n.start_ymd = int("".join(str(x) for x in _in_opts["RUN_STARTDATE"].split('-')))      
-        n.stop_ymd = int("".join(str(x) for x in _in_opts["STOP_DATE"].split('-')))
-        n.stop_n = _in_opts.get("STOP_N", -1)
-        n.restart_option = _in_opts.get("RESTART_OPTION", n.stop_option)
+        n.stop_option = _opts["STOP_OPTION"]
+        n.start_ymd = int("".join(str(x) for x in _opts["RUN_STARTDATE"].split('-')))      
+        n.stop_ymd = int("".join(str(x) for x in _opts["STOP_DATE"].split('-')))
+        n.stop_n = _opts.get("STOP_N", -1)
+        n.restart_option = _opts.get("RESTART_OPTION", n.stop_option)
         n.restart_ymd = n.stop_ymd
         n.restart_n = n.stop_n
 
         # set component coupling frequencies
-        base_period  = _in_opts.get("NCPL_BASE_PERIOD","day")
-        if _in_opts.get("CALENDAR", "NO_LEAP") != 'NO_LEAP' and (base_period == "year" or base_period == "decade"):
+        base_period  = _opts.get("NCPL_BASE_PERIOD","day")
+        if _opts.get("CALENDAR", "NO_LEAP") != 'NO_LEAP' and (base_period == "year" or base_period == "decade"):
             error(f"Invalid CALENDAR for NCPL_BASE_PERIOD {base_period} ")
         cpl_dt = {comp : calc_cpl_dt(comp, base_period) for comp in ["atm", "glc", "ice", "lnd", "ocn", "rof", "wav"]}
         cpl_dt["base_dt"] = BASE_DT[base_period]
@@ -367,7 +379,7 @@ def seq_timemgr_inparm():
         n.wav_cpl_dt = cpl_dt["wav"]
 
         # set tprof_option and tprof_n - if tprof_total is > 0
-        stop_option = _in_opts["STOP_OPTION"]
+        stop_option = _opts["STOP_OPTION"]
         if 'nyear' in stop_option:
             tprofoption = 'ndays'
             tprof_mult = 365
@@ -380,8 +392,8 @@ def seq_timemgr_inparm():
         else:
             tprof_mult = 1
             tprofoption = 'never'
-        tprof_total = _in_opts.get("TPROF_TOTAL", 0)
-        if ((tprof_total > 0) and (_in_opts.get("STOP_DATE",-999) < 0) and ('ndays' in tprofoption)):
+        tprof_total = _opts.get("TPROF_TOTAL", 0)
+        if ((tprof_total > 0) and (_opts.get("STOP_DATE",-999) < 0) and ('ndays' in tprofoption)):
             tprof_n = int((tprof_mult * n.stop_n) / tprof_total)
             n.tprof_option = tprofoption
             n.tprof_n = tprof_n if tprof_n > 0 else 1
@@ -390,8 +402,8 @@ def seq_timemgr_inparm():
             n.tprof_option = "never"
 
         # Set esp interval if pause is active
-        n.pause_n = _in_opts.get("PAUSE_N",0)
-        n.pause_option = _in_opts.get("PAUSE_OPTION", "never")
+        n.pause_n = _opts.get("PAUSE_N",0)
+        n.pause_option = _opts.get("PAUSE_OPTION", "never")
         if n.pause_option not in ["never", "none", None]:
             if "nstep" in n.pause_option:
                 n.esp_cpl_dt = min(cpl_dt.values())
@@ -439,7 +451,7 @@ def seq_timemgr_inparm():
         n.wav_cpl_offset = 0
 
 def calc_cpl_dt(comp, base_period):
-    ncpl = _in_opts.get("{}_NCPL".format(comp.upper()), 48) #TODO: default NCPL must be computed!
+    ncpl = _opts.get("{}_NCPL".format(comp.upper()), 48) #TODO: default NCPL must be computed!
     if ncpl is not None:
         cpl_dt = int(BASE_DT[base_period] / int(ncpl))
         total_dt = cpl_dt * int(ncpl)
@@ -465,7 +477,7 @@ def get_time_in_seconds(timeval, unit):
         dmult = 1
 
     return dmult * timeval
-
+            
 if __name__ == "__main__":
     """
     For testing purposes. To run gen_datm_in.py, 
@@ -474,7 +486,7 @@ if __name__ == "__main__":
     $ cd <parent folder of clm5nl>
     $ python3 -m clm5nl.generators.gen_drv_in   
     """
-    opts, nl = {}, {}
+    opts, user_nl = {}, {}
     opts["CASE"] = "NRW_300x300"
     opts["HOSTNAME"] = "JUWELS"
     opts["RUN_REFCASE"] = "case.std" # L78 
@@ -496,6 +508,7 @@ if __name__ == "__main__":
     opts["ROF_NCPL"] = 8
     opts["WAV_NCPL"] = 48
     opts["NTASKS"] = 96     # number of MPI tasks
+    opts["clm_start_type"] = "default"
 
-    build_drv_in(opts, nl, "drv_in_test")
+    build_drv_in(opts, user_nl, "drv_in_test")
     build_seq_maps_rc()

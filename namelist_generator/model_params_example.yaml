@@ -4,7 +4,7 @@ file_version: 1.0
 general_options:
   bgc_mode: "bgc"
   clm_accelerated_spinup: "off"
-  clm_start_type: "arb_ic"
+  clm_start_type: "arb_ic" #TODO: this should only be set from drv_in
   co2_ppmv: 367.0 
   co2_type: "constant"
   crop: 1
@@ -73,6 +73,7 @@ modelio_nml:
   run_dir: "/p/scratch/nrw_test_case/run"
 
 drv_in:
+  clm_start_type: "default"
   STOP_OPTION: "date"
   RUN_STARTDATE: "2017-01-01"
   STOP_DATE: "2017-12-31"
