@@ -8,10 +8,8 @@ general_options:
   co2_ppmv: 367.0 
   co2_type: "constant"
   crop: 1
-  drydep: False
   dtime: None
   dynamic_vegetation: 0
-  fire_emis: False
   GLC_TWO_WAY_COUPLING: False
   glc_nec: 10
   ignore_ic_date: False
@@ -21,7 +19,6 @@ general_options:
   lnd_frac: "/p/scratch/nrw_test_case/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
   lnd_tuning_mode: "clm5_0_CRUv7"
   mask: None
-  megan: True
   nrevsn: None
   override_nsrest: None
   res: "UNSET"
@@ -82,4 +79,7 @@ drv_in:
   NTASKS: 96
 
 drv_flds_in:
+  megan: True
+  fire_emis: False
+  drydep: False
   megan_factors_file: "/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc"

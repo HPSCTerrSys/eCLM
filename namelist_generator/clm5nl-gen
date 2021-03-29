@@ -55,6 +55,7 @@ opts_datm, nl_datm = {}, {}
 opts_mosart, nl_mosart = {}, {}
 opts_drv, nl_drv = {}, {}
 opts_modelio, nl_modelio = {}, {}
+opts_drv_flds = {}
 
 for category in config:
   if category == "general_options":
@@ -70,13 +71,13 @@ for category in config:
   elif category == "modelio_nml":
     opts_modelio = {k:v for k, v in config[category].items()}
   elif category == "drv_flds_in":
-    nl_drv_flds = {k:v for k, v in config[category].items()}
+    opts_drv_flds = {k:v for k, v in config[category].items()}
 
 # Build namelists
-build_lnd_in(opts, nl_lnd, nl_drv_flds, nl_file=Path(out_dir, "lnd_in"))
+build_lnd_in(opts, nl_lnd, nl_file=Path(out_dir, "lnd_in"))
 build_datm_in(opts_datm, nl_datm, nl_file=Path(out_dir, "datm_in"))
 build_mosart_in(opts_mosart, nl_mosart, nl_file=Path(out_dir, "mosart_in"))
 build_drv_in(opts_drv, nl_drv, nl_file=Path(out_dir, "drv_in"))
 build_seq_maps_rc(out_dir)
 build_modelio_nml(opts_modelio, nl_modelio, out_dir)
-build_drv_flds_in(nl=nl_drv_flds, nl_file="drv_flds_in")
+build_drv_flds_in(opts_drv_flds, nl_file="drv_flds_in")

@@ -9,7 +9,7 @@ CLM5 model capabilities.
 [CLMBuildNamelist.pm]: https://github.com/ESCOMP/CTSM/blob/03954bf6f697a019f289632636007a29a21e79d2/bld/CLMBuildNamelist.pm
 """
 from pathlib import Path
-from ..structures import lnd_in, drv_in, drv_flds_in
+from ..structures import lnd_in, drv_in
 
 __all__ = ['build_lnd_in']
 
@@ -17,21 +17,17 @@ __all__ = ['build_lnd_in']
 _env = {}
 _in_opts = {}
 _in_nl = {}
-_in_nl_drv_flds = {}
 _nl = lnd_in()
-_nl_drv_flds = drv_flds_in()
 _nl_drv = drv_in()
 
-def build_lnd_in(opts: dict = None, nl: dict = None, drv_flds: dict = None, nl_file: str = None):
+def build_lnd_in(opts: dict = None, nl: dict = None, nl_file: str = None):
 
     # Initialize module level variables
-    global _in_opts, _in_nl, _in_nl_drv_flds
-    global _nl, _nl_drv_flds, _nl_drv, _env
+    global _in_opts, _in_nl
+    global _nl, _nl_drv, _env
     _in_opts = opts
     _in_nl = nl
-    _in_nl_drv_flds = drv_flds
     _nl = lnd_in()
-    _nl_drv_flds = drv_flds_in()
     _nl_drv = drv_in()
     _env = {"bgc_spinup":None,
             "cnfireson":None,
@@ -230,21 +226,6 @@ def process_namelist_inline_logic():
     # namelist group: light_streams  #
     ##################################
     setup_logic_lightning_streams()
-
-    #################################
-    # namelist group: drydep_inparm #
-    #################################
-    setup_logic_dry_deposition()
-
-    #################################
-    # namelist group: fire_emis_nl  #
-    #################################
-    setup_logic_fire_emis()
-
-    #################################
-    # namelist group: megan_emis_nl #
-    #################################
-    setup_logic_megan()
 
     ##################################
     # namelist group: lai_streams  #
@@ -1124,49 +1105,6 @@ def setup_logic_lightning_streams():
                                stream_year_last_lightng, model_year_align_lightng, lightng_tintalgo nor
                                stream_fldfilename_lightng can be set!""")
 
-def setup_logic_dry_deposition():
-    with _nl_drv_flds.drydep_inparm as n:
-        if _in_opts["drydep"]:
-            n.drydep_list = ["O3", "NO2", "HNO3", "NO", "HO2NO2", "CH3OOH", "CH2O", "CO", "H2O2", "CH3COOOH", 
-                                                    "PAN", "MPAN", "C2H5OOH", "ONIT", "POOH", "C3H7OOH", "ROOH", "CH3COCHO", 
-                                                    "CH3COCH3", "Pb", "ONITR", "MACROOH", "XOOH", "ISOPOOH", "CH3OH", "C2H5OH", 
-                                                    "CH3CHO", "GLYALD", "HYAC", "HYDRALD", "ALKOOH", "MEKOOH", "TOLOOH", "TERPOOH", 
-                                                    "CH3COOH", "CB1", "CB2", "OC1", "OC2", "SOA", "SO2", "SO4", "NH3", "NH4NO3"]
-            n.drydep_method = "xactive_lnd"
-        else:
-            if (not n.drydep_list is None or not n.drydep_method is None):
-                error("drydep_list or drydep_method defined, but drydep option NOT set")
-    
-def setup_logic_fire_emis():
-    with _nl_drv_flds.fire_emis_nl as n:
-        if _in_opts["fire_emis"]:
-            n.fire_emis_factors_file = "lnd/clm2/firedata/fire_emis_factors_c140116.nc"
-            n.fire_emis_specifier = ["bc_a1 = BC", "pom_a1 = 1.4*OC", "SO2 = SO2"]
-        else:
-            if (not n.fire_emis_elevated is None or
-                not n.fire_emis_factors_file is None or
-                not n.fire_emis_specifier is None):
-                error("fire_emission setting defined: fire_emis_elevated, fire_emis_factors_file, or fire_emis_specifier, but fire_emis option NOT set")
-
-def setup_logic_megan():
-    if _in_opts["megan"] == "default":
-        use_megan = not _in_opts["clm_accelerated_spinup"]
-    else:
-        use_megan = bool(_in_opts["megan"])
-
-    with _nl_drv_flds.megan_emis_nl as n:
-        if use_megan:
-            if _nl.clm_inparm.use_fates:
-                error("MEGAN can NOT be on when ED is also on. Use the '-no-megan' option when '-bgc fates' is activated")
-            n.megan_specifier = ["ISOP = isoprene", "C10H16 = pinene_a + carene_3 + thujene_a", "CH3OH = methanol", "C2H5OH = ethanol", "CH2O = formaldehyde", "CH3CHO = acetaldehyde", "CH3COOH = acetic_acid", "CH3COCH3 = acetone"]
-            if _in_nl_drv_flds["megan_factors_file"] is not None:
-                n.megan_factors_file = _in_nl_drv_flds["megan_factors_file"]
-            else:
-                n.megan_factors_file = "atm/cam/chem/trop_mozart/emis/megan21_emis_factors_78pft_c20161108.nc"
-        else:
-            if (not n.megan_factors_file is None or n.megan_specifier is None):
-                error("megan_specifier or megan_factors_file defined, but megan option NOT set")
-
 def setup_logic_lai_streams():
     _nl.clm_inparm.use_lai_streams = False
     with _nl.lai_streams as n:
@@ -1459,17 +1397,15 @@ if __name__ == "__main__":
     $ python3 -m clm5nl.generators.gen_lnd_in   
     """
 
-    opts, nl, drv_flds = {}, {}, {}
+    opts, nl = {}, {}
     opts["bgc_mode"] = "bgc"
     opts["clm_accelerated_spinup"] = "off"
     opts["clm_start_type"] = "arb_ic"
     opts["co2_ppmv"] = 367.0 
     opts["co2_type"] = "constant"
     opts["crop"] = 1
-    opts["drydep"] = False
     opts["dtime"] = None
     opts["dynamic_vegetation"] = 0
-    opts["fire_emis"] = False
     opts["GLC_TWO_WAY_COUPLING"] = False
     opts["glc_nec"] = 10
     opts["ignore_ic_date"] = False
@@ -1479,7 +1415,6 @@ if __name__ == "__main__":
     opts["lnd_frac"] = "/p/scratch/nrw_test_case/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
     opts["lnd_tuning_mode"] = "clm5_0_CRUv7"
     opts["mask"] = None
-    opts["megan"] = True
     opts["nrevsn"] = None
     opts["override_nsrest"] = None
     opts["res"] = "UNSET"
@@ -1496,7 +1431,6 @@ if __name__ == "__main__":
     nl["fsnowoptics"] = "/p/scratch/nrw_test_case/snicar_optics_5bnd_c090915.nc"
     nl["fsurdat"] = "/p/scratch/nrw_test_case/surfdata_300x300_NRW_hist_78pfts_CMIP6_simyr2000_c190619.nc"
     nl["paramfile"] = "/p/scratch/nrw_test_case/clm5_params.c171117.nc"
-    drv_flds["megan_factors_file"] = "/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc"
-    build_lnd_in(opts, nl, drv_flds, "lnd_in_test")
+    build_lnd_in(opts, nl, "lnd_in_test")
     print("Successfully generated lnd_in_test")
 
