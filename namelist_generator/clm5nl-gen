@@ -25,7 +25,7 @@ from docopt import docopt
 from ruamel.yaml import YAML
 from clm5nl.generators import *
 
-__version__ = "0.1"
+__version__ = "0.2"
 args = docopt(__doc__, version="clm5nl-gen v" + __version__)
 invalid_args = False
 params_file = Path(args["PARAMFILE"]).absolute()
