@@ -23,13 +23,12 @@ import sys
 from pathlib import Path
 from docopt import docopt
 from ruamel.yaml import YAML
-from clm5nl.generators.gen_lnd_in import build_lnd_in
+from clm5nl.generators import *
 
-__version__ = "0.1"
+__version__ = "0.2"
 args = docopt(__doc__, version="clm5nl-gen v" + __version__)
 invalid_args = False
 params_file = Path(args["PARAMFILE"]).absolute()
-out_nl_file = "lnd_in"
 
 # Validate input args
 if (not params_file.exists()):
@@ -41,25 +40,44 @@ if (args["--out"] is None):
 else:
   out_dir = Path(args["--out"]).absolute()
   if (not out_dir.is_dir()):
-    print("clm5nl-gen error: Directory '{}' does not exist.".format(out_dir), file=sys.stderr)
-    invalid_args = True
-
+    print(f"Creating folder {out_dir}")
+    out_dir.mkdir(parents=True, exist_ok=True)
+print(f"Namelists will be saved to {out_dir}")
 if invalid_args: sys.exit(-1)
 
 # Parse model parameters file
 yaml = YAML(typ='safe')
-print("Reading model parameters file from '{}'".format(params_file))
+print(f"Reading model parameters file from {params_file}")
 config = yaml.load(open(params_file, "r"))
 
-opts, nl, drv_flds = {}, {}, {}
+opts, nl_lnd, nl_drv_flds = {}, {}, {}
+opts_datm, nl_datm = {}, {}
+opts_mosart, nl_mosart = {}, {}
+opts_drv, nl_drv = {}, {}
+opts_modelio, nl_modelio = {}, {}
+opts_drv_flds = {}
+
 for category in config:
   if category == "general_options":
     opts = {k:(v if str(v).lower() != "none" else None) for k, v in config[category].items()}
   elif category == "lnd_in":
-    nl = {k:v for k, v in config[category].items()}
+    nl_lnd = {k:v for k, v in config[category].items()}
+  elif category == "datm_in":
+    opts_datm = {k:v for k, v in config[category].items()}
+  elif category == "mosart_in":
+    nl_mosart = {k:v for k, v in config[category].items()}
+  elif category == "drv_in":
+    opts_drv = {k:v for k, v in config[category].items()}
+  elif category == "modelio_nml":
+    opts_modelio = {k:v for k, v in config[category].items()}
   elif category == "drv_flds_in":
-    drv_flds = {k:v for k, v in config[category].items()}
+    opts_drv_flds = {k:v for k, v in config[category].items()}
 
 # Build namelists
-build_lnd_in(opts, nl, drv_flds, Path(out_dir, out_nl_file))
-print("Successfully generated '{}'".format(Path(out_dir, out_nl_file)))
+build_lnd_in(opts, nl_lnd, nl_file=Path(out_dir, "lnd_in"))
+build_datm_in(opts_datm, nl_datm, nl_file=Path(out_dir, "datm_in"))
+build_mosart_in(opts_mosart, nl_mosart, nl_file=Path(out_dir, "mosart_in"))
+build_drv_in(opts_drv, nl_drv, nl_file=Path(out_dir, "drv_in"))
+build_seq_maps_rc(out_dir)
+build_modelio_nml(opts_modelio, nl_modelio, out_dir)
+build_drv_flds_in(opts_drv_flds, nl_file="drv_flds_in")
