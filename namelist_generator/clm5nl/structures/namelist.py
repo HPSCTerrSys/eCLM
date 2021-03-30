@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from .utils import nl_to_str
+from .utils import nml2str
 
 class Namelist(object):
     def __init__(self, nl_obj: dict = None):
@@ -22,11 +22,11 @@ class Namelist(object):
         return self._nl.keys()
 
     def __str__(self):
-        return nl_to_str(self._nl)
+        return nml2str(self._nl)
 
-    def write(self, nml_path):
-        with open(nml_path, "w") as f:
-            f.write(nl_to_str(self._nl))
+    def write(self, file_path, ordered_grp_names: list = []):
+        with open(file_path, "w") as f:
+            f.write(nml2str(self._nl, ordered_grp_names=ordered_grp_names))
 
 class NamelistGroupMixin(object):
     def __init__(self):
