@@ -61,10 +61,10 @@ for section in config:
 
 # ---- TODO ---- 
 # Build namelists
-#build_lnd_in(nl_opts["lnd_in"], nl_file=Path(out_dir, "lnd_in"))
-#build_datm_in(nl_opts["datm_in"], nl_file=Path(out_dir, "datm_in"))
-#build_mosart_in(nl_opts["mosart_in"], nl_file=Path(out_dir, "mosart_in"))
-#build_drv_in(nl_opts["drv_in"], nl_file=Path(out_dir, "drv_in"))
-#build_seq_maps_rc(out_dir)
-#build_modelio_nml(nl_opts["modelio_nml"], nl_modelio, out_dir)
-#build_drv_flds_in(nl_opts["drv_flds_in"], nl_file="drv_flds_in")
+build_lnd_in(nl_opts["lnd_in"], Path(out_dir, "lnd_in"))
+build_datm_in(nl_opts["datm_in"], Path(out_dir, "datm_in"))
+build_mosart_in({}, Path(out_dir, "mosart_in"))
+build_drv_in(nl_opts["drv_in"], Path(out_dir, "drv_in"))
+build_seq_maps_rc(out_dir)
+build_modelio_nml({}, out_dir)
+build_drv_flds_in(nl_opts["drv_flds_in"], Path(out_dir, "drv_flds_in"))

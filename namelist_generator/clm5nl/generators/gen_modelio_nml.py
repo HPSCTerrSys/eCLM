@@ -13,7 +13,7 @@ __all__ = ['build_modelio_nml']
 # _in_opts = {}
 # _nl = datm_in()
 
-def build_modelio_nml(opts: dict = None, nl: dict = None, out_dir: str = None):
+def build_modelio_nml(opts: dict = None, out_dir: str = None):
     # Global vars aren't necessary for now
     # global _in_opts, _in_nl, _nl
     #_in_opts = opts
@@ -23,7 +23,7 @@ def build_modelio_nml(opts: dict = None, nl: dict = None, out_dir: str = None):
 
     with _nl.modelio as n:
         n.diri = "UNUSED"
-        n.diro = opts.get("run_dir", Path.cwd())
+        n.diro = opts.get("run_dir", Path(out_dir).absolute())
 
     with _nl.pio_inparm as n:
         n.pio_netcdf_format = "64bit_offset"

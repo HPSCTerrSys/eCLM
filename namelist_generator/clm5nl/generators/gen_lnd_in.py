@@ -19,16 +19,17 @@ _opts = {}
 _user_nl = {}
 _nl = lnd_in()
 
-def build_lnd_in(opts: dict = None, user_nl: dict = None, nl_file: str = "lnd_in"):
+def build_lnd_in(opts: dict = None, nl_file: str = "lnd_in"):
 
     # Initialize module level variables
     global _opts, _user_nl
     global _nl, _env
     _opts = opts
-    _user_nl = user_nl
+    _user_nl = opts.get("user_nl", {})
     _nl = lnd_in()
 
     # set defaults
+    _opts["clm_start_type"] = opts.get("clm_start_type", "startup")
     _opts["co2_ppmv"] = opts.get("co2_ppmv", 367.0)
     _opts["co2_type"] = opts.get("co2_type", "constant")
     _opts["crop"] = opts.get("crop", 1) #if opts["bgc_mode"] != "sp"
@@ -60,7 +61,7 @@ def build_lnd_in(opts: dict = None, user_nl: dict = None, nl_file: str = "lnd_in
     process_namelist_inline_logic()                # rest of namelist parameters
 
     # Write to file
-    if nl_file and nl_file.strip != "": 
+    if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file, lnd_nl_groups())
         print(f"Generated {Path(nl_file).name}")
    

@@ -22,11 +22,11 @@ _user_nl = {}
 _opts = {}
 _nl = drv_in()
 
-def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = "drv_in"):
+def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     global _opts, _user_nl, _nl
 
     _opts = opts
-    _user_nl = user_nl
+    _user_nl = opts.get("user_nl", {})
     _nl = drv_in()
 
     # Generate sections of drv_in namelist
@@ -56,7 +56,7 @@ def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = "drv_in
     seq_flux_mct_inparm()
 
     #Write to file
-    if nl_file and nl_file.strip != "":
+    if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file)
         print(f"Generated {Path(nl_file).name}")
 
@@ -142,47 +142,47 @@ def cime_driver_inst():
 def cime_pes():
     with _nl.cime_pes as n:
         n.atm_layout   = "concurrent"
-        n.atm_ntasks   = _opts["NTASKS"]
+        n.atm_ntasks   = _opts["ntasks"]
         n.atm_nthreads = _opts.get("NTHREADS", 1)
         n.atm_pestride = 1
         n.atm_rootpe   = 0
-        n.cpl_ntasks   = _opts["NTASKS"]
+        n.cpl_ntasks   = _opts["ntasks"]
         n.cpl_nthreads = _opts.get("NTHREADS", 1)
         n.cpl_pestride = 1
         n.cpl_rootpe   = 0
         n.esp_layout   = "concurrent"
-        n.esp_ntasks   = _opts["NTASKS"]
+        n.esp_ntasks   = _opts["ntasks"]
         n.esp_nthreads = _opts.get("NTHREADS", 1)
         n.esp_pestride = 1
         n.esp_rootpe   = 0
         n.glc_layout   = "concurrent"
-        n.glc_ntasks   = _opts["NTASKS"]
+        n.glc_ntasks   = _opts["ntasks"]
         n.glc_nthreads = _opts.get("NTHREADS", 1)
         n.glc_pestride = 1
         n.glc_rootpe   = 0
         n.ice_layout   = "concurrent"
-        n.ice_ntasks   = _opts["NTASKS"]
+        n.ice_ntasks   = _opts["ntasks"]
         n.ice_nthreads = _opts.get("NTHREADS", 1)
         n.ice_pestride = 1
         n.ice_rootpe   = 0
         n.lnd_layout   = "concurrent"
-        n.lnd_ntasks   = _opts["NTASKS"]
+        n.lnd_ntasks   = _opts["ntasks"]
         n.lnd_nthreads = _opts.get("NTHREADS", 1)
         n.lnd_pestride = 1
         n.lnd_rootpe   = 0
         n.ocn_layout   = "concurrent"
-        n.ocn_ntasks   = _opts["NTASKS"]
+        n.ocn_ntasks   = _opts["ntasks"]
         n.ocn_nthreads = _opts.get("NTHREADS", 1)
         n.ocn_pestride = 1
         n.ocn_rootpe   = 0
         # TODO: Include logic for compset-dependent parameters
         # n.rof_layout   = "concurrent"
-        # n.rof_ntasks   = _opts["NTASKS"]
+        # n.rof_ntasks   = _opts["ntasks"]
         # n.rof_nthreads = _opts.get("NTHREADS", 1)
         # n.rof_pestride = 1
         # n.rof_rootpe   = 0
         # n.wav_layout   = "concurrent"
-        # n.wav_ntasks   = _opts["NTASKS"]
+        # n.wav_ntasks   = _opts["ntasks"]
         # n.wav_nthreads = _opts.get("NTHREADS", 1)
         # n.wav_pestride = 1
         # n.wav_rootpe   = 0
@@ -359,10 +359,10 @@ def seq_infodata_inparm():
 def seq_timemgr_inparm():
     with _nl.seq_timemgr_inparm as n:
         # Important time parameters
-        n.stop_option = _opts["STOP_OPTION"]
-        n.start_ymd = int("".join(str(x) for x in _opts["RUN_STARTDATE"].split('-')))      
-        n.stop_ymd = int("".join(str(x) for x in _opts["STOP_DATE"].split('-')))
-        n.stop_n = _opts.get("STOP_N", -1)
+        n.stop_option = _opts["stop_option"]
+        n.start_ymd = int("".join(str(x) for x in _opts["start_ymd"].split('-')))      
+        n.stop_ymd = int("".join(str(x) for x in _opts["stop_ymd"].split('-')))
+        n.stop_n = _opts.get("stop_n", -1)
         n.restart_option = _opts.get("RESTART_OPTION", n.stop_option)
         n.restart_ymd = n.stop_ymd
         n.restart_n = n.stop_n
@@ -384,7 +384,7 @@ def seq_timemgr_inparm():
         n.wav_cpl_dt = cpl_dt["wav"]
 
         # set tprof_option and tprof_n - if tprof_total is > 0
-        stop_option = _opts["STOP_OPTION"]
+        stop_option = _opts["stop_option"]
         if 'nyear' in stop_option:
             tprofoption = 'ndays'
             tprof_mult = 365
@@ -398,7 +398,7 @@ def seq_timemgr_inparm():
             tprof_mult = 1
             tprofoption = 'never'
         tprof_total = _opts.get("TPROF_TOTAL", 0)
-        if ((tprof_total > 0) and (_opts.get("STOP_DATE",-999) < 0) and ('ndays' in tprofoption)):
+        if ((tprof_total > 0) and (_opts.get("stop_ymd",-999) < 0) and ('ndays' in tprofoption)):
             tprof_n = int((tprof_mult * n.stop_n) / tprof_total)
             n.tprof_option = tprofoption
             n.tprof_n = tprof_n if tprof_n > 0 else 1
@@ -496,10 +496,10 @@ if __name__ == "__main__":
     opts["HOSTNAME"] = "JUWELS"
     opts["RUN_REFCASE"] = "case.std" # L78 
     opts["CALENDAR"] = "NO_LEAP"
-    opts["STOP_OPTION"] = "date"
-    opts["RUN_STARTDATE"] = "2017-01-01"
-    opts["STOP_DATE"] = "2017-12-31"
-    opts["STOP_N"] = -1
+    opts["stop_option"] = "date"
+    opts["start_ymd"] = "2017-01-01"
+    opts["stop_ymd"] = "2017-12-31"
+    opts["stop_n"] = -1
     opts["TPROF_TOTAL"] = 0
     opts["PAUSE_N"] = 0
     opts["PAUSE_OPTION"] = "never"
@@ -512,7 +512,7 @@ if __name__ == "__main__":
     opts["ESP_NCPL"] = 48 
     opts["ROF_NCPL"] = 8
     opts["WAV_NCPL"] = 48
-    opts["NTASKS"] = 96     # number of MPI tasks
+    opts["ntasks"] = 96     # number of MPI tasks
     opts["clm_start_type"] = "default"
 
     build_drv_in(opts, user_nl, "drv_in_test")
