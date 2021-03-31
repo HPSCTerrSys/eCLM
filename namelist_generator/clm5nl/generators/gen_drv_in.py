@@ -22,7 +22,7 @@ _user_nl = {}
 _opts = {}
 _nl = drv_in()
 
-def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
+def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = "drv_in"):
     global _opts, _user_nl, _nl
 
     _opts = opts
@@ -40,6 +40,10 @@ def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
         else:
             _opts["clm_start_type"] = "arb_ic"
 
+    _opts["megan"] = opts.get("megan", True)
+    _opts["fire_emis"] = opts.get("fire_emis", False)
+    _opts["drydep"] = opts.get("drydep", False)
+
     seq_infodata_inparm()
     cime_driver_inst()
     cime_pes()
@@ -50,8 +54,9 @@ def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
     seq_cplflds_inparm()
     seq_cplflds_userspec()
     seq_flux_mct_inparm()
+
     #Write to file
-    if nl_file: 
+    if nl_file and nl_file.strip != "":
         _nl.write(nl_file)
         print(f"Generated {Path(nl_file).name}")
 

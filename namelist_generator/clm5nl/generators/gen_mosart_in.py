@@ -16,7 +16,7 @@ __all__ = ['build_mosart_in']
 # _in_opts = {}
 # _nl = datm_in()
 
-def build_mosart_in(opts: dict = None, nl: dict = None, nl_file: str = None):
+def build_mosart_in(opts: dict = None, nl: dict = None, nl_file: str = "mosart_in"):
     # Global vars aren't necessary for now
     # global _in_opts, _in_nl, _nl
     #_in_opts = opts
@@ -46,7 +46,7 @@ def build_mosart_in(opts: dict = None, nl: dict = None, nl_file: str = None):
         n.smat_option = "Xonly"
 
     # Write to file
-    if nl_file: 
+    if nl_file and nl_file.strip != "": 
         _nl.write(nl_file)
         print(f"Generated {Path(nl_file).name}")
 

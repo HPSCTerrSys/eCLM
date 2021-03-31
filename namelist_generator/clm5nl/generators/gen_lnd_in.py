@@ -15,18 +15,38 @@ __all__ = ['build_lnd_in']
 
 # Module-level variables
 _env = {}
-_in_opts = {}
+_opts = {}
 _user_nl = {}
 _nl = lnd_in()
 
-def build_lnd_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
+def build_lnd_in(opts: dict = None, user_nl: dict = None, nl_file: str = "lnd_in"):
 
     # Initialize module level variables
-    global _in_opts, _user_nl
+    global _opts, _user_nl
     global _nl, _env
-    _in_opts = opts
+    _opts = opts
     _user_nl = user_nl
     _nl = lnd_in()
+
+    # set defaults
+    _opts["co2_ppmv"] = opts.get("co2_ppmv", 367.0)
+    _opts["co2_type"] = opts.get("co2_type", "constant")
+    _opts["crop"] = opts.get("crop", 1) #if opts["bgc_mode"] != "sp"
+    _opts["dtime"] = opts.get("dtime", None)
+    _opts["dynamic_vegetation"] = opts.get("dynamic_vegetation", 0)
+    _opts["GLC_TWO_WAY_COUPLING"] = opts.get("GLC_TWO_WAY_COUPLING", False)
+    _opts["glc_nec"] = opts.get("glc_nec", 10)
+    _opts["ignore_ic_date"] = opts.get("ignore_ic_date", False)
+    _opts["ignore_ic_year"] = opts.get("ignore_ic_year", False)
+    _opts["light_res"] = opts.get("light_res", "default")
+    _opts["nrevsn"] = opts.get("nrevsn", None) # required if start_type=branch
+    _opts["override_nsrest"] = opts.get("override_nsrest", None)
+    _opts["res"] = opts.get("res", "UNSET")
+    _opts["ssp_rcp"] = opts.get("ssp_rcp", "hist")
+    _opts["use_case"] = opts.get("use_case", None)
+    _opts["use_dynroot"] = opts.get("use_dynroot", False)
+    _opts["use_init_interp"] = opts.get("use_init_interp", True)
+    _opts["vichydro"] = opts.get("vichydro", 0)
 
     _env = {"bgc_spinup":None,
             "cnfireson":None,
@@ -40,16 +60,16 @@ def build_lnd_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
     process_namelist_inline_logic()                # rest of namelist parameters
 
     # Write to file
-    if nl_file: 
+    if nl_file and nl_file.strip != "": 
         _nl.write(nl_file, lnd_nl_groups())
         print(f"Generated {Path(nl_file).name}")
    
 def process_namelist_commandline_options():
     #setup_cmdl_chk_res()
-    #  _in_opts["chk_res"] = 0
+    #  _opts["chk_res"] = 0
 
     #setup_cmdl_resolution()
-    _in_opts["res"] = "UNSET"
+    _opts["res"] = "UNSET"
 
     #setup_cmdl_mask()
     _env["mask"] = "gx1v6"
@@ -66,29 +86,30 @@ def process_namelist_commandline_options():
     #_env["irrig"] = False #only for CLM4.0 physics
 
     #setup_cmdl_ssp_rcp()
-    _in_opts["ssp_rcp"] = "hist"
+    _opts["ssp_rcp"] = "hist"
 
     #setup_cmdl_simulation_year()
-    _in_opts["sim_year_range"] = "constant"
-    _in_opts["sim_year"] = 2000
+    _opts["sim_year_range"] = "constant"
+    _opts["sim_year"] = 2000
 
     setup_cmdl_dynamic_vegetation()
     setup_cmdl_fates_mode()
 
     #setup_cmdl_vichydro()
-    if _in_opts["vichydro"] == 1:
+    if _opts["vichydro"] == 1:
         _nl.clm_inparm.use_vichydro = True
 
     #setup_cmdl_output_reals()
 
     #setup_logic_lnd_tuning()
-    _in_opts["lnd_tuning_mode"] = "clm5_0_GSWP3v1"
+    _opts["lnd_tuning_mode"] = "clm5_0_GSWP3v1"
 
 def process_namelist_commandline_use_case():
+    # TODO: read default values from _opts["use_case"] XML file
     #2000_control.xml
     _nl.clm_inparm.irrigate = True
-    _in_opts["sim_year"] = 2000
-    _in_opts["sim_year_range"] = "constant"
+    _opts["sim_year"] = 2000
+    _opts["sim_year_range"] = "constant"
     _nl.ndepdyn_nml.stream_year_first_ndep = 2000
     _nl.ndepdyn_nml.stream_year_last_ndep = 2000
     _nl.popd_streams.stream_year_first_popdens = 2000
@@ -126,7 +147,7 @@ def process_namelist_inline_logic():
     setup_logic_soilstate()
     setup_logic_demand()
     setup_logic_surface_dataset()
-    if _in_opts["clm_start_type"] != "branch":
+    if _opts["clm_start_type"] != "branch":
         setup_logic_initial_conditions()
     setup_logic_dynamic_subgrid()
     setup_logic_spinup()
@@ -348,69 +369,69 @@ def lnd_nl_groups() -> list:
             "clm_canopy_inparm"]
 
 def setup_logic_site_specific():
-    if _in_opts["res"] == "1x1_vancouverCAN":
+    if _opts["res"] == "1x1_vancouverCAN":
         _nl.clm_inparm.use_vancouver = True
-    elif _in_opts["res"] == "1x1_mexicocityMEX":
+    elif _opts["res"] == "1x1_mexicocityMEX":
         _nl.clm_inparm.use_mexicocity = True
-    elif _in_opts["res"] == "1x1_smallvilleIA" or _in_opts["res"] == "1x1_numaIA":
-        if not (_in_opts["res"] or _nl.clm_inparm.use_crop):
-            error("{} grids must use a compset with CN and CROP turned on".format(_in_opts["res"]))
+    elif _opts["res"] == "1x1_smallvilleIA" or _opts["res"] == "1x1_numaIA":
+        if not (_opts["res"] or _nl.clm_inparm.use_crop):
+            error("{} grids must use a compset with CN and CROP turned on".format(_opts["res"]))
 
 def setup_logic_lnd_frac():
-    _nl.clm_inparm.fatmlndfrc = _in_opts["lnd_frac"]
+    _nl.clm_inparm.fatmlndfrc = _opts["lnd_frac"]
 
 def setup_logic_co2_type():
-    _nl.clm_inparm.co2_type = _in_opts["co2_type"]
-    if _in_opts["co2_type"] == "constant":     
-        if _in_opts["co2_ppmv"] is None:
-            if _in_opts["sim_year"] == 2100:
+    _nl.clm_inparm.co2_type = _opts["co2_type"]
+    if _opts["co2_type"] == "constant":     
+        if _opts["co2_ppmv"] is None:
+            if _opts["sim_year"] == 2100:
                 ssp_co2_defaults = {"SSP5-8.5":1135.2, "SSP5-3.4":496.6, "SSP1-2.6":445.6}
-                _nl.clm_inparm.co2_ppmv = ssp_co2_defaults.get(_in_opts["ssp_rcp"], "Invalid ssp_rcp value")
+                _nl.clm_inparm.co2_ppmv = ssp_co2_defaults.get(_opts["ssp_rcp"], "Invalid ssp_rcp value")
             else:
                 yearly_co2_defaults = {"1000":379.0, "1850":284.7, "2000":379.0, "2010":388.8, "2015":397.5, "PtVg":284.7}
-                _nl.clm_inparm.co2_ppmv = yearly_co2_defaults.get(_in_opts["sim_year"],"Invalid sim_year value")
+                _nl.clm_inparm.co2_ppmv = yearly_co2_defaults.get(_opts["sim_year"],"Invalid sim_year value")
         else:
-            if _in_opts["co2_ppmv"] <= 0:
+            if _opts["co2_ppmv"] <= 0:
                 error("co2_ppmv can NOT be less than or equal to zero")
             else:
-                _nl.clm_inparm.co2_ppmv = _in_opts["co2_ppmv"]
+                _nl.clm_inparm.co2_ppmv = _opts["co2_ppmv"]
 
 def setup_logic_irrigate():
     _nl.clm_inparm.irrigate = not (_nl.clm_inparm.use_crop and _nl.clm_inparm.use_cndv)
 
 def setup_logic_start_type():
-    my_start_type = _in_opts["clm_start_type"]
+    my_start_type = _opts["clm_start_type"]
     drv_in_start_type = "startup" # TODO: this must be read from drv_in's clm_start_type parameter.
-    if not _in_opts["override_nsrest"] == None:
+    if not _opts["override_nsrest"] == None:
         start_type = {0:"startup", 1:"continue", 3:"branch"}
-        my_start_type = start_type.get(_in_opts["override_nsrest"], "Invalid start_type value")
+        my_start_type = start_type.get(_opts["override_nsrest"], "Invalid start_type value")
         if my_start_type == drv_in_start_type:
             error("no need to set override_nsrest to same as start_type")
         if drv_in_start_type != "startup":
             error("can NOT set override_nsrest if driver is NOT a startup type")
-        _nl.clm_inparm.override_nsrest = _in_opts["override_nsrest"]
+        _nl.clm_inparm.override_nsrest = _opts["override_nsrest"]
     
     if my_start_type == "branch":
-        if _in_opts["nrevsn"] is None:
+        if _opts["nrevsn"] is None:
             error("nrevsn is required for a branch type.")
         else:
-            _nl.clm_inparm.nrevsn = _in_opts["nrevsn"]
-        if _in_opts["use_init_interp"]:
+            _nl.clm_inparm.nrevsn = _opts["nrevsn"]
+        if _opts["use_init_interp"]:
             print("WARNING: use_init_interp will NOT happen for a branch case.")
     else:
-        if not _in_opts["nrevsn"] is None:
+        if not _opts["nrevsn"] is None:
             error("nrevsn should ONLY be set for a branch type")
-    if _in_opts["use_init_interp"]:
+    if _opts["use_init_interp"]:
         _nl.clm_inparm.use_init_interp = True
 
 def setup_logic_delta_time():
-    if _in_opts["l_ncpl"] is None:
+    if _opts["l_ncpl"] is None:
         _nl.clm_inparm.dtime = 1800
     else:
-        if _in_opts["l_ncpl"] <= 0: 
+        if _opts["l_ncpl"] <= 0: 
             error("bad value for -l_ncpl option")
-        if _in_opts["dtime"] is None:
-            _nl.clm_inparm.dtime = (3600 * 24) / _in_opts["l_ncpl"]
+        if _opts["dtime"] is None:
+            _nl.clm_inparm.dtime = (3600 * 24) / _opts["l_ncpl"]
         else:
             error("can NOT set both -l_ncpl option (via LND_NCPL env variable) AND dtime namelist variable.")
 
@@ -435,8 +456,8 @@ def setup_logic_glacier():
     # these fields - so we want to ensure that CLM is truly listening to this
     # shared xml variable and not overriding it)
     with _nl.clm_inparm as n:
-        n.glc_do_dynglacier = _in_opts["GLC_TWO_WAY_COUPLING"]
-        n.maxpatch_glcmec = _in_opts["glc_nec"]
+        n.glc_do_dynglacier = _opts["GLC_TWO_WAY_COUPLING"]
+        n.maxpatch_glcmec = _opts["glc_nec"]
         n.glc_snow_persistence_max_days = 0
         n.albice = [0.50, 0.30]
 
@@ -480,9 +501,9 @@ def setup_logic_hydrstress():
 
 def setup_logic_dynamic_roots():
     with _nl.clm_inparm as n:
-        n.use_dynroot = _in_opts["use_dynroot"]
+        n.use_dynroot = _opts["use_dynroot"]
         if n.use_dynroot:
-            if _in_opts["bgc_mode"] == "sp":
+            if _opts["bgc_mode"] == "sp":
                 error("Cannot turn dynroot mode on mode bgc=sp. Set the bgc mode to 'cn' or 'bgc'")
             if n.use_hydrstress:
                 error("Cannot turn use_dynroot on when use_hydrstress is on")
@@ -508,7 +529,7 @@ def setup_logic_grainproduct():
 def setup_logic_soilstate():
     _nl.clm_soilstate_inparm.organic_frac_squared = False
     _nl.clm_inparm.soil_layerstruct = "20SL_8.5m"
-    _nl.clm_inparm.use_bedrock = not (_nl.clm_inparm.use_fates or _in_opts["vichydro"] == 1)
+    _nl.clm_inparm.use_bedrock = not (_nl.clm_inparm.use_fates or _opts["vichydro"] == 1)
 
 def setup_logic_demand():
     # Deal with options that the user has said are required...
@@ -522,7 +543,7 @@ def setup_logic_surface_dataset():
         _nl.clm_inparm.fsurdat = _user_nl["fsurdat"]
     else:    
         surface_file = {}
-        if _in_opts["sim_year"] == "1850":
+        if _opts["sim_year"] == "1850":
             if _nl.clm_inparm.use_crop:
                 surface_file["48x96"] = "release-clm5.0.18/surfdata_48x96_hist_78pfts_CMIP6_simyr1850_c190214.nc"
                 surface_file["0.9x1.25"] ="release-clm5.0.18/surfdata_0.9x1.25_hist_78pfts_CMIP6_simyr1850_c190214.nc"
@@ -541,7 +562,7 @@ def setup_logic_surface_dataset():
                 surface_file["4x5"] = "release-clm5.0.18/surfdata_4x5_hist_16pfts_Irrig_CMIP6_simyr1850_c190214.nc"
                 surface_file["1x1_brazil"] = "release-clm5.0.18/surfdata_1x1_brazil_hist_16pfts_Irrig_CMIP6_simyr1850_c190214.nc"
                 surface_file["ne30np4"] = "release-clm5.0.18/surfdata_ne30np4_hist_16pfts_Irrig_CMIP6_simyr1850_c190303.nc"
-        elif _in_opts["sim_year"] == "2000":
+        elif _opts["sim_year"] == "2000":
             if _nl.clm_inparm.use_crop:
                 surface_file["0.9x1.25"] = "release-clm5.0.18/surfdata_0.9x1.25_hist_78pfts_CMIP6_simyr2000_c190214.nc"
                 surface_file["1.9x2.5"] = "release-clm5.0.18/surfdata_1.9x2.5_hist_78pfts_CMIP6_simyr2000_c190304.nc"
@@ -566,28 +587,28 @@ def setup_logic_surface_dataset():
                 surface_file["1x1_vancouverCAN"] = "release-clm5.0.18/surfdata_1x1_vancouverCAN_hist_16pfts_Irrig_CMIP6_simyr2000_c190214.nc"
                 surface_file["1x1_mexicocityMEX"] = "release-clm5.0.18/surfdata_1x1_mexicocityMEX_hist_16pfts_Irrig_CMIP6_simyr2000_c190214.nc"
                 surface_file["1x1_urbanc_alpha"] = "release-clm5.0.18/surfdata_1x1_urbanc_alpha_hist_16pfts_Irrig_CMIP6_simyr2000_c190214.nc"
-        elif _in_opts["sim_year"] == "2100" and _nl.clm_inparm.use_crop:
-            if _in_opts["ssp_rcp"] == "SSP1-2.6":
+        elif _opts["sim_year"] == "2100" and _nl.clm_inparm.use_crop:
+            if _opts["ssp_rcp"] == "SSP1-2.6":
                 surface_file["0.9x1.25"] = "release-clm5.0.30/surfdata_0.9x1.25_SSP1-2.6_78pfts_CMIP6_simyr2100_c200329.nc"
-            elif _in_opts["ssp_rcp"] == "SSP1-2.6":
+            elif _opts["ssp_rcp"] == "SSP1-2.6":
                 surface_file["0.9x1.25"] = "release-clm5.0.30/surfdata_0.9x1.25_SSP5-8.5_78pfts_CMIP6_simyr2100_c200330.nc"
-            elif _in_opts["ssp_rcp"] == "SSP1-2.6":
+            elif _opts["ssp_rcp"] == "SSP1-2.6":
                 surface_file["0.9x1.25"] = "release-clm5.0.30/surfdata_0.9x1.25_SSP5-3.4_78pfts_CMIP6_simyr2100_c200330.nc"
-        elif _in_opts["sim_year"] == "PtVg" and not _nl.clm_inparm.use_crop and not _nl.clm_inparm.irrigate:
+        elif _opts["sim_year"] == "PtVg" and not _nl.clm_inparm.use_crop and not _nl.clm_inparm.irrigate:
             # Potential vegetation land use dataset, crop is off, and zeroed, all areas are natural vegetation without human disturbance
             surface_file["0.9x1.25"] = "surfdata_0.9x1.25_hist_16pfts_nourb_CMIP6_simyrPtVg_c181114.nc"
-        sf = surface_file.get(_in_opts["res"], None)
+        sf = surface_file.get(_opts["res"], None)
         if not sf is None:
             _nl.clm_inparm.fsurdat = "lnd/clm2/surfdata_map/" + sf
 
 def setup_logic_initial_conditions():
-    if _in_opts["clm_start_type"] == "cold":
+    if _opts["clm_start_type"] == "cold":
         if not _user_nl["finidat"] is None:
             print("""
             WARNING: setting finidat (either explicitly in your user_nl_clm or by doing a hybrid or branch RUN_TYPE) is 
             incomptable with using a cold start (by setting CLM_FORCE_COLDSTART=on)
             Overridding input finidat file with one specifying that this is a cold start from arbitrary initial conditions.""")
-        _in_opts["finidat"] = "' '"
+        _opts["finidat"] = "' '"
     elif not _user_nl["finidat"] is None and _user_nl["finidat"] == "' '":
         error("""You are setting finidat to blank which signals arbitrary initial conditions.
         But, CLM_FORCE_COLDSTART is off which is a contradiction. For arbitrary initial conditions just use the CLM_FORCE_COLDSTART option
@@ -666,9 +687,9 @@ def setup_logic_do_harvest():
 
 def setup_logic_spinup():
     with _nl.clm_inparm as n:
-        if _in_opts["bgc_mode"] == "sp" and n.override_bgc_restart_mismatch_dump:
+        if _opts["bgc_mode"] == "sp" and n.override_bgc_restart_mismatch_dump:
             error("CN must be on if override_bgc_restart_mismatch_dump is set.")
-        if _in_opts["clm_accelerated_spinup"] == "on":
+        if _opts["clm_accelerated_spinup"] == "on":
             n.hist_nhtfrq = 8760
             n.hist_empty_htapes = True
             n.hist_mfilt = 20
@@ -685,11 +706,11 @@ def setup_logic_spinup():
 
 def setup_logic_supplemental_nitrogen():
     with _nl.clm_inparm as n:
-        if not (_in_opts["bgc_mode"] == "sp" or _in_opts["bgc_mode"] == "fates") and _nl.clm_inparm.use_crop:
+        if not (_opts["bgc_mode"] == "sp" or _opts["bgc_mode"] == "fates") and _nl.clm_inparm.use_crop:
             n.suplnitro = "NONE" if _nl.clm_inparm.use_cn else ""
 
         if not n.suplnitro is None:
-            if _in_opts["bgc_mode"] == "sp":
+            if _opts["bgc_mode"] == "sp":
                 error("supplemental Nitrogen (suplnitro) is set, but neither CN nor CNDV is active!")
             if _nl.clm_inparm.use_crop and n.suplnitro == "PROG_CROP_ONLY":
                 error("supplemental Nitrogen is set to run over prognostic crops, but prognostic crop is NOT active")
@@ -784,10 +805,10 @@ def setup_logic_cnfire():
                 n.ufuel = 1050.0
                 n.cmb_cmplt_fact = [0.5, 0.25]
             elif _nl.cnfire_inparm.fire_method == "li2016crufrc":
-                if _in_opts["lnd_tuning_mode"] == "clm5_0_GSWP3v1" or _in_opts["lnd_tuning_mode"] == "clm5_0_CRUv7":
+                if _opts["lnd_tuning_mode"] == "clm5_0_GSWP3v1" or _opts["lnd_tuning_mode"] == "clm5_0_CRUv7":
                     n.rh_low = 30.0
                     n.pot_hmn_ign_counts_alpha = 0.010
-                elif _in_opts["lnd_tuning_mode"] == "clm5_0_cam6.0":
+                elif _opts["lnd_tuning_mode"] == "clm5_0_cam6.0":
                     n.rh_low = 20.0
                     n.pot_hmn_ign_counts_alpha = 0.008
                 n.rh_hgh = 80.0
@@ -856,7 +877,7 @@ def setup_logic_c_isotope():
                                             "SSP3-7.0":"lnd/clm2/isotopes/atm_delta_C14_CMIP6_SSP3B_3x1_global_1850-2100_yearly_c181209.nc",
                                             "SSP5-3.4":"lnd/clm2/isotopes/atm_delta_C14_CMIP6_SSP534os_3x1_global_1850-2100_yearly_c181209.nc",
                                             "SSP5-8.5":"lnd/clm2/isotopes/atm_delta_C14_CMIP6_SSP5B_3x1_global_1850-2100_yearly_c181209.nc"}
-                        n.atm_c14_filename = atm_c14_filename.get(_in_opts["ssp_rcp"], None)
+                        n.atm_c14_filename = atm_c14_filename.get(_opts["ssp_rcp"], None)
                 else:
                     if not (n.atm_c14_filename is None and n.use_c14_bombspike is None):
                         error("use_c14 is FALSE and use_c14_bombspike or atm_c14_filename set")
@@ -874,7 +895,7 @@ def setup_logic_c_isotope():
                                             "SSP3-7.0":"lnd/clm2/isotopes/atm_delta_C13_CMIP6_SSP3B_1850-2100_yearly_c181209.nc",
                                             "SSP5-3.4":"lnd/clm2/isotopes/atm_delta_C13_CMIP6_SSP534os_1850-2100_yearly_c181209.nc",
                                             "SSP5-8.5":"lnd/clm2/isotopes/atm_delta_C13_CMIP6_SSP5B_1850-2100_yearly_c181209.nc"}
-                        n.atm_c13_filename = atm_c13_filename.get(_in_opts["ssp_rcp"], None)
+                        n.atm_c13_filename = atm_c13_filename.get(_opts["ssp_rcp"], None)
                 else:
                     if not (n.atm_c13_filename is None and n.use_c13_timeseries is None):
                         error("use_c13 is FALSE and use_c13_timeseries or atm_c13_filename set")
@@ -892,31 +913,31 @@ def setup_logic_c_isotope():
 
 def setup_logic_nitrogen_deposition():
     with _nl.ndepdyn_nml as n:
-        if _in_opts["bgc_mode"] == "cn" or _in_opts["bgc_mode"] == "bgc":
+        if _opts["bgc_mode"] == "cn" or _opts["bgc_mode"] == "bgc":
             if _nl.clm_inparm.use_cn:
-                if _in_opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha",
+                if _opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha",
                                 "1x1_camdenNJ", "1x1_asphaltjungleNJ", "5x5_amazon"]:
                     n.ndepmapalgo = "nn"
                 else:
                     n.ndepmapalgo = "bilinear"
                 n.ndep_taxmode = "cycle"
                 n.ndep_varlist = "NDEP_month"
-                if _in_opts["sim_year_range"] == "1850-2100":
+                if _opts["sim_year_range"] == "1850-2100":
                     n.stream_year_first_ndep = 2015
                     n.stream_year_last_ndep = 2101
                     n.model_year_align_ndep = 2015
-                elif _in_opts["sim_year_range"] == "2100-2300":
+                elif _opts["sim_year_range"] == "2100-2300":
                     n.stream_year_first_ndep = 2101
                     n.stream_year_last_ndep = 2101
                     n.model_year_align_ndep = 2101
-                elif _in_opts["sim_year"] in ["1850", "2000", "2010"]:
-                    n.stream_year_first_ndep = int(_in_opts["sim_year"])
-                    n.stream_year_last_ndep = int(_in_opts["sim_year"])
-                elif _in_opts["sim_year"] == "1000":
+                elif _opts["sim_year"] in ["1850", "2000", "2010"]:
+                    n.stream_year_first_ndep = int(_opts["sim_year"])
+                    n.stream_year_last_ndep = int(_opts["sim_year"])
+                elif _opts["sim_year"] == "1000":
                     n.stream_year_first_ndep = 2000
                     n.stream_year_last_ndep = 2000
-                elif (_in_opts["sim_year"] == "constant" and 
-                      (_in_opts["sim_year_range"] == "1000-1002" or _in_opts["sim_year_range"] == "1000-1004")):
+                elif (_opts["sim_year"] == "constant" and 
+                      (_opts["sim_year_range"] == "1000-1002" or _opts["sim_year_range"] == "1000-1004")):
                     n.stream_year_first_ndep = 2000
                     n.stream_year_last_ndep = 2000
                 stream_fldfilename_ndep = {"hist":"lnd/clm2/ndepdata/fndep_clm_hist_b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.ensmean_1849-2015_monthly_0.9x1.25_c180926.nc",
@@ -924,7 +945,7 @@ def setup_logic_nitrogen_deposition():
                                            "SSP1-2.6":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP1-2.6-WACCM_1849-2101_monthly_c191007.nc",
                                            "SSP2-4.5":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP2-4.5-WACCM_1849-2101_monthly_c191007.nc",
                                            "SSP3-7.0":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP3-7.0-WACCM_1849-2101_monthly_c191007.nc"}
-                n.stream_fldfilename_ndep = stream_fldfilename_ndep.get(_in_opts["ssp_rcp"], None)
+                n.stream_fldfilename_ndep = stream_fldfilename_ndep.get(_opts["ssp_rcp"], None)
                 if n.stream_fldfilename_ndep is None:
                     print("""WARNING: Did NOT find the Nitrogen-deposition forcing file (stream_fldfilename_ndep) for this ssp_rcp.
                         "One way to get around this is to point to a file for another existing ssp_rcp in your user_nl_clm file.
@@ -952,9 +973,9 @@ def setup_logic_soilm_streams():
             n.stream_year_last_soilm = 1997
             if n.stream_year_first_soilm != n.stream_year_last_soilm:
                 n.model_year_align_soilm = 1997
-            if _in_opts["res"] == "0.9x1.25":
+            if _opts["res"] == "0.9x1.25":
                 n.stream_fldfilename_soilm = "lnd/clm2/prescribed_data/LFMIP-pdLC-SST.H2OSOI.0.9x1.25.20levsoi.natveg.1980-2014.MONS_climo.c190716.nc"
-            if _in_opts["use_case"] == "transient" and n.soilm_tintalgo == "linear":
+            if _opts["use_case"] == "transient" and n.soilm_tintalgo == "linear":
                 print("""WARNING: For a transient case, soil moisture streams, should NOT use soilm_tintalgo='linear'
                         since vegetated areas could go from missing to not missing or vice versa""")
         else:
@@ -969,7 +990,7 @@ def setup_logic_soilm_streams():
                                soilm_tintalgo soilm_offset is defined, but use_soil_moisture_streams option NOT set to true""")
 
 def setup_logic_cnmresp():
-    if _in_opts["bgc_mode"] != "sp":
+    if _opts["bgc_mode"] != "sp":
         if _nl.clm_inparm.use_fun:
             _nl.cnmresp_inparm.br_root = 0.83e-6
     else:
@@ -1004,27 +1025,27 @@ def setup_logic_popd_streams():
     with _nl.popd_streams as n:
         if _env["cnfireson"]:
             if _nl.clm_inparm.use_cn:
-                if _in_opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha", 
+                if _opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha", 
                                "1x1_camdenNJ", "1x1_asphaltjungleNJ", "5x5_amazon"]:
                     n.popdensmapalgo = "nn"
                 else:
                     n.popdensmapalgo = "bilinear"
-                if _in_opts["sim_year_range"] == "1850-2100":
+                if _opts["sim_year_range"] == "1850-2100":
                     n.stream_year_first_popdens = 2015
                     n.stream_year_last_popdens = 2101
                     n.model_year_align_popdens = 2015
-                elif _in_opts["sim_year_range"] == "2100-2300":
+                elif _opts["sim_year_range"] == "2100-2300":
                     n.stream_year_first_popdens = 2100
                     n.stream_year_last_popdens = 2100
                     n.model_year_align_popdens = 2100
-                elif _in_opts["sim_year"] in ["1850", "2000", "2010"]:
-                    n.stream_year_first_popdens = int(_in_opts["sim_year"])
-                    n.stream_year_last_popdens = int(_in_opts["sim_year"])
-                elif _in_opts["sim_year"] == "1000":
+                elif _opts["sim_year"] in ["1850", "2000", "2010"]:
+                    n.stream_year_first_popdens = int(_opts["sim_year"])
+                    n.stream_year_last_popdens = int(_opts["sim_year"])
+                elif _opts["sim_year"] == "1000":
                     n.stream_year_first_popdens = 2000
                     n.stream_year_last_popdens = 2000
-                elif (_in_opts["sim_year"] == "constant" and 
-                        (_in_opts["sim_year_range"] == "1000-1002" or _in_opts["sim_year_range"] == "1000-1004")):
+                elif (_opts["sim_year"] == "constant" and 
+                        (_opts["sim_year_range"] == "1000-1002" or _opts["sim_year_range"] == "1000-1004")):
                     n.stream_year_first_popdens = 2000
                     n.stream_year_last_popdens = 2000
                 stream_fldfilename_popdens = {"SSP1-1.9":"lnd/clm2/firedata/clmforc.Li_2018_SSP1_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
@@ -1035,7 +1056,7 @@ def setup_logic_popd_streams():
                                               "SSP4-3.4":"lnd/clm2/firedata/clmforc.Li_2018_SSP4_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
                                               "SSP5-8.5":"lnd/clm2/firedata/clmforc.Li_2018_SSP5_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
                                               "SSP5-3.4":"lnd/clm2/firedata/clmforc.Li_2018_SSP5_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc"}
-                n.stream_fldfilename_popdens = stream_fldfilename_popdens.get(_in_opts["ssp_rcp"], "lnd/clm2/firedata/clmforc.Li_2017_HYDEv3.2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2016_c180202.nc")
+                n.stream_fldfilename_popdens = stream_fldfilename_popdens.get(_opts["ssp_rcp"], "lnd/clm2/firedata/clmforc.Li_2017_HYDEv3.2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2016_c180202.nc")
         else:
             if (not n.stream_fldfilename_popdens is None or
                 not n.stream_year_last_popdens is None or
@@ -1049,22 +1070,22 @@ def setup_logic_popd_streams():
 def setup_logic_urbantv_streams():
     with _nl.urbantv_streams as n:
         n.urbantvmapalgo = "nn"
-        if _in_opts["sim_year_range"] == "1850-2100":
+        if _opts["sim_year_range"] == "1850-2100":
             n.stream_year_first_urbantv = 2015
             n.stream_year_last_urbantv = 2106
             n.model_year_align_urbantv = 2015
-        elif _in_opts["sim_year_range"] == "2100-2300":
+        elif _opts["sim_year_range"] == "2100-2300":
             n.stream_year_first_urbantv = 2100
             n.stream_year_last_urbantv = 2106
             n.model_year_align_urbantv = 2100
-        elif _in_opts["sim_year"] in ["1850", "2000"]:
-            n.stream_year_first_urbantv = int(_in_opts["sim_year"])
-            n.stream_year_last_urbantv = int(_in_opts["sim_year"])
-        elif _in_opts["sim_year"] == "1000":
+        elif _opts["sim_year"] in ["1850", "2000"]:
+            n.stream_year_first_urbantv = int(_opts["sim_year"])
+            n.stream_year_last_urbantv = int(_opts["sim_year"])
+        elif _opts["sim_year"] == "1000":
             n.stream_year_first_urbantv = 2000
             n.stream_year_last_urbantv = 2000
-        elif (_in_opts["sim_year"] == "constant" and 
-                (_in_opts["sim_year_range"] == "1000-1002" or _in_opts["sim_year_range"] == "1000-1004")):
+        elif (_opts["sim_year"] == "constant" and 
+                (_opts["sim_year_range"] == "1000-1002" or _opts["sim_year_range"] == "1000-1004")):
             n.stream_year_first_urbantv = 2000
             n.stream_year_last_urbantv = 2000
         n.stream_fldfilename_urbantv = "lnd/clm2/urbandata/CLM50_tbuildmax_Oleson_2016_0.9x1.25_simyr1849-2106_c160923.nc"
@@ -1073,16 +1094,16 @@ def setup_logic_lightning_streams():
     with _nl.light_streams as n:
         if _env["cnfireson"]:
             if _nl.clm_inparm.use_cn:
-                if _in_opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha", 
+                if _opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha", 
                             "1x1_camdenNJ", "1x1_asphaltjungleNJ", "5x5_amazon"]:
                     n.lightngmapalgo = "nn"
                 else:
                     n.lightngmapalgo = "bilinear"
                 n.stream_year_first_lightng = 1
                 n.stream_year_last_lightng = 1
-                if _in_opts["light_res"] == "94x192":
+                if _opts["light_res"] == "94x192":
                     n.stream_fldfilename_lightng = "atm/datm7/NASA_LIS/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc"
-                elif _in_opts["light_res"] == "360x720":
+                elif _opts["light_res"] == "360x720":
                     n.stream_fldfilename_lightng = "atm/datm7/NASA_LIS/clmforc.Li_2016_climo1995-2013.360x720.lnfm_Total_c160825.nc"
         else:
             if (not n.stream_year_first_lightng is None or
@@ -1099,9 +1120,9 @@ def setup_logic_lai_streams():
     with _nl.lai_streams as n:
         if _nl.clm_inparm.use_crop and _nl.clm_inparm.use_lai_streams:
             error("turning use_lai_streams on is incompatable with use_crop set to true.")
-        if _in_opts["bgc_mode"] == "sp":
+        if _opts["bgc_mode"] == "sp":
             if _nl.clm_inparm.use_lai_streams:
-                if _in_opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha",
+                if _opts["res"] in ["1x1_brazil", "1x1_mexicocityMEX", "1x1_vancouverCAN", "1x1_urbanc_alpha",
                                "1x1_camdenNJ", "1x1_asphaltjungleNJ", "5x5_amazon"]:
                     n.lai_mapalgo = "nn"
                 else:
@@ -1121,7 +1142,7 @@ def setup_logic_lai_streams():
                   "stream_fldfilename_lai (eg. don't use this option with BGC,CN,CNDV nor BGDCV""")
 
 def setup_logic_bgc_shared():
-    if _in_opts["bgc_mode"] != "sp":
+    if _opts["bgc_mode"] != "sp":
         _nl.bgc_shared.constrain_stress_deciduous_onset = True
     # FIXME(bja, 201606) the logic around fates / bgc_mode /
     # use_century_decomp is confusing and messed up. This is a hack
@@ -1134,7 +1155,7 @@ def setup_logic_soilwater_movement():
         n.soilwater_movement_method = 1
         n.upper_boundary_condition = 1
         if n.soilwater_movement_method == 1:
-            if not _nl.clm_inparm.use_bedrock and _in_opts["vichydro"] == 1:
+            if not _nl.clm_inparm.use_bedrock and _opts["vichydro"] == 1:
                 n.lower_boundary_condition = 3
             else:
                 n.lower_boundary_condition = 2
@@ -1262,7 +1283,7 @@ def setup_logic_initinterp():
 
 def setup_cmdl_bgc():
     with _nl.clm_inparm as n:
-        if _in_opts["bgc_mode"] == "cn":
+        if _opts["bgc_mode"] == "cn":
             n.use_cn = True
             n.use_fates = False
             n.use_vertsoilc = False
@@ -1270,7 +1291,7 @@ def setup_cmdl_bgc():
             n.use_lch4 = False
             n.use_nitrif_denitrif = False
             n.use_fun = False
-        elif _in_opts["bgc_mode"] == "bgc":
+        elif _opts["bgc_mode"] == "bgc":
             n.use_cn = True
             n.use_fates = False
             n.use_vertsoilc = True
@@ -1278,7 +1299,7 @@ def setup_cmdl_bgc():
             n.use_lch4 = True
             n.use_nitrif_denitrif = True
             n.use_fun = True
-        elif _in_opts["bgc_mode"] == "fates":
+        elif _opts["bgc_mode"] == "fates":
             n.use_cn = False
             n.use_fates = True
             n.use_vertsoilc = True
@@ -1286,7 +1307,7 @@ def setup_cmdl_bgc():
             n.use_lch4 = False
             n.use_nitrif_denitrif = False
             n.use_fun = False
-        elif _in_opts["bgc_mode"] == "sp":
+        elif _opts["bgc_mode"] == "sp":
             n.use_cn = False
             n.use_fates = False
             n.use_vertsoilc = False
@@ -1295,14 +1316,14 @@ def setup_cmdl_bgc():
             n.use_nitrif_denitrif = False
             n.use_fun = False
         else:
-            error("Unsupported bgc_mode = " + _in_opts["bgc_mode"])
+            error("Unsupported bgc_mode = " + _opts["bgc_mode"])
 
 def setup_cmdl_fire_light_res():
-    if _in_opts["light_res"] == "default":
+    if _opts["light_res"] == "default":
         if not _nl.clm_inparm.use_cn or _nl.cnfire_inparm.fire_method == "nofire":
-            _in_opts["light_res"] = "none"
+            _opts["light_res"] = "none"
         else:
-            _in_opts["light_res"] = "94x192"
+            _opts["light_res"] = "94x192"
     else:
         if _nl.cnfire_inparm.fire_method == "nofire":
             error("light_res used with fire_method='nofire'. light_res can ONLY be used without the nofire option")
@@ -1310,7 +1331,7 @@ def setup_cmdl_fire_light_res():
             error("light_res used while also explicitly setting stream_fldfilename_lightng filename which is a contradiction. Use one or the other not both.")
         if not _nl.clm_inparm.use_cn:
             error("light_res used CN is NOT on. light_res can only be used when CN is on (with bgc: cn or bgc)")
-        if not _nl.clm_inparm.use_cn and _in_opts["light_res"] is None:
+        if not _nl.clm_inparm.use_cn and _opts["light_res"] is None:
             error("light_res is set to none, but CN is on (with bgc: cn or bgc) which is a contradiction")
     if _nl.clm_inparm.use_cn:
         _nl.cnfire_inparm.fire_method = "li2016crufrc"
@@ -1322,15 +1343,15 @@ def setup_cmdl_fire_light_res():
 
 def setup_cmdl_spinup():
     if _nl.clm_inparm.use_cn:
-        if _in_opts["clm_accelerated_spinup"] == "on":
+        if _opts["clm_accelerated_spinup"] == "on":
             _nl.clm_inparm.spinup_state = 2
         else:
             _nl.clm_inparm.spinup_state = 0
         if _nl.clm_inparm.spinup_state != 0:
             _env["bgc_spinup"] = "on"
-            if _in_opts["bgc_mode"] == "sp":
+            if _opts["bgc_mode"] == "sp":
                 error("spinup_state is accelerated (=1 or 2) which is for a BGC mode of CN or BGC, but the BGC mode is Satellite Phenology, change one or the other")
-            if _in_opts["clm_accelerated_spinup"] == "off":
+            if _opts["clm_accelerated_spinup"] == "off":
                 error("spinup_state is accelerated, but clm_accelerated_spinup is off, change one or the other")
     else:
         _env["bgc_spinup"] = "off"
@@ -1343,20 +1364,20 @@ def setup_cmdl_spinup():
         error("Namelist spinup_state contradicts the command line option bgc_spinup")
 
 def setup_cmdl_crop():
-    if _in_opts["crop"] == 1 and _in_opts["bgc_mode"] == "sp":
+    if _opts["crop"] == 1 and _opts["bgc_mode"] == "sp":
         error("Cannot turn crop mode on mode bgc=sp")
-    _nl.clm_inparm.use_crop = (_in_opts["crop"] == 1)
+    _nl.clm_inparm.use_crop = (_opts["crop"] == 1)
 
 def setup_cmdl_dynamic_vegetation():
-    if _in_opts["dynamic_vegetation"] == 1 and _in_opts["bgc_mode"] == "sp":
-        if _in_opts["bgc_mode"] == "sp":
+    if _opts["dynamic_vegetation"] == 1 and _opts["bgc_mode"] == "sp":
+        if _opts["bgc_mode"] == "sp":
             error("Cannot turn dynamic_vegetation mode on with bgc=sp")
         else:
             _nl.clm_inparm.use_cndv = True
         
 def setup_cmdl_fates_mode():
     with _nl.clm_inparm as n:
-        if n.use_crop and _in_opts["bgc_mode"] == "fates":
+        if n.use_crop and _opts["bgc_mode"] == "fates":
             error("Cannot turn fates mode on with crop")
         elif n.use_fates:
             n.use_vertsoilc = True
@@ -1395,14 +1416,12 @@ if __name__ == "__main__":
     opts["light_res"] = "default"
     opts["lnd_frac"] = "/p/scratch/nrw_test_case/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
     opts["lnd_tuning_mode"] = "clm5_0_CRUv7"
-    opts["mask"] = None
     opts["nrevsn"] = None
     opts["override_nsrest"] = None
     opts["res"] = "UNSET"
     opts["sim_year"] = "2000"
     opts["sim_year_range"] = "constant"
     opts["ssp_rcp"] = "hist"
-    opts["start_ymd"] = 20170101
     opts["use_case"] = None
     opts["use_dynroot"] = False
     opts["use_init_interp"] = True

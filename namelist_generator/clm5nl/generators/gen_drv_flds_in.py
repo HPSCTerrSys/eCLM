@@ -12,7 +12,7 @@ __all__ = ['build_drv_flds_in']
 _opts = {}
 _nl = drv_flds_in()
 
-def build_drv_flds_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
+def build_drv_flds_in(opts: dict = None, user_nl: dict = None, nl_file: str = "drv_flds_in"):
     
     global _opts, _nl
     _opts = opts
@@ -23,7 +23,7 @@ def build_drv_flds_in(opts: dict = None, user_nl: dict = None, nl_file: str = No
     setup_logic_megan()
 
     # Write to file
-    if nl_file: 
+    if nl_file and nl_file.strip != "":
         _nl.write(nl_file)
         print(f"Generated {Path(nl_file).name}")
 

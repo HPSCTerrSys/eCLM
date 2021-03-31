@@ -18,7 +18,7 @@ _in_opts = {}
 _nl = datm_in()
 _out_dir = ""
 
-def build_datm_in(opts: dict = None, nl: dict = None, nl_file: str = None):
+def build_datm_in(opts: dict = None, nl: dict = None, nl_file: str = "datm_in"):
     global _in_opts, _in_nl, _nl, _out_dir
 
     _in_opts = opts
@@ -37,7 +37,7 @@ def build_datm_in(opts: dict = None, nl: dict = None, nl_file: str = None):
     init_datm_nml()
 
     # Write to file
-    if nl_file: 
+    if nl_file and nl_file.strip != "": 
         _nl.write(nl_file, ["datm_nml", "shr_strdata_nml"])
         print(f"Generated {Path(nl_file).name}")
 
