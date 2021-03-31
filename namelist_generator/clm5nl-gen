@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 from docopt import docopt
 from ruamel.yaml import YAML
-from clm5nl.generators import *
+from clm5nl.generators import build_namelist
 
 __version__ = "0.2-dev"
 args = docopt(__doc__, version="clm5nl-gen v" + __version__)
@@ -48,23 +48,21 @@ if invalid_args: sys.exit(-1)
 # Parse model parameters file
 yaml = YAML(typ='safe')
 print(f"Reading model parameters file from {params_file}")
-config = yaml.load(open(params_file, "r"))
+model_config = yaml.load(open(params_file, "r"))
 
+ignored_sections = ["file_version"]
 namelists = ["drv_in", "lnd_in", "drv_flds_in", "datm_in", "mosart_in", "modelio_nml"]
-nl_opts = dict.fromkeys(namelists)
-
-for section in config:
+for section in model_config:
   if section in namelists:
-    nl_opts[section] = {k:v for k, v in config[section].items()}
+    opts = {k:v for k, v in model_config[section].items()}
+    build_namelist(section, opts, out_dir)
+    namelists.remove(section)
+  elif section in ignored_sections:
+    pass
   else:
-    print(f"{section} is not recognized!")
+    print(f"WARNING: {section} is not recognized!")
 
-# ---- TODO ---- 
-# Build namelists
-build_lnd_in(nl_opts["lnd_in"], Path(out_dir, "lnd_in"))
-build_datm_in(nl_opts["datm_in"], Path(out_dir, "datm_in"))
-build_mosart_in({}, Path(out_dir, "mosart_in"))
-build_drv_in(nl_opts["drv_in"], Path(out_dir, "drv_in"))
-build_seq_maps_rc(out_dir)
-build_modelio_nml({}, out_dir)
-build_drv_flds_in(nl_opts["drv_flds_in"], Path(out_dir, "drv_flds_in"))
+# Namelists not mentioned in config file 
+# should still be generated
+for nl in namelists:
+  build_namelist(nl, {}, out_dir)
