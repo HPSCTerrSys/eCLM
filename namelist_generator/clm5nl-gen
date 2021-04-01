@@ -12,57 +12,75 @@ Usage:
   clm5nl-gen (-v | --version)
 
 Arguments:
-  PARAMFILE           model parameters file (.yaml)
+  PARAMFILE           model parameters file (.toml)
 
 Options:
   -o DIR --out DIR    Save generated namelists to this directory.
   -h --help           Show this screen.
   -v --version        Show version.
 """
-import sys
-from pathlib import Path
+import os, re, sys
+import toml
 from docopt import docopt
-from ruamel.yaml import YAML
 from clm5nl.generators import build_namelist
 
 __version__ = "0.2-dev"
-args = docopt(__doc__, version="clm5nl-gen v" + __version__)
-invalid_args = False
-params_file = Path(args["PARAMFILE"]).absolute()
 
-# Validate input args
-if (not params_file.exists()):
-  print("clm5nl-gen error: Model parameter file '{}' not found.".format(params_file), file=sys.stderr)
-  invalid_args = True
+env_var_regex = re.compile(r"\$\{.*\}")
 
-if (args["--out"] is None):
-  out_dir = Path.cwd()
-else:
-  out_dir = Path(args["--out"]).absolute()
-  if (not out_dir.is_dir()):
-    print(f"Creating folder {out_dir}")
-    out_dir.mkdir(parents=True, exist_ok=True)
-print(f"Namelists will be saved to {out_dir}")
-if invalid_args: sys.exit(-1)
+def resolve_env_vars(node_value):
+  """
+  Replaces ${VARIABLE} with its corresponding
+  environment variable if present.
+  """
+  if isinstance(node_value, str):
+    match = env_var_regex.match(node_value)
+    if match:
+      env_var = os.getenv(match.group()[2:-1])
+      if env_var and env_var.strip() != "":
+        return env_var + value[match.end():]
+      else:
+        print(f"WARNING: Environment variable '{match.group()[2:-1]}' is not set.")
+  elif isinstance(node_value, list):
+    node_value = [resolve_env_vars(v) for v in node_value]
+  elif isinstance(node_value, dict):
+    node_value = {k:resolve_env_vars(v) for k, v in node_value.items()}
 
-# Parse model parameters file
-yaml = YAML(typ='safe')
-print(f"Reading model parameters file from {params_file}")
-model_config = yaml.load(open(params_file, "r"))
+  return node_value
 
-ignored_sections = ["file_version"]
-namelists = ["drv_in", "lnd_in", "drv_flds_in", "datm_in", "mosart_in", "modelio_nml"]
-for section in model_config:
-  if section in namelists:
-    opts = {k:v for k, v in model_config[section].items()}
-    build_namelist(section, opts, out_dir)
-    namelists.remove(section)
-  elif section in ignored_sections:
-    pass
+def generate_namelists(params_file, out_dir: str = ""):
+  """
+  Generate CLM5 namelists from a .toml parameter file.
+  """
+  print(f"Reading model parameters file from {params_file}")
+  print(f"Namelists will be saved to {out_dir}")
+
+  # Parse model parameters file
+  model_config = toml.loads(open(params_file, "r").read())
+  namelists = ["drv_in", "lnd_in", "drv_flds_in", "datm_in", "mosart_in", "modelio_nml"]
+  for section in model_config:
+    if section in namelists:
+      opts = {k:resolve_env_vars(v) for k, v in model_config[section].items()}
+      build_namelist(section, opts, out_dir)
+      namelists.remove(section)
+    else:
+      print(f"WARNING: {section} is not recognized!")
+
+  # Namelists not mentioned in config file should still be generated
+  for nl in namelists:
+    build_namelist(nl, {}, out_dir)
+
+if __name__ == "__main__":
+  args = docopt(__doc__, version="clm5nl-gen v" + __version__)
+  params_file = os.path.abspath((args["PARAMFILE"]))
+
+  # Validate input args
+  if (not os.path.exists(params_file)):
+    print(f"clm5nl-gen error: Model parameter file '{params_file}' not found.", file=sys.stderr)
+    sys.exit(-1)
+  if (args["--out"] is None):
+    out_dir = os.getcwd()
   else:
-    print(f"WARNING: {section} is not recognized!")
-
-# Namelists not mentioned in config file 
-# should still be generated
-for nl in namelists:
-  build_namelist(nl, {}, out_dir)
+    out_dir = os.path.abspath(args["--out"])
+    os.makedirs(out_dir, exist_ok=True)
+  generate_namelists(params_file, out_dir)
