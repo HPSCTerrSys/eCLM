@@ -2,23 +2,24 @@ from collections import OrderedDict
 from itertools import filterfalse
 from io import StringIO
 
-def nml2str(nl: dict, ordered_grp_names: list = []) -> str:
+def nml2str(nl: dict, grp_names: list = [], fill_missing_groups: bool = True) -> str:
     """
     Converts a namelist object (dict) into a Fortran namelist (string).
     """
     nl_str = StringIO()
-    sort_grp_a2z = (len(ordered_grp_names) == 0)
+    sort_grp_a2z = (len(grp_names) == 0)
 
     if sort_grp_a2z:
         nl_sorted = OrderedDict(sorted(nl.items(), key=lambda t: t[0]))
         [nmlGroup2str(grp, params, nl_str) for grp, params in nl_sorted.items()]
     else:
-        for grp in ordered_grp_names:
+        for grp in grp_names:
             nmlGroup2str(grp, nl[grp] if grp in nl else {}, nl_str)
 
-        # Add groups not included in ordered_grp_names
-        missing_groups = filterfalse(lambda g : g in ordered_grp_names, nl.keys())
-        [nmlGroup2str(grp, nl[grp], nl_str) for grp in missing_groups]
+        # Add groups not included in grp_names
+        if fill_missing_groups:
+            missing_groups = filterfalse(lambda g : g in grp_names, nl.keys())
+            [nmlGroup2str(grp, nl[grp], nl_str) for grp in missing_groups]
 
     return nl_str.getvalue()
 
