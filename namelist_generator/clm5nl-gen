@@ -24,7 +24,7 @@ import toml
 from docopt import docopt
 from clm5nl.generators import build_namelist
 
-__version__ = "0.2-dev"
+__version__ = "0.3"
 
 env_var_regex = re.compile(r"\$\{.*\}")
 _missing_envs = set()
