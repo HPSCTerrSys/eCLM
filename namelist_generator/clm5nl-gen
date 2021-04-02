@@ -51,17 +51,28 @@ def generate_namelists(params_file, out_dir: str = ""):
   if has_warnings():
     # TODO: Add CLI option to ignore warnings
     print(f"Please fix the warnings first.", file=sys.stderr)
-    return -2
+    return 2
 
   # Build namelists
   print(f"Namelists will be saved to {out_dir}")
   os.makedirs(out_dir, exist_ok=True)   
   for nl, opts in nl_opts.items():
-    build_namelist(nl, opts, out_dir)
+    if nl == "lnd_in":
+      opts["drv_in.start_type"] = nl_opts["drv_in"]["clm_start_type"]
+    elif nl == "drv_flds_in":
+      opts["lnd_in.clm_accelerated_spinup"] = nl_opts["lnd_in"]["clm_accelerated_spinup"]
+      opts["lnd_in.use_fates"] = nl_opts["lnd_in"]["use_fates"]
+    success, msg = build_namelist(nl, opts, out_dir)
+    if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
 
   # Namelists not mentioned in config file should still be generated
+  opts = {}
   for nl in namelists:
-    build_namelist(nl, {}, out_dir)
+    if nl == "mosart_in":
+      #TODO: Throw error if ${CESMDATAROOT} is missing
+      opts["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}/inputdata") 
+    success, msg = build_namelist(nl, opts, out_dir)
+    if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
   print("Success!")
   return 0
 
@@ -109,7 +120,7 @@ if __name__ == "__main__":
   params_file = os.path.abspath((args["PARAMFILE"]))
   if (not os.path.exists(params_file)):
     print(f"clm5nl-gen error: Model parameter file '{params_file}' not found.", file=sys.stderr)
-    sys.exit(-1)
+    sys.exit(1)
   out_dir = os.path.abspath(args["--out"]) if args["--out"] else os.getcwd()
   err_code = generate_namelists(params_file, out_dir)
   sys.exit(err_code)

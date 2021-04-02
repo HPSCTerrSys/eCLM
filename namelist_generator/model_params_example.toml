@@ -41,7 +41,6 @@ urban_hac = "ON_WASTEHEAT"
 urban_traffic = false
 
 [drv_flds_in]
-megan = true
 megan_factors_file = "${CESMDATAROOT}/megan21_emis_factors_78pft_c20161108.nc"
   
 [datm_in]

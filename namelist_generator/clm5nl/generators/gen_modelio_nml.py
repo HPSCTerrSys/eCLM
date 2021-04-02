@@ -35,11 +35,12 @@ def build_modelio_nml(opts: dict = None, out_dir: str = None):
 
     if out_dir is None: out_dir = Path.cwd()
     components = ["atm", "cpl", "esp", "glc", "ice", "lnd", "ocn", "rof", "wav"]
+    nl_files = {}
     for comp in components:
-        nl_file = Path(out_dir, f"{comp}_modelio.nml")
+        nl_files[comp] = Path(out_dir, f"{comp}_modelio.nml")
         _nl.modelio.logfile = "{}.log.{}".format(comp, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
-        _nl.write(nl_file, ["modelio", "pio_inparm"])
-        print(f"--> Generated {Path(nl_file).name}")
+        _nl.write(nl_files[comp], ["modelio", "pio_inparm"])
+    return True, [Path(nl) for nl in nl_files.values()]
 
 if __name__ == "__main__":
     """

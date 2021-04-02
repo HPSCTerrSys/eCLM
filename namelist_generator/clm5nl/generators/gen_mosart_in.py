@@ -31,7 +31,7 @@ def build_mosart_in(opts: dict = None, nl_file: str = "mosart_in"):
         n.do_rtm = False
         n.do_rtmflood = False
         n.finidat_rtm = " "
-        n.frivinp_rtm = opts.get("frivinp_rtm", "$CESMDATAROOT/inputdata")
+        n.frivinp_rtm = opts["frivinp_rtm"] # caller should set this to $CESMDATAROOT/inputdata
         n.ice_runoff = True 
         n.qgwl_runoff_option = "threshold"
         n.rtmhist_fexcl1 = ""
@@ -48,7 +48,9 @@ def build_mosart_in(opts: dict = None, nl_file: str = "mosart_in"):
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "": 
         _nl.write(nl_file)
-        print(f"--> Generated {Path(nl_file).name}")
+        return True, Path(nl_file)
+    else:
+        return True, ""
 
 def error(msg):
     raise ValueError(msg)

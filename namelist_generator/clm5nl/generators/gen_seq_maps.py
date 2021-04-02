@@ -70,4 +70,6 @@ def build_seq_maps_rc(seq_maps_file: str = "seq_maps.rc"):
         with open(seq_maps_file, "w") as f:
             for k, v in seq_maps.items():
                 f.write(f'{k} : "{v}"\n')
-        print(f"--> Generated {Path(seq_maps_file).name}")
+        return True, Path(seq_maps_file)
+    else:
+        return True, ""

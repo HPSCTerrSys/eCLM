@@ -57,7 +57,9 @@ def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     #Write to file
     if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file)
-        print(f"--> Generated {Path(nl_file).name}")
+        return True, Path(nl_file)
+    else:
+        return True, ""
 
 def error(msg):
     raise ValueError(msg)

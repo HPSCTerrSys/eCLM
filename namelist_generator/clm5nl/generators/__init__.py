@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import PurePath, Path
 from .gen_lnd_in import build_lnd_in
 from .gen_datm_in import build_datm_in
 from .gen_modelio_nml import build_modelio_nml
@@ -23,18 +23,28 @@ def build_namelist(nl_key: str, opts: dict, out_dir: str = ""):
         out_file = Path.cwd() / nl_key
 
     if nl_key == "lnd_in":
-        build_lnd_in(opts, out_file)   
+        success, status_msg = build_lnd_in(opts, out_file)   
     elif nl_key == "datm_in":
-        build_datm_in(opts, out_file)
+        success, status_msg = build_datm_in(opts, out_file)
     elif nl_key == "mosart_in":
-        build_mosart_in(opts, out_file)
+        success, status_msg = build_mosart_in(opts, out_file)
     elif nl_key == "drv_in":
-        build_drv_in(opts, out_file)
+        success, status_msg = build_drv_in(opts, out_file)
     elif nl_key == "seq_maps.rc":
-        build_seq_maps_rc(out_file)
+        success, status_msg = build_seq_maps_rc(out_file)
     elif nl_key == "drv_flds_in":
-        build_drv_flds_in(opts, out_file)
+        success, status_msg = build_drv_flds_in(opts, out_file)
     elif nl_key == "modelio_nml":
-        build_modelio_nml(opts, out_dir)
+        success, status_msg = build_modelio_nml(opts, out_dir)
     else:
-        raise ValueError(f"build_namelist error: Namelist '{nl_key}' is not supported.")
+        success = False
+        status_msg = f"build_namelist error: Namelist '{nl_key}' is not supported."
+    if success: print_build_status(status_msg)
+    return success, status_msg
+
+def print_build_status(message):
+    if isinstance(message, PurePath):
+        print(f"--> Generated {Path(message).name}")
+    elif isinstance(message, list):
+        for m in message:
+            print_build_status(m) 

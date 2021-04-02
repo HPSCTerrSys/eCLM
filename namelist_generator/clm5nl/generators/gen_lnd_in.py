@@ -29,6 +29,8 @@ def build_lnd_in(opts: dict = None, nl_file: str = "lnd_in"):
     _nl = lnd_in()
 
     # set defaults
+    if "drv_in.start_type" not in _opts:
+        return False, "Missing required option 'drv_in.start_type"
     _opts["clm_start_type"] = opts.get("clm_start_type", "startup")
     _opts["co2_ppmv"] = opts.get("co2_ppmv", 367.0)
     _opts["co2_type"] = opts.get("co2_type", "constant")
@@ -60,10 +62,15 @@ def build_lnd_in(opts: dict = None, nl_file: str = "lnd_in"):
     process_namelist_commandline_use_case()        # use case (e.g. 1850, 20th century, 2000, 2010, SSPx-y.z)
     process_namelist_inline_logic()                # rest of namelist parameters
 
+    # this param is needed by drv_flds_in
+    _opts["use_fates"] = _nl.clm_inparm.use_fates
+    
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file, lnd_nl_groups())
-        print(f"--> Generated {Path(nl_file).name}")
+        return True, Path(nl_file)
+    else:
+        return True, ""
    
 def process_namelist_commandline_options():
     #setup_cmdl_chk_res()
@@ -402,7 +409,7 @@ def setup_logic_irrigate():
 
 def setup_logic_start_type():
     my_start_type = _opts["clm_start_type"]
-    drv_in_start_type = "startup" # TODO: this must be read from drv_in's clm_start_type parameter.
+    drv_in_start_type = _opts["drv_in.start_type"]
     if not _opts["override_nsrest"] == None:
         start_type = {0:"startup", 1:"continue", 3:"branch"}
         my_start_type = start_type.get(_opts["override_nsrest"], "Invalid start_type value")
