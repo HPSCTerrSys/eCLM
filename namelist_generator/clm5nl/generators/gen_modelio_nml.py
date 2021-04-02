@@ -13,7 +13,7 @@ __all__ = ['build_modelio_nml']
 # _in_opts = {}
 # _nl = datm_in()
 
-def build_modelio_nml(opts: dict = None, nl: dict = None, out_dir: str = None):
+def build_modelio_nml(opts: dict = None, out_dir: str = None):
     # Global vars aren't necessary for now
     # global _in_opts, _in_nl, _nl
     #_in_opts = opts
@@ -23,7 +23,7 @@ def build_modelio_nml(opts: dict = None, nl: dict = None, out_dir: str = None):
 
     with _nl.modelio as n:
         n.diri = "UNUSED"
-        n.diro = opts.get("run_dir", Path.cwd())
+        n.diro = opts.get("run_dir", Path(out_dir).absolute())
 
     with _nl.pio_inparm as n:
         n.pio_netcdf_format = "64bit_offset"
@@ -35,11 +35,12 @@ def build_modelio_nml(opts: dict = None, nl: dict = None, out_dir: str = None):
 
     if out_dir is None: out_dir = Path.cwd()
     components = ["atm", "cpl", "esp", "glc", "ice", "lnd", "ocn", "rof", "wav"]
+    nl_files = {}
     for comp in components:
-        nl_file = Path(out_dir, f"{comp}_modelio.nml")
+        nl_files[comp] = Path(out_dir, f"{comp}_modelio.nml")
         _nl.modelio.logfile = "{}.log.{}".format(comp, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
-        _nl.write(nl_file, ["modelio", "pio_inparm"])
-        print(f"Generated {Path(nl_file).name}")
+        _nl.write(nl_files[comp], ["modelio", "pio_inparm"])
+    return True, [Path(nl) for nl in nl_files.values()]
 
 if __name__ == "__main__":
     """

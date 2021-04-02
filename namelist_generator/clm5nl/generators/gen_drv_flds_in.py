@@ -12,20 +12,40 @@ __all__ = ['build_drv_flds_in']
 _opts = {}
 _nl = drv_flds_in()
 
-def build_drv_flds_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
+def build_drv_flds_in(opts: dict = None, nl_file: str = "drv_flds_in"):
     
     global _opts, _nl
     _opts = opts
+    _user_nl = opts.get("user_nl", {})
     _nl = drv_flds_in()
 
+    _opts["megan"] = opts.get("megan", "default")
+    _opts["drydep"] = opts.get("drydep", False)
+    _opts["fire_emis"] = opts.get("fire_emis", False)
+
+    if _opts["megan"] == "default":
+        if "lnd_in.clm_accelerated_spinup" not in _opts:
+            return False, "Missing required option 'lnd_in.clm_accelerated_spinup'"
+        else:
+            _opts["megan"] = True if _opts["lnd_in.clm_accelerated_spinup"] == "off" else False
+    else:
+        _opts["megan"] = bool(_opts["megan"])
+    if _opts["megan"]:
+        if "lnd_in.use_fates" not in _opts:
+            return False, "Missing required option 'lnd_in.use_fates'"
+        elif _opts["lnd_in.use_fates"]:
+            return False, "MEGAN can NOT be on when ED is also on. Use the '-no-megan' option when '-bgc fates' is activated"
+    
     setup_logic_dry_deposition()
     setup_logic_fire_emis()
     setup_logic_megan()
 
     # Write to file
-    if nl_file: 
+    if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file)
-        print(f"Generated {Path(nl_file).name}")
+        return True, Path(nl_file)
+    else:
+        return True, ""
 
 def setup_logic_dry_deposition():
     with _nl.drydep_inparm as n:
@@ -52,18 +72,8 @@ def setup_logic_fire_emis():
                 error("fire_emission setting defined: fire_emis_elevated, fire_emis_factors_file, or fire_emis_specifier, but fire_emis option NOT set")
 
 def setup_logic_megan():
-    # TODO: use_megan should depend on 'clm_accelerated_spinup' and
-    # 'use_fates' parameters from lnd_in.
-    #
-    # if _opts["megan"] == "default":
-    #     use_megan = not _opts["clm_accelerated_spinup"]
-    # else:
-    #     use_megan = bool(_opts["megan"])
-    use_megan = True
     with _nl.megan_emis_nl as n:
-        if use_megan:
-            # if _nl.clm_inparm.use_fates:
-            #     error("MEGAN can NOT be on when ED is also on. Use the '-no-megan' option when '-bgc fates' is activated")
+        if _opts["megan"]:
             n.megan_specifier = ["ISOP = isoprene",
                         "C10H16 = pinene_a + carene_3 + thujene_a",
                         "CH3OH = methanol",

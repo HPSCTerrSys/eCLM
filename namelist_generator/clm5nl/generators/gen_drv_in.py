@@ -6,10 +6,9 @@ Default datm_in values are based from these files:
 [config_component.xml]: https://github.com/ESMCI/cime/blob/cime5.6.33/src/drivers/mct/cime_config/config_component.xml
 """
 from pathlib import Path
-from io import StringIO
 from ..structures import drv_in
 
-__all__ = ['build_drv_in','build_seq_maps_rc']
+__all__ = ['build_drv_in']
 
 BASE_DT = {
     "hour"   : 3600,
@@ -22,11 +21,11 @@ _user_nl = {}
 _opts = {}
 _nl = drv_in()
 
-def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
+def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     global _opts, _user_nl, _nl
 
     _opts = opts
-    _user_nl = user_nl
+    _user_nl = opts.get("user_nl", {})
     _nl = drv_in()
 
     # Generate sections of drv_in namelist
@@ -40,6 +39,10 @@ def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
         else:
             _opts["clm_start_type"] = "arb_ic"
 
+    _opts["megan"] = opts.get("megan", True)
+    _opts["fire_emis"] = opts.get("fire_emis", False)
+    _opts["drydep"] = opts.get("drydep", False)
+
     seq_infodata_inparm()
     cime_driver_inst()
     cime_pes()
@@ -50,83 +53,13 @@ def build_drv_in(opts: dict = None, user_nl: dict = None, nl_file: str = None):
     seq_cplflds_inparm()
     seq_cplflds_userspec()
     seq_flux_mct_inparm()
+
     #Write to file
-    if nl_file: 
+    if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file)
-        print(f"Generated {Path(nl_file).name}")
-
-def build_seq_maps_rc(out_dir: str = None):
-    # Seems like this could be transformed into a
-    # loop, but I don't see a clear pattern how.
-    seq_maps = {
-        "atm2ice_fmapname" : "idmap",
-        "atm2ice_fmaptype" : "X",
-        "atm2ice_smapname" : "idmap",
-        "atm2ice_smaptype" : "X",
-        "atm2ice_vmapname" : "idmap",
-        "atm2ice_vmaptype" : "X",
-        "atm2lnd_fmapname" : "idmap",
-        "atm2lnd_fmaptype" : "X",
-        "atm2lnd_smapname" : "idmap",
-        "atm2lnd_smaptype" : "X",
-        "atm2ocn_fmapname" : "idmap",
-        "atm2ocn_fmaptype" : "X",
-        "atm2ocn_smapname" : "idmap",
-        "atm2ocn_smaptype" : "X",
-        "atm2ocn_vmapname" : "idmap",
-        "atm2ocn_vmaptype" : "X",
-        "atm2wav_smapname" : "idmap",
-        "atm2wav_smaptype" : "Y",
-        "glc2ice_rmapname" : "idmap_ignore",
-        "glc2ice_rmaptype" : "Y",
-        "glc2lnd_fmapname" : "idmap",
-        "glc2lnd_fmaptype" : "Y",
-        "glc2lnd_smapname" : "idmap",
-        "glc2lnd_smaptype" : "Y",
-        "glc2ocn_ice_rmapname" : "idmap_ignore",
-        "glc2ocn_ice_rmaptype" : "Y",
-        "glc2ocn_liq_rmapname" : "idmap_ignore",
-        "glc2ocn_liq_rmaptype" : "Y",
-        "ice2atm_fmapname" : "idmap",
-        "ice2atm_fmaptype" : "Y",
-        "ice2atm_smapname" : "idmap",
-        "ice2atm_smaptype" : "Y",
-        "ice2wav_smapname" : "idmap",
-        "ice2wav_smaptype" : "Y",
-        "lnd2atm_fmapname" : "idmap",
-        "lnd2atm_fmaptype" : "Y",
-        "lnd2atm_smapname" : "idmap",
-        "lnd2atm_smaptype" : "Y",
-        "lnd2glc_fmapname" : "idmap",
-        "lnd2glc_fmaptype" : "X",
-        "lnd2glc_smapname" : "idmap",
-        "lnd2glc_smaptype" : "X",
-        "lnd2rof_fmapname" : "idmap",
-        "lnd2rof_fmaptype" : "X",
-        "ocn2atm_fmapname" : "idmap",
-        "ocn2atm_fmaptype" : "Y",
-        "ocn2atm_smapname" : "idmap",
-        "ocn2atm_smaptype" : "Y",
-        "ocn2wav_smapname" : "idmap",
-        "ocn2wav_smaptype" : "Y",
-        "rof2lnd_fmapname" : "idmap",
-        "rof2lnd_fmaptype" : "Y",
-        "rof2ocn_fmapname" : "idmap_ignore",
-        "rof2ocn_fmaptype" : "Y",
-        "rof2ocn_ice_rmapname" : "idmap",
-        "rof2ocn_ice_rmaptype" : "Y",
-        "rof2ocn_liq_rmapname" : "idmap",
-        "rof2ocn_liq_rmaptype" : "Y",
-        "wav2ocn_smapname" : "idmap",
-        "wav2ocn_smaptype" : "X"
-    }
-
-    if out_dir is None: out_dir = Path.cwd()
-    seq_maps_file = Path(out_dir, "seq_maps.rc")
-    with open(seq_maps_file, "w") as f:
-        for k, v in seq_maps.items():
-            f.write(f'{k} : "{v}"\n')
-    print(f"Generated {Path(seq_maps_file).name}")
+        return True, Path(nl_file)
+    else:
+        return True, ""
 
 def error(msg):
     raise ValueError(msg)
@@ -137,47 +70,47 @@ def cime_driver_inst():
 def cime_pes():
     with _nl.cime_pes as n:
         n.atm_layout   = "concurrent"
-        n.atm_ntasks   = _opts["NTASKS"]
+        n.atm_ntasks   = _opts["ntasks"]
         n.atm_nthreads = _opts.get("NTHREADS", 1)
         n.atm_pestride = 1
         n.atm_rootpe   = 0
-        n.cpl_ntasks   = _opts["NTASKS"]
+        n.cpl_ntasks   = _opts["ntasks"]
         n.cpl_nthreads = _opts.get("NTHREADS", 1)
         n.cpl_pestride = 1
         n.cpl_rootpe   = 0
         n.esp_layout   = "concurrent"
-        n.esp_ntasks   = _opts["NTASKS"]
+        n.esp_ntasks   = _opts["ntasks"]
         n.esp_nthreads = _opts.get("NTHREADS", 1)
         n.esp_pestride = 1
         n.esp_rootpe   = 0
         n.glc_layout   = "concurrent"
-        n.glc_ntasks   = _opts["NTASKS"]
+        n.glc_ntasks   = _opts["ntasks"]
         n.glc_nthreads = _opts.get("NTHREADS", 1)
         n.glc_pestride = 1
         n.glc_rootpe   = 0
         n.ice_layout   = "concurrent"
-        n.ice_ntasks   = _opts["NTASKS"]
+        n.ice_ntasks   = _opts["ntasks"]
         n.ice_nthreads = _opts.get("NTHREADS", 1)
         n.ice_pestride = 1
         n.ice_rootpe   = 0
         n.lnd_layout   = "concurrent"
-        n.lnd_ntasks   = _opts["NTASKS"]
+        n.lnd_ntasks   = _opts["ntasks"]
         n.lnd_nthreads = _opts.get("NTHREADS", 1)
         n.lnd_pestride = 1
         n.lnd_rootpe   = 0
         n.ocn_layout   = "concurrent"
-        n.ocn_ntasks   = _opts["NTASKS"]
+        n.ocn_ntasks   = _opts["ntasks"]
         n.ocn_nthreads = _opts.get("NTHREADS", 1)
         n.ocn_pestride = 1
         n.ocn_rootpe   = 0
         # TODO: Include logic for compset-dependent parameters
         # n.rof_layout   = "concurrent"
-        # n.rof_ntasks   = _opts["NTASKS"]
+        # n.rof_ntasks   = _opts["ntasks"]
         # n.rof_nthreads = _opts.get("NTHREADS", 1)
         # n.rof_pestride = 1
         # n.rof_rootpe   = 0
         # n.wav_layout   = "concurrent"
-        # n.wav_ntasks   = _opts["NTASKS"]
+        # n.wav_ntasks   = _opts["ntasks"]
         # n.wav_nthreads = _opts.get("NTHREADS", 1)
         # n.wav_pestride = 1
         # n.wav_rootpe   = 0
@@ -354,10 +287,10 @@ def seq_infodata_inparm():
 def seq_timemgr_inparm():
     with _nl.seq_timemgr_inparm as n:
         # Important time parameters
-        n.stop_option = _opts["STOP_OPTION"]
-        n.start_ymd = int("".join(str(x) for x in _opts["RUN_STARTDATE"].split('-')))      
-        n.stop_ymd = int("".join(str(x) for x in _opts["STOP_DATE"].split('-')))
-        n.stop_n = _opts.get("STOP_N", -1)
+        n.stop_option = _opts["stop_option"]
+        n.start_ymd = int("".join(str(x) for x in _opts["start_ymd"].split('-')))      
+        n.stop_ymd = int("".join(str(x) for x in _opts["stop_ymd"].split('-')))
+        n.stop_n = _opts.get("stop_n", -1)
         n.restart_option = _opts.get("RESTART_OPTION", n.stop_option)
         n.restart_ymd = n.stop_ymd
         n.restart_n = n.stop_n
@@ -379,7 +312,7 @@ def seq_timemgr_inparm():
         n.wav_cpl_dt = cpl_dt["wav"]
 
         # set tprof_option and tprof_n - if tprof_total is > 0
-        stop_option = _opts["STOP_OPTION"]
+        stop_option = _opts["stop_option"]
         if 'nyear' in stop_option:
             tprofoption = 'ndays'
             tprof_mult = 365
@@ -393,7 +326,7 @@ def seq_timemgr_inparm():
             tprof_mult = 1
             tprofoption = 'never'
         tprof_total = _opts.get("TPROF_TOTAL", 0)
-        if ((tprof_total > 0) and (_opts.get("STOP_DATE",-999) < 0) and ('ndays' in tprofoption)):
+        if ((tprof_total > 0) and (_opts.get("stop_ymd",-999) < 0) and ('ndays' in tprofoption)):
             tprof_n = int((tprof_mult * n.stop_n) / tprof_total)
             n.tprof_option = tprofoption
             n.tprof_n = tprof_n if tprof_n > 0 else 1
@@ -491,10 +424,10 @@ if __name__ == "__main__":
     opts["HOSTNAME"] = "JUWELS"
     opts["RUN_REFCASE"] = "case.std" # L78 
     opts["CALENDAR"] = "NO_LEAP"
-    opts["STOP_OPTION"] = "date"
-    opts["RUN_STARTDATE"] = "2017-01-01"
-    opts["STOP_DATE"] = "2017-12-31"
-    opts["STOP_N"] = -1
+    opts["stop_option"] = "date"
+    opts["start_ymd"] = "2017-01-01"
+    opts["stop_ymd"] = "2017-12-31"
+    opts["stop_n"] = -1
     opts["TPROF_TOTAL"] = 0
     opts["PAUSE_N"] = 0
     opts["PAUSE_OPTION"] = "never"
@@ -507,7 +440,7 @@ if __name__ == "__main__":
     opts["ESP_NCPL"] = 48 
     opts["ROF_NCPL"] = 8
     opts["WAV_NCPL"] = 48
-    opts["NTASKS"] = 96     # number of MPI tasks
+    opts["ntasks"] = 96     # number of MPI tasks
     opts["clm_start_type"] = "default"
 
     build_drv_in(opts, user_nl, "drv_in_test")
