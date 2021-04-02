@@ -39,7 +39,7 @@ def build_modelio_nml(opts: dict = None, out_dir: str = None):
         nl_file = Path(out_dir, f"{comp}_modelio.nml")
         _nl.modelio.logfile = "{}.log.{}".format(comp, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
         _nl.write(nl_file, ["modelio", "pio_inparm"])
-        print(f"Generated {Path(nl_file).name}")
+        print(f"--> Generated {Path(nl_file).name}")
 
 if __name__ == "__main__":
     """

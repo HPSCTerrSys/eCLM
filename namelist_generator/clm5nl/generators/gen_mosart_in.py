@@ -48,7 +48,7 @@ def build_mosart_in(opts: dict = None, nl_file: str = "mosart_in"):
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "": 
         _nl.write(nl_file)
-        print(f"Generated {Path(nl_file).name}")
+        print(f"--> Generated {Path(nl_file).name}")
 
 def error(msg):
     raise ValueError(msg)

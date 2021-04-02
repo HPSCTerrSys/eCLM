@@ -63,7 +63,7 @@ def build_lnd_in(opts: dict = None, nl_file: str = "lnd_in"):
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file, lnd_nl_groups())
-        print(f"Generated {Path(nl_file).name}")
+        print(f"--> Generated {Path(nl_file).name}")
    
 def process_namelist_commandline_options():
     #setup_cmdl_chk_res()

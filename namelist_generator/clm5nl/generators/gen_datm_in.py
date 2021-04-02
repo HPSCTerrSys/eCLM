@@ -39,7 +39,7 @@ def build_datm_in(opts: dict = None, nl_file: str = "datm_in"):
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "": 
         _nl.write(nl_file, ["datm_nml", "shr_strdata_nml"])
-        print(f"Generated {Path(nl_file).name}")
+        print(f"--> Generated {Path(nl_file).name}")
 
 def error(msg):
     raise ValueError(msg)
@@ -129,7 +129,7 @@ def create_stream_files(stream_files : dict):
         with open(Path(_out_dir, s_file), "w+") as output:
             output.write(s_template.safe_substitute(s_vars))
 
-        print(f"Generated {s_file}")
+        print(f"--> Generated {s_file}")
 
 if __name__ == "__main__":
     """

@@ -27,20 +27,59 @@ from clm5nl.generators import build_namelist
 __version__ = "0.2-dev"
 
 env_var_regex = re.compile(r"\$\{.*\}")
+_missing_envs = set()
+
+def generate_namelists(params_file, out_dir: str = ""):
+  """
+  Generate CLM5 namelists from a .toml parameter file.
+  """
+  print(f"Reading model parameters file from {params_file}")
+  
+  # Parse model parameters file
+  model_config = toml.loads(open(params_file, "r").read())
+  namelists = ["drv_in", "lnd_in", "drv_flds_in", "datm_in", "mosart_in", "modelio_nml", "seq_maps.rc"]
+  nl_opts = {}
+  for section in model_config:
+    if section in namelists:
+      nl_opts[section] = {k:resolve_env_vars(v) for k, v in model_config[section].items()}     
+      namelists.remove(section)
+    else:
+      
+      print(f"***WARNING*** Section '{section}' in config file is not recognized.")
+
+  # Print warnings
+  if has_warnings():
+    # TODO: Add CLI option to ignore warnings
+    print(f"Please fix the warnings first.", file=sys.stderr)
+    return -2
+
+  # Build namelists
+  print(f"Namelists will be saved to {out_dir}")
+  os.makedirs(out_dir, exist_ok=True)   
+  for nl, opts in nl_opts.items():
+    build_namelist(nl, opts, out_dir)
+
+  # Namelists not mentioned in config file should still be generated
+  for nl in namelists:
+    build_namelist(nl, {}, out_dir)
+  print("Success!")
+  return 0
 
 def resolve_env_vars(node_value):
   """
   Replaces ${VARIABLE} with its corresponding
   environment variable if present.
   """
+  global _missing_envs
   if isinstance(node_value, str):
     match = env_var_regex.match(node_value)
     if match:
-      env_var = os.getenv(match.group()[2:-1])
-      if env_var and env_var.strip() != "":
-        return env_var + value[match.end():]
+      env_var = match.group()[2:-1]
+      resolved_var = os.getenv(match.group()[2:-1])
+      if resolved_var and resolved_var.strip() != "":
+        return resolved_var + node_value[match.end():]
       else:
-        print(f"WARNING: Environment variable '{match.group()[2:-1]}' is not set.")
+        _missing_envs.add(env_var)
   elif isinstance(node_value, list):
     node_value = [resolve_env_vars(v) for v in node_value]
   elif isinstance(node_value, dict):
@@ -48,39 +87,29 @@ def resolve_env_vars(node_value):
 
   return node_value
 
-def generate_namelists(params_file, out_dir: str = ""):
-  """
-  Generate CLM5 namelists from a .toml parameter file.
-  """
-  print(f"Reading model parameters file from {params_file}")
-  print(f"Namelists will be saved to {out_dir}")
+def has_warnings():
+  for env_var in _missing_envs:
+    print(f"***WARNING*** ${{{env_var}}} is used in config file but is not set in the environment.")
+  if len(_missing_envs) > 0:
+    example_var = list(_missing_envs)[0]
+    print(f"""
+    You can set environment variables by running:
 
-  # Parse model parameters file
-  model_config = toml.loads(open(params_file, "r").read())
-  namelists = ["drv_in", "lnd_in", "drv_flds_in", "datm_in", "mosart_in", "modelio_nml"]
-  for section in model_config:
-    if section in namelists:
-      opts = {k:resolve_env_vars(v) for k, v in model_config[section].items()}
-      build_namelist(section, opts, out_dir)
-      namelists.remove(section)
-    else:
-      print(f"WARNING: {section} is not recognized!")
+       export {example_var}="MY_VALUE"
+       echo ${example_var} # check if {example_var} was set
 
-  # Namelists not mentioned in config file should still be generated
-  for nl in namelists:
-    build_namelist(nl, {}, out_dir)
+    Alternatively, you can replace the variables in the config file with hardcoded values.
+    """)
+    return True
+  else:
+    return False
 
 if __name__ == "__main__":
   args = docopt(__doc__, version="clm5nl-gen v" + __version__)
   params_file = os.path.abspath((args["PARAMFILE"]))
-
-  # Validate input args
   if (not os.path.exists(params_file)):
     print(f"clm5nl-gen error: Model parameter file '{params_file}' not found.", file=sys.stderr)
     sys.exit(-1)
-  if (args["--out"] is None):
-    out_dir = os.getcwd()
-  else:
-    out_dir = os.path.abspath(args["--out"])
-    os.makedirs(out_dir, exist_ok=True)
-  generate_namelists(params_file, out_dir)
+  out_dir = os.path.abspath(args["--out"]) if args["--out"] else os.getcwd()
+  err_code = generate_namelists(params_file, out_dir)
+  sys.exit(err_code)

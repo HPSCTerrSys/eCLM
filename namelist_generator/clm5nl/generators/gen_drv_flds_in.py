@@ -29,7 +29,7 @@ def build_drv_flds_in(opts: dict = None, nl_file: str = "drv_flds_in"):
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file)
-        print(f"Generated {Path(nl_file).name}")
+        print(f"--> Generated {Path(nl_file).name}")
 
 def setup_logic_dry_deposition():
     with _nl.drydep_inparm as n:
