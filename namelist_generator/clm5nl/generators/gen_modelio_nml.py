@@ -30,16 +30,29 @@ def build_modelio_nml(opts: dict = None, out_dir: str = None):
         n.pio_numiotasks = -99
         n.pio_rearranger = 1
         n.pio_root = 1
-        n.pio_stride = 8
+        n.pio_stride = 48
         n.pio_typename = "netcdf"
 
     if out_dir is None: out_dir = Path.cwd()
-    components = ["atm", "cpl", "esp", "glc", "ice", "lnd", "ocn", "rof", "wav"]
+    components = ["atm", "cpl", "glc", "ice", "lnd", "ocn", "rof", "wav"]
     nl_files = {}
     for comp in components:
         nl_files[comp] = Path(out_dir, f"{comp}_modelio.nml")
         _nl.modelio.logfile = "{}.log.{}".format(comp, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
         _nl.write(nl_files[comp], ["modelio", "pio_inparm"])
+
+    # Assign different set of defaults for esp
+    with _nl.pio_inparm as n:
+        n.pio_netcdf_format = ""
+        n.pio_rearranger = -99
+        n.pio_root = -99
+        n.pio_stride = -99
+        n.pio_typename = "nothing"
+
+    nl_files["esp"] = Path(out_dir, "esp_modelio.nml")
+    _nl.modelio.logfile = "esp.log.{}".format(datetime.now().strftime("%Y-%m-%d_%H%M%S"))
+    _nl.write(nl_files["esp"], ["modelio", "pio_inparm"])
+
     return True, [Path(nl) for nl in nl_files.values()]
 
 if __name__ == "__main__":

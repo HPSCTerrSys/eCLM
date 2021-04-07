@@ -69,19 +69,25 @@ def shr_strdata_nml():
         num_streams  = len(n.streams)
 
         # array params w/ length = # stream files
-        n.dtlimit    = [_user_nl.get("dtlimit"  , 1.5)]        * num_streams # see line 3040
-        n.fillalgo   = [_user_nl.get("fillalgo" , "nn")]       * num_streams
-        n.fillmask   = [_user_nl.get("fillmask" , "nomask")]   * num_streams
-        n.fillread   = [_user_nl.get("fillread" , "NOT_SET")]  * num_streams
-        n.fillwrite  = [_user_nl.get("fillwrite", "NOT_SET")]  * num_streams
-        n.mapalgo    = [_user_nl.get("mapalgo"  , "bilinear")] * num_streams # stream-dependent; see L2884
-        n.mapmask    = [_user_nl.get("mapmask"  , "nomask")]   * num_streams
-        n.mapread    = [_user_nl.get("mapread"  , "NOT_SET")]  * num_streams
-        n.mapwrite   = [_user_nl.get("mapwrite" , "NOT_SET")]  * num_streams
-        n.readmode   = [_user_nl.get("readmode" , "single")]   * num_streams
-        n.taxmode    = [_user_nl.get("taxmode"  , "cycle")]    * num_streams # stream-dependent; see L2994
-        n.tintalgo   = [_user_nl.get("tintalgo" , "nearest")]  * num_streams # stream-dependent; see L2938
-        n.vectors    = [_user_nl.get("vectors"  , "null")]     * num_streams # depends on datm_mode; see L3065
+        n.dtlimit    = set_array_values("dtlimit"  , 1.5,        num_streams)  # see line 3040
+        n.fillalgo   = set_array_values("fillalgo" , "nn",       num_streams)      
+        n.fillmask   = set_array_values("fillmask" , "nomask",   num_streams)  
+        n.fillread   = set_array_values("fillread" , "NOT_SET",  num_streams)
+        n.fillwrite  = set_array_values("fillwrite", "NOT_SET",  num_streams)
+        n.mapalgo    = set_array_values("mapalgo"  , "bilinear", num_streams)  # stream-dependent; see L2884
+        n.mapmask    = set_array_values("mapmask"  , "nomask",   num_streams)  
+        n.mapread    = set_array_values("mapread"  , "NOT_SET",  num_streams) 
+        n.mapwrite   = set_array_values("mapwrite" , "NOT_SET",  num_streams) 
+        n.readmode   = set_array_values("readmode" , "single",   num_streams)  
+        n.taxmode    = set_array_values("taxmode"  , "cycle",    num_streams)  # stream-dependent; see L2994
+        n.tintalgo   = set_array_values("tintalgo" , "nearest",  num_streams)  # stream-dependent; see L2938
+        n.vectors    = set_array_values("vectors"  , "null",     num_streams)  # depends on datm_mode; see L3065
+
+def set_array_values(key, default_val, array_len):
+    if key in _user_nl:
+        return _user_nl[key]
+    else:
+        return [default_val] * array_len
 
 def generate_streams():
     datm_mode = _opts["datm_mode"]
@@ -114,12 +120,16 @@ def create_stream_files(stream_files : dict, out_dir : str):
         # Populate stream variables 
         if s_type == "presaero":
             s_vars = deepcopy(PRESAERO_STREAM_DEFAULTS)
+            s_vars["DOMAIN_FILE_PATH"]  = Path(_opts["domainfile"]).parent.absolute()
+            s_vars["FIELD_FILE_PATH"]   = Path(_opts["domainfile"]).parent.absolute()
         elif s_type == "topo":
             s_vars = deepcopy(TOPO_STREAM_DEFAULTS)
+            s_vars["DOMAIN_FILE_PATH"]  = Path(_opts["domainfile"]).parent.absolute()
+            s_vars["FIELD_FILE_PATH"]   = Path(_opts["domainfile"]).parent.absolute()
         else:
             s_vars["DOMAIN_FILE_PATH"]  = Path(_opts["domainfile"]).parent.absolute()
             s_vars["DOMAIN_FILE_NAMES"] = Path(_opts["domainfile"]).name
-            s_vars["FIELD_FILE_PATH"]   = _opts["domainfile"]
+            s_vars["FIELD_FILE_PATH"]   = _opts["stream_root_dir"]
             s_vars["DOMAIN_VAR_NAMES"]  = DATM_STREAM_DEFAULTS["DOMAIN_VAR_NAMES"]
             s_vars["FIELD_VAR_NAMES"]   = DATM_STREAM_DEFAULTS["FIELD_VAR_NAMES"][s_type]
             s_vars["FIELD_FILE_NAMES"]  = _opts["stream_files"]
@@ -150,7 +160,7 @@ if __name__ == "__main__":
     opts["stream_year_align"] = "2017"
     opts["stream_year_first"] = "2017"
     opts["stream_year_last"] = "2017"
-    opts["stream_root_folder"] = "/p/scratch/nrw_test_case/COSMOREA6/forcings"
+    opts["stream_root_dir"] = "/p/scratch/nrw_test_case/COSMOREA6/forcings"
     opts["stream_files"] = ["2017-{}.nc".format(str(month).zfill(2)) for month in range(1,13)]
     opts["domainfile"] = "/p/scratch/nrw_test_case/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
     build_datm_in(opts, nl, "datm_in_test")
