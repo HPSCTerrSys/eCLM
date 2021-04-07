@@ -2,7 +2,7 @@
 clm_start_type = "default"
 stop_option = "date"
 start_ymd = "2017-01-01"
-stop_ymd = "2017-12-31"
+stop_ymd = "2017-01-31"
 #stop_n = 4
 ntasks = 96
 

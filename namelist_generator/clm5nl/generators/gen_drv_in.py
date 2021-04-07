@@ -28,6 +28,14 @@ def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     _user_nl = opts.get("user_nl", {})
     _nl = drv_in()
 
+    _opts["ATM_NCPL"] = opts.get("ATM_NCPL", 48)
+    _opts["LND_NCPL"] = opts.get("LND_NCPL", _opts["ATM_NCPL"])
+    _opts["ICE_NCPL"] = opts.get("ICE_NCPL", _opts["ATM_NCPL"])
+    _opts["OCN_NCPL"] = opts.get("OCN_NCPL", _opts["ATM_NCPL"])
+    _opts["GLC_NCPL"] = opts.get("GLC_NCPL", _opts["ATM_NCPL"])
+    _opts["ROF_NCPL"] = opts.get("ROF_NCPL", 8)
+    _opts["WAV_NCPL"] = opts.get("WAV_NCPL", _opts["ATM_NCPL"])
+
     # Generate sections of drv_in namelist
     seq_timemgr_inparm()
 
@@ -38,10 +46,6 @@ def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
             _opts["clm_start_type"] = "startup"
         else:
             _opts["clm_start_type"] = "arb_ic"
-
-    _opts["megan"] = opts.get("megan", True)
-    _opts["fire_emis"] = opts.get("fire_emis", False)
-    _opts["drydep"] = opts.get("drydep", False)
 
     seq_infodata_inparm()
     cime_driver_inst()
@@ -103,17 +107,16 @@ def cime_pes():
         n.ocn_nthreads = _opts.get("NTHREADS", 1)
         n.ocn_pestride = 1
         n.ocn_rootpe   = 0
-        # TODO: Include logic for compset-dependent parameters
-        # n.rof_layout   = "concurrent"
-        # n.rof_ntasks   = _opts["ntasks"]
-        # n.rof_nthreads = _opts.get("NTHREADS", 1)
-        # n.rof_pestride = 1
-        # n.rof_rootpe   = 0
-        # n.wav_layout   = "concurrent"
-        # n.wav_ntasks   = _opts["ntasks"]
-        # n.wav_nthreads = _opts.get("NTHREADS", 1)
-        # n.wav_pestride = 1
-        # n.wav_rootpe   = 0
+        n.rof_layout   = "concurrent"
+        n.rof_ntasks   = _opts["ntasks"]
+        n.rof_nthreads = _opts.get("NTHREADS", 1)
+        n.rof_pestride = 1
+        n.rof_rootpe   = 0
+        n.wav_layout   = "concurrent"
+        n.wav_ntasks   = _opts["ntasks"]
+        n.wav_nthreads = _opts.get("NTHREADS", 1)
+        n.wav_pestride = 1
+        n.wav_rootpe   = 0
 
 def esmf_inparm():
     _nl.esmf_inparm.esmf_logfile_kind = "ESMF_LOGKIND_NONE"
@@ -267,9 +270,9 @@ def seq_infodata_inparm():
         n.scmlon = -999.
         n.shr_map_dopole = True
         n.single_column = False
-        n.tchkpt_dir = "timing/checkpoints"
+        n.tchkpt_dir = _user_nl.get("tchkpt_dir", "./timing/checkpoints")
         n.tfreeze_option = "mushy"
-        n.timing_dir = "timing"
+        n.timing_dir = _user_nl.get("timing_dir", "./timing")
         n.username = "user1"
         n.vect_map = "cart3d"
         n.wall_time_limit = -1.0
@@ -384,7 +387,7 @@ def seq_timemgr_inparm():
         n.wav_cpl_offset = 0
 
 def calc_cpl_dt(comp, base_period):
-    ncpl = _opts.get("{}_NCPL".format(comp.upper()), 48) #TODO: default NCPL must be computed!
+    ncpl = _opts["{}_NCPL".format(comp.upper())]
     if ncpl is not None:
         cpl_dt = int(BASE_DT[base_period] / int(ncpl))
         total_dt = cpl_dt * int(ncpl)
@@ -437,7 +440,6 @@ if __name__ == "__main__":
     opts["ICE_NCPL"] = 48
     opts["OCN_NCPL"] = 48
     opts["GLC_NCPL"] = 48
-    opts["ESP_NCPL"] = 48 
     opts["ROF_NCPL"] = 8
     opts["WAV_NCPL"] = 48
     opts["ntasks"] = 96     # number of MPI tasks
