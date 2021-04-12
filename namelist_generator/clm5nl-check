@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""clm5nl-check - CLM5 namelist validator
+
+Checks if the specified directory contains valid CLM5 namelists.
+
+Usage: 
+  clm5nl-check [DIR]
+
+Arguments:
+  DIR            Directory to check. Defaults to current directory
+                 if not specified.
+
+Options:
+  -h --help      Show this screen.
+  -v --version   Show version.
+"""
+from docopt import docopt
+import os, re, sys
+
+__version__ = "0.1"
+args = docopt(__doc__, version="clm5nl-check v" + __version__)
+
+errors = []
+case_dir = os.path.abspath(args["DIR"]) if args["DIR"] else os.getcwd()
+if os.path.isdir(case_dir):
+  os.chdir(case_dir)
+  nl_pio = [f"{c}_modelio.nml" for c in ["atm", "cpl", "esp", "glc", "ice", "lnd", "ocn", "rof", "wav"]]
+  nl_all = ["lnd_in", "datm_in", "drv_in", "drv_flds_in", "mosart_in", "seq_maps.rc"]
+  nl_all.extend(nl_pio)
+  if os.path.isfile("datm_in"):
+    s_params = "".join(l for l in open("datm_in", "r").readlines() if "datm.streams.txt" in l)
+    s_files = re.compile(r"[^('|\")]*datm.streams.txt[^\s]*").findall(s_params, re.MULTILINE)
+    if s_files: nl_all.extend(f.strip() for f in s_files)
+  for nl in nl_all:
+    if not os.path.isfile(nl):
+      errors.append(f"'{nl}' is missing")
+else:
+  errors.append(f"{case_dir} does not exist")
+
+if len(errors) > 0:
+  print("clm5nl-check errors:")
+  for msg in errors: print(f"  {msg}")
+  sys.exit(1)
+
+
+
