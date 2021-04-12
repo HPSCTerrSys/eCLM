@@ -517,10 +517,7 @@ def setup_logic_dynamic_roots():
                 error("Cannot turn use_dynroot on when use_hydrstress is on")
 
 def setup_logic_params_file():
-    if _user_nl["paramfile"] is not None:
-        _nl.clm_inparm.paramfile = _user_nl["paramfile"]
-    else:
-        _nl.clm_inparm.paramfile = "lnd/clm2/paramdata/clm5_params.c171117.nc"
+    _nl.clm_inparm.paramfile = _user_nl.get("paramfile","lnd/clm2/paramdata/clm5_params.c171117.nc")
 
 def setup_logic_create_crop_landunit():
     _nl.clm_inparm.create_crop_landunit = not _nl.clm_inparm.use_fates
@@ -857,7 +854,7 @@ def setup_logic_methane():
     if _nl.clm_inparm.use_lch4:
         _nl.ch4par_in.finundation_method = "TWS_inversion"
         _env["finundation_res"] = "1.9x2.5"
-        _nl.ch4finundated.stream_fldfilename_ch4finundated = "lnd/clm2/paramdata/finundated_inversiondata_0.9x1.25_c170706.nc"
+        _nl.ch4finundated.stream_fldfilename_ch4finundated = _user_nl.get("stream_fldfilename_ch4finundated", "lnd/clm2/paramdata/finundated_inversiondata_0.9x1.25_c170706.nc")
         _nl.ch4par_in.use_aereoxid_prog = True
         # TODO: Ch4 namelist checking
         # Unknown nl params:
@@ -948,17 +945,20 @@ def setup_logic_nitrogen_deposition():
                       (_opts["sim_year_range"] == "1000-1002" or _opts["sim_year_range"] == "1000-1004")):
                     n.stream_year_first_ndep = 2000
                     n.stream_year_last_ndep = 2000
-                stream_fldfilename_ndep = {"hist":"lnd/clm2/ndepdata/fndep_clm_hist_b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.ensmean_1849-2015_monthly_0.9x1.25_c180926.nc",
-                                           "SSP5-8.5":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP5-8.5-WACCM_1849-2101_monthly_c191007.nc",
-                                           "SSP1-2.6":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP1-2.6-WACCM_1849-2101_monthly_c191007.nc",
-                                           "SSP2-4.5":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP2-4.5-WACCM_1849-2101_monthly_c191007.nc",
-                                           "SSP3-7.0":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP3-7.0-WACCM_1849-2101_monthly_c191007.nc"}
-                n.stream_fldfilename_ndep = stream_fldfilename_ndep.get(_opts["ssp_rcp"], None)
+                
+                n.stream_fldfilename_ndep = _user_nl.get("stream_fldfilename_ndep", None)
                 if n.stream_fldfilename_ndep is None:
-                    print("""WARNING: Did NOT find the Nitrogen-deposition forcing file (stream_fldfilename_ndep) for this ssp_rcp.
-                        "One way to get around this is to point to a file for another existing ssp_rcp in your user_nl_clm file.
-                        "If you are running with CAM and WACCM chemistry Nitrogen deposition will come through the coupler.
-                        "This file won't be used, so it doesn't matter what it points to -- but it's required to point to something.""")
+                    stream_fldfilename_ndep = {"hist":"lnd/clm2/ndepdata/fndep_clm_hist_b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.ensmean_1849-2015_monthly_0.9x1.25_c180926.nc",
+                                            "SSP5-8.5":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP5-8.5-WACCM_1849-2101_monthly_c191007.nc",
+                                            "SSP1-2.6":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP1-2.6-WACCM_1849-2101_monthly_c191007.nc",
+                                            "SSP2-4.5":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP2-4.5-WACCM_1849-2101_monthly_c191007.nc",
+                                            "SSP3-7.0":"lnd/clm2/ndepdata/fndep_clm_f09_g17.CMIP6-SSP3-7.0-WACCM_1849-2101_monthly_c191007.nc"}
+                    n.stream_fldfilename_ndep = stream_fldfilename_ndep.get(_opts["ssp_rcp"], None)
+                    if n.stream_fldfilename_ndep is None:
+                        print("""WARNING: Did NOT find the Nitrogen-deposition forcing file (stream_fldfilename_ndep) for this ssp_rcp.
+                            "One way to get around this is to point to a file for another existing ssp_rcp in your user_nl_clm file.
+                            "If you are running with CAM and WACCM chemistry Nitrogen deposition will come through the coupler.
+                            "This file won't be used, so it doesn't matter what it points to -- but it's required to point to something.""")
         else:
             if (not n.stream_year_first_ndep is None or
                 not n.stream_year_last_ndep is None or
@@ -1056,15 +1056,17 @@ def setup_logic_popd_streams():
                         (_opts["sim_year_range"] == "1000-1002" or _opts["sim_year_range"] == "1000-1004")):
                     n.stream_year_first_popdens = 2000
                     n.stream_year_last_popdens = 2000
-                stream_fldfilename_popdens = {"SSP1-1.9":"lnd/clm2/firedata/clmforc.Li_2018_SSP1_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
-                                              "SSP1-2.6":"lnd/clm2/firedata/clmforc.Li_2018_SSP1_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
-                                              "SSP2-4.5":"lnd/clm2/firedata/clmforc.Li_2018_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
-                                              "SSP3-7.0":"lnd/clm2/firedata/clmforc.Li_2018_SSP3_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
-                                              "SSP4-6.0":"lnd/clm2/firedata/clmforc.Li_2018_SSP4_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
-                                              "SSP4-3.4":"lnd/clm2/firedata/clmforc.Li_2018_SSP4_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
-                                              "SSP5-8.5":"lnd/clm2/firedata/clmforc.Li_2018_SSP5_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
-                                              "SSP5-3.4":"lnd/clm2/firedata/clmforc.Li_2018_SSP5_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc"}
-                n.stream_fldfilename_popdens = stream_fldfilename_popdens.get(_opts["ssp_rcp"], "lnd/clm2/firedata/clmforc.Li_2017_HYDEv3.2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2016_c180202.nc")
+                n.stream_fldfilename_popdens = _user_nl.get("stream_fldfilename_popdens", None)
+                if n.stream_fldfilename_popdens is None:
+                    stream_fldfilename_popdens = {"SSP1-1.9":"lnd/clm2/firedata/clmforc.Li_2018_SSP1_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
+                                                "SSP1-2.6":"lnd/clm2/firedata/clmforc.Li_2018_SSP1_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
+                                                "SSP2-4.5":"lnd/clm2/firedata/clmforc.Li_2018_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
+                                                "SSP3-7.0":"lnd/clm2/firedata/clmforc.Li_2018_SSP3_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
+                                                "SSP4-6.0":"lnd/clm2/firedata/clmforc.Li_2018_SSP4_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
+                                                "SSP4-3.4":"lnd/clm2/firedata/clmforc.Li_2018_SSP4_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
+                                                "SSP5-8.5":"lnd/clm2/firedata/clmforc.Li_2018_SSP5_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc",
+                                                "SSP5-3.4":"lnd/clm2/firedata/clmforc.Li_2018_SSP5_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c181205.nc"}
+                    n.stream_fldfilename_popdens = stream_fldfilename_popdens.get(_opts["ssp_rcp"], "lnd/clm2/firedata/clmforc.Li_2017_HYDEv3.2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2016_c180202.nc")
         else:
             if (not n.stream_fldfilename_popdens is None or
                 not n.stream_year_last_popdens is None or
@@ -1096,7 +1098,7 @@ def setup_logic_urbantv_streams():
                 (_opts["sim_year_range"] == "1000-1002" or _opts["sim_year_range"] == "1000-1004")):
             n.stream_year_first_urbantv = 2000
             n.stream_year_last_urbantv = 2000
-        n.stream_fldfilename_urbantv = "lnd/clm2/urbandata/CLM50_tbuildmax_Oleson_2016_0.9x1.25_simyr1849-2106_c160923.nc"
+        n.stream_fldfilename_urbantv = _user_nl.get("stream_fldfilename_urbantv", "lnd/clm2/urbandata/CLM50_tbuildmax_Oleson_2016_0.9x1.25_simyr1849-2106_c160923.nc")
 
 def setup_logic_lightning_streams():
     with _nl.light_streams as n:
@@ -1109,10 +1111,12 @@ def setup_logic_lightning_streams():
                     n.lightngmapalgo = "bilinear"
                 n.stream_year_first_lightng = 1
                 n.stream_year_last_lightng = 1
-                if _opts["light_res"] == "94x192":
-                    n.stream_fldfilename_lightng = "atm/datm7/NASA_LIS/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc"
-                elif _opts["light_res"] == "360x720":
-                    n.stream_fldfilename_lightng = "atm/datm7/NASA_LIS/clmforc.Li_2016_climo1995-2013.360x720.lnfm_Total_c160825.nc"
+                n.stream_fldfilename_lightng = _user_nl.get("stream_fldfilename_lightng", None)
+                if n.stream_fldfilename_lightng is None:
+                    if _opts["light_res"] == "94x192":
+                        n.stream_fldfilename_lightng = "atm/datm7/NASA_LIS/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc"
+                    elif _opts["light_res"] == "360x720":
+                        n.stream_fldfilename_lightng = "atm/datm7/NASA_LIS/clmforc.Li_2016_climo1995-2013.360x720.lnfm_Total_c160825.nc"
         else:
             if (not n.stream_year_first_lightng is None or
                 not n.stream_year_last_lightng is None or
