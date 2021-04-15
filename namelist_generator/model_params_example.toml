@@ -1,4 +1,5 @@
 [drv_in]
+case_name = "NRW"
 clm_start_type = "default"
 stop_option = "date"
 start_ymd = "2017-01-01"

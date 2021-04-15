@@ -200,7 +200,7 @@ def seq_infodata_inparm():
         n.budget_ltend = 0
         n.budget_month = 1
         n.case_desc = "UNSET"
-        n.case_name = _opts.get("CASE","UNSET")
+        n.case_name = _opts.get("case_name","UNSET")
         n.cime_model = "cesm"
         n.coldair_outbreak_mod = True
         n.cpl_decomp = 0
