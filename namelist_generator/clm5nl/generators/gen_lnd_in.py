@@ -439,7 +439,7 @@ def setup_logic_delta_time():
         if _opts["l_ncpl"] <= 0: 
             error("bad value for -l_ncpl option")
         if _opts["dtime"] is None:
-            _nl.clm_inparm.dtime = (3600 * 24) / _opts["l_ncpl"]
+            _nl.clm_inparm.dtime = int((3600 * 24) / _opts["l_ncpl"])
         else:
             error("can NOT set both -l_ncpl option (via LND_NCPL env variable) AND dtime namelist variable.")
 
@@ -448,14 +448,8 @@ def setup_logic_decomp_performance():
 
 def setup_logic_snow():
     _nl.clm_canopyhydrology_inparm.snowveg_flag = "ON_RAD"
-    if _user_nl["fsnowoptics"] is not None:
-        _nl.clm_inparm.fsnowoptics = _user_nl["fsnowoptics"]
-    else:
-       _nl.clm_inparm.fsnowoptics = "lnd/clm2/snicardata/snicar_optics_5bnd_c090915.nc"
-    if _user_nl["fsnowaging"] is not None:
-        _nl.clm_inparm.fsnowaging = _user_nl["fsnowaging"]
-    else:
-        _nl.clm_inparm.fsnowaging = "lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc"
+    _nl.clm_inparm.fsnowoptics = _user_nl.get("fsnowoptics", "lnd/clm2/snicardata/snicar_optics_5bnd_c090915.nc")
+    _nl.clm_inparm.fsnowaging = _user_nl.get("fsnowaging", "lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc")
 
 def setup_logic_glacier():
     # glc_do_dynglacier is set via GLC_TWO_WAY_COUPLING; it cannot be set via
@@ -544,9 +538,8 @@ def setup_logic_surface_dataset():
     if not _nl.dynamic_subgrid.flanduse_timeseries is None:
         if _nl.clm_inparm.use_cndv: error("dynamic PFT's (setting flanduse_timeseries) are incompatible with dynamic vegetation (use_cndv=.true)")
         if _nl.clm_inparm.use_fates: error("dynamic PFT's (setting flanduse_timeseries) are incompatible with ecosystem dynamics (use_fates=.true)")
-    if _user_nl["fsurdat"] is not None:
-        _nl.clm_inparm.fsurdat = _user_nl["fsurdat"]
-    else:    
+    _nl.clm_inparm.fsurdat = _user_nl.get("fsurdat", None)
+    if _nl.clm_inparm.fsurdat is None:    
         surface_file = {}
         if _opts["sim_year"] == "1850":
             if _nl.clm_inparm.use_crop:
@@ -627,6 +620,7 @@ def setup_logic_initial_conditions():
 
 def setup_logic_dynamic_subgrid():
     # Options controlling which parts of flanduse_timeseries to use
+    _nl.dynamic_subgrid.flanduse_timeseries = _user_nl.get("flanduse_timeseries", None)
     setup_logic_do_transient_pfts()
     setup_logic_do_transient_crops()
     setup_logic_do_harvest()
@@ -674,6 +668,7 @@ def setup_logic_do_transient_crops():
 def setup_logic_do_harvest():
     cannot_be_true = ""
     default_val = True
+    
     if _nl.dynamic_subgrid.flanduse_timeseries is None:
         cannot_be_true = "do_harvest can only be set to true when running a transient case (flanduse_timeseries non-blank)"
     elif _nl.clm_inparm.use_cndv:
@@ -708,6 +703,11 @@ def setup_logic_spinup():
                         n.hist_fincl1 = ["TOTECOSYSC", "TOTECOSYSN", "TOTSOMC", "TOTSOMN", "TOTVEGC", "TOTVEGN", "TLAI", "GPP", "CPOOL", "NPP", "TWS"]
                 else:
                     n.hist_fincl1 = ["TLAI" "TWS"]
+        else:
+            # TODO: default values should be dependent on
+            # stop_option and stop_n from drv_in
+            n.hist_mfilt = _user_nl.get("hist_mfilt", 87600)
+            n.hist_nhtfrq = _user_nl.get("hist_nhtfrq", 0)
 
 def setup_logic_supplemental_nitrogen():
     with _nl.clm_inparm as n:

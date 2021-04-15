@@ -156,7 +156,7 @@ def prof_inparm():
         n.profile_ovhd_measurement = False
         n.profile_papi_enable = False
         n.profile_single_file = False
-        n.profile_timer = 4
+        n.profile_timer = 1 if _opts["ntasks"] == 1 else 4
 
 def seq_cplflds_inparm():
     with _nl.seq_cplflds_inparm as n:
@@ -290,9 +290,19 @@ def seq_infodata_inparm():
 def seq_timemgr_inparm():
     with _nl.seq_timemgr_inparm as n:
         # Important time parameters
-        n.stop_option = _opts["stop_option"]
-        n.start_ymd = int("".join(str(x) for x in _opts["start_ymd"].split('-')))      
-        n.stop_ymd = int("".join(str(x) for x in _opts["stop_ymd"].split('-')))
+        if "start_ymd" in _opts:
+            #n.start_ymd = int("".join(str(x) for x in _opts["start_ymd"].split('-')))
+            n.start_ymd = int("".join(_opts["start_ymd"].split('-')))
+        else:
+            error("Missing drv_in option 'start_ymd'.")
+        if "stop_option" in _opts:
+            n.stop_option = _opts["stop_option"]
+        else:
+            error("Missing drv_in option 'stop_option'.")
+        if "stop_ymd" in _opts:
+            n.stop_ymd = int("".join(_opts["stop_ymd"].split('-')))
+        else:
+            n.stop_ymd = -999
         n.stop_n = _opts.get("stop_n", -1)
         n.restart_option = _opts.get("RESTART_OPTION", n.stop_option)
         n.restart_ymd = n.stop_ymd
@@ -329,7 +339,7 @@ def seq_timemgr_inparm():
             tprof_mult = 1
             tprofoption = 'never'
         tprof_total = _opts.get("TPROF_TOTAL", 0)
-        if ((tprof_total > 0) and (_opts.get("stop_ymd",-999) < 0) and ('ndays' in tprofoption)):
+        if (tprof_total > 0 and n.stop_ymd < 0 and 'ndays' in tprofoption):
             tprof_n = int((tprof_mult * n.stop_n) / tprof_total)
             n.tprof_option = tprofoption
             n.tprof_n = tprof_n if tprof_n > 0 else 1

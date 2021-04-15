@@ -62,6 +62,8 @@ def generate_namelists(params_file, out_dir: str = ""):
     elif nl == "drv_flds_in":
       opts["lnd_in.clm_accelerated_spinup"] = nl_opts["lnd_in"]["clm_accelerated_spinup"]
       opts["lnd_in.use_fates"] = nl_opts["lnd_in"]["use_fates"]
+    elif nl == "modelio_nml":
+      opts["MAX_MPITASKS_PER_NODE"] = nl_opts["drv_in"]["ntasks"]
     success, msg = build_namelist(nl, opts, out_dir)
     if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
 
@@ -70,7 +72,7 @@ def generate_namelists(params_file, out_dir: str = ""):
   for nl in namelists:
     if nl == "mosart_in":
       #TODO: Throw error if ${CESMDATAROOT} is missing
-      opts["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}/inputdata") 
+      opts["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}") 
     success, msg = build_namelist(nl, opts, out_dir)
     if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
   print("Success!")

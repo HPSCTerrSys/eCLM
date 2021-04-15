@@ -30,7 +30,7 @@ def build_modelio_nml(opts: dict = None, out_dir: str = None):
         n.pio_numiotasks = -99
         n.pio_rearranger = 1
         n.pio_root = 1
-        n.pio_stride = 48
+        n.pio_stride = opts.get("MAX_MPITASKS_PER_NODE", 8)
         n.pio_typename = "netcdf"
 
     if out_dir is None: out_dir = Path.cwd()
