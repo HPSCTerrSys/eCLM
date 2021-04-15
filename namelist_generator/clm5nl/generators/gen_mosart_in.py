@@ -25,13 +25,13 @@ def build_mosart_in(opts: dict = None, nl_file: str = "mosart_in"):
 
     with _nl.mosart_inparm as n:
         n.bypass_routing_option = "direct_in_place"
-        n.coupling_period = "10800"
+        n.coupling_period = 10800
         n.decomp_option = "roundrobin"
-        n.delt_mosart = "3600"
+        n.delt_mosart = 3600
         n.do_rtm = False
         n.do_rtmflood = False
         n.finidat_rtm = " "
-        n.frivinp_rtm = opts["frivinp_rtm"] # caller should set this to $CESMDATAROOT/inputdata
+        n.frivinp_rtm = opts["frivinp_rtm"]
         n.ice_runoff = True 
         n.qgwl_runoff_option = "threshold"
         n.rtmhist_fexcl1 = ""

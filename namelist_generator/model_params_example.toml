@@ -1,8 +1,9 @@
 [drv_in]
+case_name = "NRW"
 clm_start_type = "default"
 stop_option = "date"
 start_ymd = "2017-01-01"
-stop_ymd = "2017-12-31"
+stop_ymd = "2017-01-31"
 #stop_n = 4
 ntasks = 96
 
@@ -45,10 +46,17 @@ megan_factors_file = "${CESMDATAROOT}/megan21_emis_factors_78pft_c20161108.nc"
   
 [datm_in]
 datm_mode = "CLMCRUNCEPv7"
-datm_presaero = "clim_2010" # DATM prescribed aerosol forcing
+datm_presaero = "clim_2000" # DATM prescribed aerosol forcing
 domainfile = "${CESMDATAROOT}/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
 stream_year_first = 2017    # first year of the stream data that will be used
 stream_year_last = 2017     # last  year of the stream data that will be used
 stream_year_align = 2017    # model year that will be aligned with stream data for year_first
-stream_root_folder = "${CESMDATAROOT}/COSMOREA6/forcings"
-stream_files = ["2017-01.nc", "2017-02.nc", "2017-03.nc", "2017-04.nc", "2017-05.nc"]
+stream_root_dir = "${CESMDATAROOT}/COSMOREA6/forcings"
+stream_files = ["2017-01.nc", "2017-02.nc", "2017-03.nc", "2017-04.nc", "2017-05.nc", "2017-06.nc",
+                "2017-07.nc", "2017-08.nc", "2017-09.nc", "2017-10.nc", "2017-11.nc", "2017-12.nc"]
+
+[datm_in.user_nl]
+dtlimit = [5.1, 5.1, 5.1, 1.5, 1.5]
+mapalgo = ["nn", "nn", "nn", "bilinear", "bilinear"]
+tintalgo = ["nearest", "nearest", "linear", "linear", "lower"]
+vectors = "null"
