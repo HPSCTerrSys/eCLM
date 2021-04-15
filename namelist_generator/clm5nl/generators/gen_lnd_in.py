@@ -620,7 +620,8 @@ def setup_logic_initial_conditions():
 
 def setup_logic_dynamic_subgrid():
     # Options controlling which parts of flanduse_timeseries to use
-    _nl.dynamic_subgrid.flanduse_timeseries = _user_nl.get("flanduse_timeseries", None)
+    if "flanduse_timeseries" in _user_nl:
+        _nl.dynamic_subgrid.flanduse_timeseries = _user_nl["flanduse_timeseries"]
     setup_logic_do_transient_pfts()
     setup_logic_do_transient_crops()
     setup_logic_do_harvest()
