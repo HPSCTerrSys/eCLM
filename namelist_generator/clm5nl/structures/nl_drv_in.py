@@ -282,6 +282,84 @@ class drv_in(Namelist):
             """
             pass
 
+        @namelist_item
+        def rof_layout(self) -> str:
+            """
+            Layout of multi-instance lnds (if there are more than 1)
+            """
+            pass
+
+        @namelist_item
+        def rof_ntasks(self) -> int:
+            """
+            the number of mpi tasks assigned to the lnd components.
+            set by NTASKS_LND in env_configure.xml.
+            """
+            pass
+
+        @namelist_item
+        def rof_nthreads(self) -> int:
+            """
+            the number of threads per mpi task for the ocn component.
+            set by NTHRDS_ROF in env_configure.xml.
+            """
+            pass
+
+        @namelist_item
+        def rof_pestride(self) -> int:
+            """
+            the mpi global processors stride associated with the mpi tasks for the lnd component.
+            set by PSTRID_LND in env_configure.xml.
+            """
+            pass
+
+        @namelist_item
+        def rof_rootpe(self) -> int:
+            """
+            the global mpi task rank of the root processor assigned to the lnd component.
+            set by ROOTPE_LND in env_configure.xml.
+            """
+            pass
+
+        @namelist_item
+        def wav_layout(self) -> str:
+            """
+            Layout of multi-instance wavs (if there are more than 1)
+            """
+            pass
+
+        @namelist_item
+        def wav_ntasks(self) -> int:
+            """
+            the number of mpi tasks assigned to the wav components.
+            set by NTASKS_WAV in env_configure.xml.
+            """
+            pass
+
+        @namelist_item
+        def wav_nthreads(self) -> int:
+            """
+            the number of threads per mpi task for the wav component.
+            set by NTHRDS_WAV in env_configure.xml.
+            """
+            pass
+
+        @namelist_item
+        def wav_pestride(self) -> int:
+            """
+            the mpi global processors stride associated with the mpi tasks for the wav component.
+            set by PSTRID_WAV in env_configure.xml.
+            """
+            pass
+
+        @namelist_item
+        def wav_rootpe(self) -> int:
+            """
+            the global mpi task rank of the root processor assigned to the lnd component.
+            set by ROOTPE_WAV in env_configure.xml.
+            """
+            pass
+
     @namelist_group
     class esmf_inparm():
 
