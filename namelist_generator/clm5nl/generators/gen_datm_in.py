@@ -151,7 +151,19 @@ def create_stream_files(out_dir : str):
 def parse_stream_param(stream):
     if len(stream.split(" ")) == 4:
         stream_file = stream.split(" ")[0]
-        stream_type = stream_file.split(".")[-1]
+        sf = stream_file.lower()
+        if "solar" in sf:
+            stream_type = "Solar"
+        elif "precip" in sf:
+            stream_type = "Precip"
+        elif "tpqw" in sf:
+            stream_type = "TPQW"
+        elif "presaero" in sf:
+            stream_type = "presaero"
+        elif "topo" in sf:
+            stream_type = "topo"
+        else:
+            stream_type = "Unknown"
         return stream_file, stream_type
     else:
         error(f"""
