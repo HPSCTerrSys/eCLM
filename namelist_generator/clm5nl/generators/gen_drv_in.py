@@ -61,6 +61,8 @@ def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     #Write to file
     if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file)
+        Path(_nl.seq_infodata_inparm.timing_dir).mkdir(parents=True, exist_ok=True)
+        Path(_nl.seq_infodata_inparm.tchkpt_dir).mkdir(parents=True, exist_ok=True)
         return True, Path(nl_file)
     else:
         return True, ""

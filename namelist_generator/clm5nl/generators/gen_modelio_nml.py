@@ -9,51 +9,46 @@ from datetime import datetime
 
 __all__ = ['build_modelio_nml']
 
-# _in_nl = {}
-# _in_opts = {}
-# _nl = datm_in()
-
 def build_modelio_nml(opts: dict = None, out_dir: str = None):
-    # Global vars aren't necessary for now
-    # global _in_opts, _in_nl, _nl
-    #_in_opts = opts
-    #_in_nl = nl
-
     _nl = modelio_in()
 
     with _nl.modelio as n:
         n.diri = "UNUSED"
-        n.diro = opts.get("run_dir", Path(out_dir).absolute())
+        n.diro = opts.get("log_dir", Path(out_dir, "logs").absolute())
 
     with _nl.pio_inparm as n:
         n.pio_netcdf_format = "64bit_offset"
         n.pio_numiotasks = -99
         n.pio_rearranger = 1
         n.pio_root = 1
-        n.pio_stride = opts.get("MAX_MPITASKS_PER_NODE", 8)
+        n.pio_stride = opts.get("drv_in.ntasks", 1)
         n.pio_typename = "netcdf"
 
-    if out_dir is None: out_dir = Path.cwd()
-    components = ["atm", "cpl", "glc", "ice", "lnd", "ocn", "rof", "wav"]
-    nl_files = {}
-    for comp in components:
-        nl_files[comp] = Path(out_dir, f"{comp}_modelio.nml")
-        _nl.modelio.logfile = "{}.log.{}".format(comp, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
-        _nl.write(nl_files[comp], ["modelio", "pio_inparm"])
+    if out_dir is not None:
+        # Generate modelio namelists
+        components = ["atm", "cpl", "glc", "ice", "lnd", "ocn", "rof", "wav"]
+        nl_files = {}
+        for comp in components:
+            nl_files[comp] = Path(out_dir, f"{comp}_modelio.nml")
+            _nl.modelio.logfile = "{}.log.{}".format(comp, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
+            _nl.write(nl_files[comp], ["modelio", "pio_inparm"])
 
-    # Assign different set of defaults for esp
-    with _nl.pio_inparm as n:
-        n.pio_netcdf_format = ""
-        n.pio_rearranger = -99
-        n.pio_root = -99
-        n.pio_stride = -99
-        n.pio_typename = "nothing"
+        # Assign different set of defaults for esp
+        with _nl.pio_inparm as n:
+            n.pio_netcdf_format = ""
+            n.pio_rearranger = -99
+            n.pio_root = -99
+            n.pio_stride = -99
+            n.pio_typename = "nothing"
+        nl_files["esp"] = Path(out_dir, "esp_modelio.nml")
+        _nl.modelio.logfile = "esp.log.{}".format(datetime.now().strftime("%Y-%m-%d_%H%M%S"))
+        _nl.write(nl_files["esp"], ["modelio", "pio_inparm"])
 
-    nl_files["esp"] = Path(out_dir, "esp_modelio.nml")
-    _nl.modelio.logfile = "esp.log.{}".format(datetime.now().strftime("%Y-%m-%d_%H%M%S"))
-    _nl.write(nl_files["esp"], ["modelio", "pio_inparm"])
-
-    return True, [Path(nl) for nl in nl_files.values()]
+        # Automatically create log directory
+        Path(_nl.modelio.diro).mkdir(parents=True, exist_ok=True)
+        return True, [Path(nl) for nl in nl_files.values()]
+    else:
+        return True, ""
 
 if __name__ == "__main__":
     """
