@@ -23,8 +23,7 @@ import os, re, sys
 import toml
 from docopt import docopt
 from clm5nl.generators import build_namelist
-
-__version__ = "0.4"
+from clm5nl._version import __version__
 
 env_var_regex = re.compile(r"\$\{.*\}")
 _missing_envs = set()
@@ -113,7 +112,7 @@ def has_warnings():
     return False
 
 if __name__ == "__main__":
-  args = docopt(__doc__, version="clm5nl-gen v" + __version__)
+  args = docopt(__doc__, version=__version__)
   params_file = os.path.abspath((args["PARAMFILE"]))
   if (not os.path.exists(params_file)):
     print(f"clm5nl-gen error: Model parameter file '{params_file}' not found.", file=sys.stderr)
