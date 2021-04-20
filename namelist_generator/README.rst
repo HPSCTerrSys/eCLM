@@ -3,7 +3,7 @@ Installation
 
 .. code:: bash
 
-    cd ../CLM5-TSMP/namelist_generator
+    cd /path/to/eCLM/namelist_generator
     pip install --user .
 
 Usage
