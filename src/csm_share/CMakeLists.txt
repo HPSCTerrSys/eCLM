@@ -31,13 +31,14 @@ foreach(f90in_file IN LISTS F90IN_FILES)
     set(outfile "${CMAKE_CURRENT_BINARY_DIR}/${filename_noext}.F90")
     add_custom_command(
         OUTPUT ${outfile}
-        COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file} > ${outfile}
+        COMMAND ${GENF90} ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file} > ${outfile}
         DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file}
     )
     list(APPEND PREPROCESSED_F90_FILES ${outfile})
 endforeach()
 
 target_sources(${PROJECT_NAME} PRIVATE ${PREPROCESSED_F90_FILES})
+
 target_sources(${PROJECT_NAME} PRIVATE 
     esmf_wrf_timemgr/ESMF_AlarmClockMod.F90
     esmf_wrf_timemgr/ESMF_AlarmMod.F90

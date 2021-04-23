@@ -1,7 +1,3 @@
-IF( NOT GENF90_PATH)
-  SET (GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-ENDIF()
-
 PROJECT(pio C Fortran)
 ADD_LIBRARY(${PROJECT_NAME} STATIC)
 
@@ -159,7 +155,7 @@ SET(TEMPSRCF90    pionfatt_mod.F90
 FOREACH(tempfile IN LISTS TEMPSRCF90)
 ADD_CUSTOM_COMMAND(
 	OUTPUT ${tempfile}
-	COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/${tempfile}.in > ${tempfile}
+	COMMAND ${GENF90} ${CMAKE_CURRENT_SOURCE_DIR}/${tempfile}.in > ${tempfile}
 	DEPENDS  ${tempfile}.in
 )
 ENDFOREACH()
