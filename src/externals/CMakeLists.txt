@@ -36,31 +36,41 @@ target_link_libraries(gptl INTERFACE libgptl.a)
 add_dependencies(gptl gptl_external)
 install (FILES ${GPTL_BLD_DIR}/lib/libgptl.a TYPE LIB)
 
+
 # ===========
 #     MCT
 # ===========
-set(MCT_BLD_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct)
-file(MAKE_DIRECTORY ${MCT_BLD_DIR}/include ${MCT_BLD_DIR}/lib)
-ExternalProject_Add(mct_external
-    PREFIX            mct
-    SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/mct
-    BUILD_IN_SOURCE   TRUE
-    CONFIGURE_COMMAND ./configure
-                      --prefix=${MCT_BLD_DIR}
-                      --exec-prefix=${MCT_BLD_DIR}
-                      CC=${CMAKE_C_COMPILER}
-                      FC=${CMAKE_Fortran_COMPILER}
-                      CFLAGS=${CMAKE_C_FLAGS}
-                      FCFLAGS=${CMAKE_Fortran_FLAGS}
-    BUILD_ALWAYS      YES
-    BUILD_BYPRODUCTS  ${GPTL_BLD_DIR}/lib/libmct.a ${GPTL_BLD_DIR}/lib/libmpeu.a
-)
-add_library(mct INTERFACE IMPORTED GLOBAL)  
-target_include_directories(mct INTERFACE ${MCT_BLD_DIR}/include)
-target_link_directories(mct INTERFACE ${MCT_BLD_DIR}/lib)
-target_link_libraries(mct INTERFACE libmct.a libmpeu.a)
-add_dependencies(mct mct_external) 
-install (FILES ${MCT_BLD_DIR}/lib/libmct.a ${MCT_BLD_DIR}/lib/libmpeu.a TYPE LIB)
+option(BUILD_MCT "Use built-in MCT library." ON)
+add_library(mct INTERFACE IMPORTED GLOBAL)
+if (BUILD_MCT)
+    set(MCT_BLD_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct)
+    file(MAKE_DIRECTORY ${MCT_BLD_DIR}/include ${MCT_BLD_DIR}/lib)
+    ExternalProject_Add(mct_external
+        PREFIX            mct
+        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/mct
+        BUILD_IN_SOURCE   TRUE
+        CONFIGURE_COMMAND ./configure
+                        --prefix=${MCT_BLD_DIR}
+                        --exec-prefix=${MCT_BLD_DIR}
+                        CC=${CMAKE_C_COMPILER}
+                        FC=${CMAKE_Fortran_COMPILER}
+                        CFLAGS=${CMAKE_C_FLAGS}
+                        FCFLAGS=${CMAKE_Fortran_FLAGS}
+        BUILD_ALWAYS      YES
+        BUILD_BYPRODUCTS  ${GPTL_BLD_DIR}/lib/libmct.a ${GPTL_BLD_DIR}/lib/libmpeu.a
+    )
+    target_include_directories(mct INTERFACE ${MCT_BLD_DIR}/include)
+    target_link_directories(mct INTERFACE ${MCT_BLD_DIR}/lib)
+    target_link_libraries(mct INTERFACE libmct.a libmpeu.a)
+    add_dependencies(mct mct_external) 
+    install (FILES ${MCT_BLD_DIR}/lib/libmct.a ${MCT_BLD_DIR}/lib/libmpeu.a TYPE LIB)
+else()
+    find_package(MCT REQUIRED)
+    if (${MCT_FOUND})
+        target_include_directories(mct SYSTEM INTERFACE ${MCT_INCLUDE_DIR})
+        target_link_libraries(mct INTERFACE ${MCT_LIBRARIES})
+    endif()
+endif()
 
 # ===========
 #     PIO
