@@ -10,12 +10,17 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE")
 endif()
 
+# Check if MPI is present. This should succeed if
+# the compilers were set to mpifort and mpicc.
+find_package(MPI REQUIRED)
+
 # Set default compiler = GNU if none was specified. 
 if(NOT COMPILER)
-    set(COMPILER "GNU" CACHE STRING "Choose compiler toolchain." FORCE)
+    set(COMPILER "${CMAKE_Fortran_COMPILER_ID}" CACHE STRING "Choose compiler toolchain." FORCE)
     set_property(CACHE COMPILER PROPERTY STRINGS "GNU" "Intel")
 endif()
 
+# Set compiler specific flags.
 if(COMPILER STREQUAL "GNU")
     add_compile_definitions(CPRGNU)
     set(CMAKE_C_FLAGS "-std=gnu99")
