@@ -2,6 +2,11 @@ project (csm_share LANGUAGES C Fortran)
 
 add_library(${PROJECT_NAME} STATIC)
 
+# TODO: NUM_COMP_INST_<COMP> should be adjusted for ensemble runs. See the ff. for more info:
+# https://esmci.github.io/cime/versions/cesm2.2/html/users_guide/multi-instance.html
+# https://github.com/ESMCI/cime/blob/cime5.6.33/src/build_scripts/buildlib.csm_share#L63
+# https://github.com/ESMCI/cime/blob/cime5.6.33/src/drivers/mct/cime_config/config_component.xml#L1989
+
 target_compile_definitions(${PROJECT_NAME} 
     PUBLIC 
         NDEBUG
@@ -31,13 +36,14 @@ foreach(f90in_file IN LISTS F90IN_FILES)
     set(outfile "${CMAKE_CURRENT_BINARY_DIR}/${filename_noext}.F90")
     add_custom_command(
         OUTPUT ${outfile}
-        COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file} > ${outfile}
+        COMMAND ${GENF90} ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file} > ${outfile}
         DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${f90in_file}
     )
     list(APPEND PREPROCESSED_F90_FILES ${outfile})
 endforeach()
 
 target_sources(${PROJECT_NAME} PRIVATE ${PREPROCESSED_F90_FILES})
+
 target_sources(${PROJECT_NAME} PRIVATE 
     esmf_wrf_timemgr/ESMF_AlarmClockMod.F90
     esmf_wrf_timemgr/ESMF_AlarmMod.F90
