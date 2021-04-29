@@ -20,7 +20,6 @@ Unlike CLM5, there are no built-in batch scripts in eCLM. It is up to system mai
 
 ```sh
 # User-specific variables
-NetCDF_ROOT="/path-prefix/to/netCDF/lib"
 BUILD_DIR="bld"
 INSTALL_DIR="out"
 
@@ -28,8 +27,7 @@ INSTALL_DIR="out"
 cmake -S src -B "$BUILD_DIR" \
       -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
       -DCMAKE_C_COMPILER=mpicc \
-      -DCMAKE_Fortran_COMPILER=mpifort \
-      -DPnetCDF_PATH=$NetCDF_ROOT
+      -DCMAKE_Fortran_COMPILER=mpifort
 ```
 
 Additionally, you may specify these optional build variables.

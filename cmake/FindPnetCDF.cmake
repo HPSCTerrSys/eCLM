@@ -1,68 +1,29 @@
-# - Try to find PnetCDF
+# Finds the PnetCDF library. Defines the following variables:
 #
-# This can be controlled by setting the PnetCDF_PATH (or, equivalently, the 
-# PNETCDF environment variable), or PnetCDF_<lang>_PATH CMake variables, where
-# <lang> is the COMPONENT language one needs.
+#  PnetCDF_FOUND: Whether NetCDF was found or not.
+#  PnetCDF_INCLUDE_DIR: Include directory necessary to use NetCDF.
+#  PnetCDF_LIBRARIES: Libraries necessary to use NetCDF.
+#  PnetCDF_VERSION: The version of NetCDF found.
+#  PnetCDF::PnetCDF: A target to use with `target_link_libraries`.
 #
-# Once done, this will define:
-#
-#   PnetCDF_<lang>_FOUND        (BOOL) - system has PnetCDF
-#   PnetCDF_<lang>_IS_SHARED    (BOOL) - whether library is shared/dynamic
-#   PnetCDF_<lang>_INCLUDE_DIR  (PATH) - Location of the C header file
-#   PnetCDF_<lang>_INCLUDE_DIRS (LIST) - the PnetCDF include directories
-#   PnetCDF_<lang>_LIBRARY      (FILE) - Path to the C library file
-#   PnetCDF_<lang>_LIBRARIES    (LIST) - link these to use PnetCDF
-#
-# The available COMPONENTS are: C, Fortran
-# If no components are specified, it assumes only C
-include (LibFind)
-include (LibCheck)
 
-# Define PnetCDF C Component
-define_package_component (PnetCDF DEFAULT
-                          COMPONENT C
-                          INCLUDE_NAMES pnetcdf.h
-                          LIBRARY_NAMES pnetcdf)
+# Find PnetCDF using pkg-tools.
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(PnetCDF QUIET pnetcdf IMPORTED_TARGET)
+    if (PnetCDF_FOUND)
+        set(PnetCDF_INCLUDE_DIR "${PnetCDF_INCLUDEDIR}")
+        add_library(PnetCDF::PnetCDF INTERFACE IMPORTED)
+        target_link_libraries(PnetCDF::PnetCDF INTERFACE PkgConfig::PnetCDF)
+    endif()
+endif()
 
-# Define PnetCDF Fortran Component
-define_package_component (PnetCDF
-                          COMPONENT Fortran
-                          INCLUDE_NAMES pnetcdf.mod pnetcdf.inc
-                          LIBRARY_NAMES pnetcdf)
+# If not found, manually search for Pnetcdf include and library files.
+if (NOT PnetCDF_FOUND)
+    find_path(PnetCDF_INCLUDE_DIR NAMES pnetcdf.mod)
+    find_library(PnetCDF_LIBRARIES NAMES pnetcdf)
+endif()
 
-# Search for list of valid components requested
-find_valid_components (PnetCDF)
-
-#==============================================================================
-# SEARCH FOR VALIDATED COMPONENTS
-foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
-
-    # If not found already, search...
-    if (NOT PnetCDF_${PNCDFcomp}_FOUND)
-
-        # Manually add the MPI include and library dirs to search paths
-        # and search for the package component
-        if (MPI_${PNCDFcomp}_FOUND)
-            initialize_paths (PnetCDF_${PNCDFcomp}_PATHS
-                              INCLUDE_DIRECTORIES ${MPI_${PNCDFcomp}_INCLUDE_PATH}
-                              LIBRARIES ${MPI_${PNCDFcomp}_LIBRARIES})
-            find_package_component(PnetCDF COMPONENT ${PNCDFcomp}
-                                   PATHS ${PnetCDF_${PNCDFcomp}_PATHS})
-        else ()
-            find_package_component(PnetCDF COMPONENT ${PNCDFcomp})
-        endif ()
-
-        # Continue only if component found
-        if (PnetCDF_${PNCDFcomp}_FOUND)
-        
-            # Check version
-            check_version (PnetCDF
-                           NAME "pnetcdf.h"
-                           HINTS ${PnetCDF_${PNCDFcomp}_INCLUDE_DIR}
-                           MACRO_REGEX "PNETCDF_VERSION_")
-
-        endif ()
-            
-    endif ()
-    
-endforeach ()
+find_package_handle_standard_args(PnetCDF
+   REQUIRED_VARS PnetCDF_INCLUDE_DIR PnetCDF_LIBRARIES
+   VERSION_VAR PnetCDF_VERSION)
