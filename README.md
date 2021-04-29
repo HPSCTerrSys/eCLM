@@ -29,7 +29,6 @@ cmake -S src -B "$BUILD_DIR" \
       -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
       -DCMAKE_C_COMPILER=mpicc \
       -DCMAKE_Fortran_COMPILER=mpifort \
-      -DNetCDF_PATH=$NetCDF_ROOT \
       -DPnetCDF_PATH=$NetCDF_ROOT
 ```
 

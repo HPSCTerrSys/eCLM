@@ -1,143 +1,70 @@
-# - Try to find NetCDF
+# Finds the NetCDF Fortran library. Defines the following variables:
 #
-# This can be controlled by setting the NetCDF_PATH (or, equivalently, the
-# NETCDF environment variable), or NetCDF_<lang>_PATH CMake variables, where
-# <lang> is the COMPONENT language one needs.
+#  NetCDF_FOUND: Whether NetCDF was found or not.
+#  NetCDF_INCLUDE_DIR: Include directory necessary to use NetCDF.
+#  NetCDF_LIBRARIES: Libraries necessary to use NetCDF.
+#  NetCDF_VERSION: The version of NetCDF found.
+#  NetCDF_HAS_PARALLEL: Whether or not NetCDF was found with parallel IO support.
+#  NetCDF::NetCDF: A target to use with `target_link_libraries`.
 #
-# Once done, this will define:
-#
-#   NetCDF_<lang>_FOUND        (BOOL) - system has NetCDF
-#   NetCDF_<lang>_IS_SHARED    (BOOL) - whether library is shared/dynamic
-#   NetCDF_<lang>_INCLUDE_DIR  (PATH) - Location of the C header file
-#   NetCDF_<lang>_INCLUDE_DIRS (LIST) - the NetCDF include directories
-#   NetCDF_<lang>_LIBRARY      (FILE) - Path to the C library file
-#   NetCDF_<lang>_LIBRARIES    (LIST) - link these to use NetCDF
-#
-# The available COMPONENTS are: C Fortran
-# If no components are specified, it assumes only C
-include (LibFind)
-include (LibCheck)
 
-# Define NetCDF C Component
-define_package_component (NetCDF DEFAULT
-                          COMPONENT C
-                          INCLUDE_NAMES netcdf.h
-                          LIBRARY_NAMES netcdf)
+find_package(PkgConfig QUIET)
+include(FindPackageHandleStandardArgs)
 
-# Define NetCDF Fortran Component
-define_package_component (NetCDF
-                          COMPONENT Fortran
-                          INCLUDE_NAMES netcdf.mod netcdf.inc
-                          LIBRARY_NAMES netcdff)
+# Detect NetCDF_HAS_PARALLEL feature from the netCDF C library.
+# Try to find CMake-built netCDF-C.
+find_package(_NetCDF_C NAMES netCDF)
+if(_NetCDF_C_FOUND)
+   set(NetCDF_HAS_PARALLEL "${netCDF_HAS_PARALLEL}")
+   get_filename_component(_NetCDF_C_CONFIG_DIR ${_NetCDF_C_CONFIG} DIRECTORY)
+endif()
 
-# Search for list of valid components requested
-find_valid_components (NetCDF)
+# If netCDF-C was not found, try finding it using pkg-config.
+if (NOT DEFINED NetCDF_HAS_PARALLEL AND PkgConfig_FOUND)
+   pkg_check_modules(_NetCDF_C QUIET netcdf IMPORTED_TARGET)
+   if (_NetCDF_C_FOUND)
+      # Regex copied from https://github.com/Kitware/VTK/blob/181e6ba2/CMake/FindNetCDF.cmake#L13
+      file(STRINGS "${_NetCDF_C_INCLUDEDIR}/netcdf_meta.h" _netcdf_lines
+         REGEX "#define[ \t]+NC_HAS_PARALLEL[ \t]")
+      string(REGEX REPLACE ".*NC_HAS_PARALLEL[ \t]*([0-1]+).*" "\\1" NetCDF_HAS_PARALLEL "${_netcdf_lines}")
+   endif()
+endif()
 
-#==============================================================================
-# SEARCH FOR VALIDATED COMPONENTS
-foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
+if (NOT DEFINED NetCDF_HAS_PARALLEL)
+   message(WARNING "NetCDF C library was not found. Assuming NetCDF_HAS_PARALLEL=FALSE ...")
+   set(NetCDF_HAS_PARALLEL FALSE)
+endif()
 
-    # If not found already, search...
-    if (NOT NetCDF_${NCDFcomp}_FOUND)
+# Try to find CMake-built netCDF-Fortran.
+find_package(_NetCDF_F90 QUIET NAMES netCDF-Fortran HINTS ${_NetCDF_C_CONFIG_DIR})
+if(_NetCDF_F90_FOUND AND TARGET netCDF::netcdff)
+   get_target_property(NetCDF_INCLUDE_DIR netCDF::netcdff INTERFACE_INCLUDE_DIRECTORIES)
+   set(NetCDF_LIBRARIES netCDF::netcdff)
+   set(NetCDF_VERSION "${_NetCDF_F90_VERSION}")
+elseif(PkgConfig_FOUND)
+   # Try finding netCDF-Fortran using pkg-config.
+   pkg_check_modules(_NetCDF_F90 QUIET netcdf-fortran IMPORTED_TARGET)
+   if (_NetCDF_F90_FOUND)
+      set(NetCDF_INCLUDE_DIR "${_NetCDF_F90_INCLUDEDIR}")
+      set(NetCDF_LIB_DIR "${_NetCDF_F90_LIBDIR}")
+      set(NetCDF_LIBRARIES "${_NetCDF_F90_LIBRARIES}")
+      set(NetCDF_VERSION "${_NetCDF_F90_VERSION}")
+   endif()
+endif()
 
-        # Manually add the MPI include and library dirs to search paths
-        # and search for the package component
-        if (MPI_${NCDFcomp}_FOUND)
-            initialize_paths (NetCDF_${NCDFcomp}_PATHS
-                              INCLUDE_DIRECTORIES ${MPI_${NCDFcomp}_INCLUDE_PATH}
-                              LIBRARIES ${MPI_${NCDFcomp}_LIBRARIES})
-            find_package_component(NetCDF COMPONENT ${NCDFcomp}
-                                   PATHS ${NetCDF_${NCDFcomp}_PATHS})
-        else ()
-            find_package_component(NetCDF COMPONENT ${NCDFcomp})
-        endif ()
+find_package_handle_standard_args(NetCDF
+   REQUIRED_VARS NetCDF_INCLUDE_DIR NetCDF_LIBRARIES
+   VERSION_VAR NetCDF_VERSION)
 
-        # Continue only if component found
-        if (NetCDF_${NCDFcomp}_FOUND)
+if(NetCDF_FOUND AND NOT TARGET NetCDF::NetCDFF)
+   add_library(NetCDF::NetCDFF INTERFACE IMPORTED)
+   target_include_directories(NetCDF::NetCDFF INTERFACE ${NetCDF_INCLUDE_DIR})
+   target_link_libraries(NetCDF::NetCDFF INTERFACE ${NetCDF_LIBRARIES})
+   if(DEFINED NetCDF_LIB_DIR)
+      target_link_directories(NetCDF::NetCDFF INTERFACE ${NetCDF_LIB_DIR})
+   endif()
+endif()
 
-            # Checks
-            if (NCDFcomp STREQUAL C)
-
-                # Check version
-                check_version (NetCDF
-                               NAME "netcdf_meta.h"
-                               HINTS ${NetCDF_C_INCLUDE_DIRS}
-                               MACRO_REGEX "NC_VERSION_")
-
-                # Check for parallel support
-                check_macro (NetCDF_C_HAS_PARALLEL
-                             NAME TryNetCDF_PARALLEL.c
-                             HINTS ${CMAKE_MODULE_PATH}
-                             DEFINITIONS -I${NetCDF_C_INCLUDE_DIR}
-                             COMMENT "whether NetCDF has parallel support")
-
-                 # Check if logging enabled
-		 set(CMAKE_REQUIRED_INCLUDES ${NetCDF_C_INCLUDE_DIR})
-		 set(CMAKE_REQUIRED_LIBRARIES ${NetCDF_C_LIBRARIES})
-		 CHECK_FUNCTION_EXISTS(nc_set_log_level NetCDF_C_LOGGING_ENABLED)
-
-            endif ()
-
-            # Dependencies
-            if (NCDFcomp STREQUAL C AND NOT NetCDF_C_IS_SHARED)
-
-                # DEPENDENCY: PnetCDF (if PnetCDF enabled)
-                check_macro (NetCDF_C_HAS_PNETCDF
-                             NAME TryNetCDF_PNETCDF.c
-                             HINTS ${CMAKE_MODULE_PATH}
-                             DEFINITIONS -I${NetCDF_C_INCLUDE_DIR}
-                             COMMENT "whether NetCDF has PnetCDF support")
-                if (NetCDF_C_HAS_PNETCDF)
-                    find_package (PnetCDF COMPONENTS C)
-                    if (CURL_FOUND)
-                        list (APPEND NetCDF_C_INCLUDE_DIRS ${PnetCDF_C_INCLUDE_DIRS})
-                        list (APPEND NetCDF_C_LIBRARIES ${PnetCDF_C_LIBRARIES})
-                    endif ()
-                endif ()
-
-                # DEPENDENCY: CURL (If DAP enabled)
-                check_macro (NetCDF_C_HAS_DAP
-                             NAME TryNetCDF_DAP.c
-                             HINTS ${CMAKE_MODULE_PATH}
-                             DEFINITIONS -I${NetCDF_C_INCLUDE_DIR}
-                             COMMENT "whether NetCDF has DAP support")
-                if (NetCDF_C_HAS_DAP)
-                    find_package (CURL)
-                    if (CURL_FOUND)
-                        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
-                        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
-                    endif ()
-                endif ()
-
-                # DEPENDENCY: HDF5
-                find_package (HDF5 COMPONENTS HL C)
-                if (HDF5_C_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
-                                                       ${HDF5_HL_INCLUDE_DIRS})
-                    list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
-                                                    ${HDF5_HL_LIBRARIES})
-                endif ()
-
-                # DEPENDENCY: LIBDL Math
-                list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
-
-            elseif (NCDFcomp STREQUAL Fortran AND NOT NetCDF_Fortran_IS_SHARED)
-
-                # DEPENDENCY: NetCDF
-                set (orig_comp ${NCDFcomp})
-                set (orig_comps ${NetCDF_FIND_VALID_COMPONENTS})
-                find_package (NetCDF COMPONENTS C)
-                set (NetCDF_FIND_VALID_COMPONENTS ${orig_comps})
-                set (NCDFcomp ${orig_comp})
-                if (NetCDF_C_FOUND)
-                    list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
-                    list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
-                endif ()
-
-            endif ()
-
-        endif ()
-
-    endif ()
-
-endforeach ()
+unset(_NetCDF_C_FOUND)
+unset(_NetCDF_F90_FOUND)
+unset(_NetCDF_C_CONFIG_DIR)
