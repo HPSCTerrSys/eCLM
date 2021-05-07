@@ -62,9 +62,25 @@ python3 -m pip install --upgrade pip
 pip3 install --user ./namelist_generator
 ```
 
-## Sample test case
+## Run sample test case
 
-*TODO*
+```sh
+# Download and extract data files
+wget https://datapub.fz-juelich.de/slts/eclm/1x1_wuestebach.tar.gz
+mkdir 1x1_wuestebach
+tar xf 1x1_wuestebach.tar.gz -C 1x1_wuestebach
+
+# Generate namelists
+cd 1x1_wuestebach
+export TEST_DIR="$(pwd)"
+clm5nl-gen wtb_1x1.toml
+
+# Validate namelists
+clm5nl-check .
+
+# Run eCLM
+/path/to/eclm.exe
+```
 
 ## Status
 
