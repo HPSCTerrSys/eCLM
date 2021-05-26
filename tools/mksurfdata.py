@@ -4,6 +4,8 @@ import os, subprocess
 from datetime import datetime
 
 CSMDATA = "/glade/p/cesm/cseg/inputdata"
+scrdir = ""
+debug = 0
 
 opts = {}
 opts["hgrid"] = "all"
@@ -11,33 +13,33 @@ opts["vic"] = 0
 opts["glc"] = 0
 opts["ssp_rcp"] = "hist" 
 opts["debug"] = 0
-opts["exedir"] = "undef"
-opts["allownofile"] = "undef"
+opts["exedir"] = None
+opts["allownofile"] = None
 opts["crop"] = 1
 opts["fast_maps"] = 0
-opts["hirespft"] = "undef"
+opts["hirespft"] = None
 opts["years"] = "1850,2000"
 opts["glc_nec"] = 10
-opts["merge_gis"] = "undef"
-opts["inlandwet"] = "undef"
+opts["merge_gis"] = None
+opts["inlandwet"] = None
 opts["help"] = 0
 opts["no_surfdata"] = 0
-opts["pft_override"] = "undef"
-opts["pft_frc"] = "undef"
-opts["pft_idx"] = "undef"
-opts["soil_override"] = "undef"
-opts["soil_cly"] = "undef"
-opts["soil_snd"] = "undef"
-opts["soil_col"] = "undef"
-opts["soil_fmx"] = "undef"
-opts["outnc_double"] = "undef"
+opts["pft_override"] = None
+opts["pft_frc"] = None
+opts["pft_idx"] = None
+opts["soil_override"] = None
+opts["soil_cly"] = None
+opts["soil_snd"] = None
+opts["soil_col"] = None
+opts["soil_fmx"] = None
+opts["outnc_double"] = None
 opts["outnc_dims"] = "2"     
 opts["usrname"] = ""
-opts["rundir"] = "cwd"
+opts["rundir"] = os.getcwd()
 opts["usr_mapdir"] = "../mkmapdata"
-opts["dynpft"] = "undef"
+opts["dynpft"] = None
 opts["csmdata"] = CSMDATA
-opts["urban_skip_abort_on_invalid_data_check"] = "undef"
+opts["urban_skip_abort_on_invalid_data_check"] = None
 
 numpft = 78
 
@@ -132,34 +134,198 @@ def check_soil():
     """
     check that the soil options are set correctly
     """
-    # TODO
-    pass
+    for my_type in ["soil_cly", "soil_snd"]:
+      if not my_type in opts:
+         raise KeyError("ERROR: Soil variables were set, but $type was NOT set")
+
+    texsum = opts["soil_cly"] + opts["soil_snd"]
+    loam   = 100.0 - texsum
+    if ( texsum < 0.0 or texsum > 100.0 ):
+      raise ValueError(f'ERROR: Soil textures are out of range: clay = {opts["soil_cly"]} sand = {opts["soil_snd"]} loam = {loam}')
 
 def check_soil_col_fmx():
     """
     check that the soil color or soil fmax option is set correctly
     """
-    # TODO
-    pass
+    if "soil_col" in opts:
+      if opts["soil_col"] < 0 or opts["soil_col"] > 20:
+         raise ValueError(f'ERROR: Soil color is out of range = {opts["soil_col"]}')
+
+    if "soil_fmx" in opts:
+      if opts["soil_fmx"] < 0 or opts["soil_fmx"] > 1.0:
+         raise ValueError(f'ERROR: Soil fmax is out of range = = {opts["soil_fmx"]}')
 
 def check_pft():
     """
     check that the pft options are set correctly
     """
     # TODO
-    pass
+    # Eliminate starting and ending square brackets
+    # $opts{'pft_idx'} =~ s/^\[//;
+    # $opts{'pft_idx'} =~ s/\]$//;
+    # $opts{'pft_frc'} =~ s/^\[//;
+    # $opts{'pft_frc'} =~ s/\]$//;
 
-def write_transient_timeseries_file():
-    """
-    """
-    # TODO
-    pass
+    for mytype in ["pft_idx", "pft_frc"]:
+       if not mytype in opts:
+          raise ValueError(f"ERROR: PFT variables were set, but {mytype} was NOT set")
 
-def write_namelist_file():
+    pft_idx = opts["pft_idx"].split(",")
+    pft_frc = opts["pft_frc"].split(",")
+
+    if len(pft_idx) != len(pft_frc):
+       raise IndexError("ERROR: PFT arrays are different sizes: pft_idx and pft_frc")
+
+    sumfrc = 0.0
+
+    for i in range(0, len(pft_idx)):
+       if pft_idx[i] < 0 or pft_idx[i] > numpft:
+          # check index in range
+          raise IndexError(f'ERROR: pft_idx out of range = {opts["pft_idx"]}')
+
+       # make sure there are no duplicates
+       for j in range(0, i):
+          if pft_idx[i] == pft_idx[j]:
+             raise IndexError(f'ERROR: pft_idx has duplicates = {opts["pft_idx"]}')
+
+       # check fraction in range
+       if pft_frc[i] < 0.0 or pft_frc[i] > 100.0:
+          raise OverflowError(f'ERROR: pft_frc out of range (>0.0 and <=100.0) = {opts["pft_frc"]}')
+
+       sumfrc = sumfrc + pft_frc[i]
+
+    # check that fraction sums up to 100%
+    if abs(sumfrc - 100.0) > 1e-6:
+       raise ArithmeticError(f'ERROR: pft_frc does NOT add up to 100% = {opts["pft_frc"]}')
+
+def write_transient_timeseries_file(transient, desc, sim_yr0, sim_yrn, queryfilopts, resol, 
+                                    resolhrv, ssp_rcp, mkcrop, sim_yr_surfdat):
     """
     """
-    # TODO
-    pass
+    strlen = 195
+    dynpft_format = "{0:<{1}} {2:04d}"
+    if transient:
+       landuse_timeseries_text_file = f"landuse_timeseries_{desc}.txt"
+       with open(landuse_timeseries_text_file, "w") as fh_landuse_timeseries:
+          print(f"Writing out landuse_timeseries text file: {landuse_timeseries_text_file}")
+          for yr in range(sim_yr0, sim_yrn + 1):
+             vegtypyr = subprocess.run(["queryDefaultNamelist.pl", queryfilopts, resol, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True).stdout
+             vegtypyr.rstrip('\n')
+             fh_landuse_timeseries.write(dynpft_format.format(vegtypyr, strlen, yr))
+             hrvtypyr = subprocess.run(["queryDefaultNamelist.pl", queryfilopts, resolhrv, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True).stdout
+             hrvtypyr.rstrip('\n')
+             fh_landuse_timeseries.write(dynpft_format.format(hrvtypyr, strlen, yr))
+             if (yr % 100 == 0):
+                print("year:", yr)
+       print("Done writing file")
+    elif opts["pft_override"] and "dynpft" in opts:
+       landuse_timeseries_text_file = opts["dynpft"]
+    else:
+       landuse_timeseries_text_file = f"landuse_timeseries_override_{desc}.txt"
+       with open(landuse_timeseries_text_file, "w") as fh_landuse_timeseries:
+          frstpft = (f'<pft_f>{opts["pft_frc"]}</pft_f>' +
+                     f'<pft_i>{opts["pft_frc"]}</pft_i>' +
+                      '<harv>0,0,0,0,0</harv><graz>0</graz>')
+          print(f"Writing out landuse_timeseries text file: {landuse_timeseries_text_file}")
+          l = len(frstpft)
+          if (l > strlen):
+             raise ValueError(f"ERROR PFT line is too long ({l}): {frstpft}")
+          fh_landuse_timeseries.write(frstpft, sim_yr_surfdat)
+       print("Done writing file")
+
+def write_namelist_file(namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fname,
+                        glc_nec, griddata, map, datfil, double,
+                        all_urb, no_inlandwet, vegtyp, hrvtyp, 
+                        landuse_timeseries_text_file, setnumpft):
+    """
+    """
+    orig_cwd = os.getcwd()
+    os.chdir(scrdir)
+    gitdescribe = subprocess.run(["git", "describe"], capture_output=True).stdout
+    os.chdir(orig_cwd)
+
+    with open(namelist_fname, "w") as fh:
+       fh.write(f"""&clmexp
+ nglcec           = $glc_nec
+ mksrf_fgrid      = {griddata}
+ map_fpft         = {map['veg']}
+ map_fglacier     = {map['glc']}
+ map_fglacierregion = {map['glcregion']}
+ map_fsoicol      = {map['col']}
+ map_furban       = {map['urb']}
+ map_fmax         = {map['fmx']}
+ map_forganic     = {map['org']}
+ map_flai         = {map['lai']}
+ map_fharvest     = {map['hrv']}
+ map_flakwat      = {map['lak']}
+ map_fwetlnd      = {map['wet']}
+ map_fvocef       = {map['voc']}
+ map_fsoitex      = {map['tex']}
+ map_furbtopo     = {map['utp']}
+ map_fgdp         = {map['gdp']}
+ map_fpeat        = {map['peat']}
+ map_fsoildepth   = {map['soildepth']}
+ map_fabm         = {map['abm']}
+ mksrf_fsoitex    = {datfil['tex']}
+ mksrf_forganic   = {datfil['org']}
+ mksrf_flakwat    = {datfil['lak']}
+ mksrf_fwetlnd    = {datfil['wet']}
+ mksrf_fmax       = {datfil['fmx']}
+ mksrf_fglacier   = {datfil['glc']}
+ mksrf_fglacierregion = {datfil['glcregion']}
+ mksrf_fvocef     = {datfil['voc']}
+ mksrf_furbtopo   = {datfil['utp']}
+ mksrf_fgdp       = {datfil['gdp']}
+ mksrf_fpeat      = {datfil['peat']}
+ mksrf_fsoildepth = {datfil['soildepth']}
+ mksrf_fabm       = {datfil['abm']}
+ outnc_double   = {double}
+ all_urban      = {all_urb}
+ no_inlandwet   = {no_inlandwet}
+ mksrf_furban   = {datfil['urb']}
+ gitdescribe    = {gitdescribe}""")
+
+       if opts["vic"]:
+          fh.write(f' map_fvic         = {map["vic"]}')
+          fh.write(f' mksrf_fvic       = {datfil["vic"]}')
+          fh.write(f' outnc_vic = .true.')
+
+       if opts["glc"]:
+          fh.write(" outnc_3dglc = .true.")
+
+       if opts["fast_maps"]:
+          fh.write(f' map_ftopostats   = {map["topostats"]}')
+          fh.write(f' mksrf_ftopostats   = {datfil["topostats"]}')
+       else:
+          fh.write(" std_elev         = 371.0d00")
+
+       if opts["soil_override"]:
+          fh.write(f' soil_clay     = {opts["soil_clay"]}')
+          fh.write(f' soil_sand     = {opts["soil_snd"]}')
+
+       if opts["pft_override"]:
+          fh.write(f' all_veg      = .true.')
+          fh.write(f' pft_frc      = {opts["pft_frc"]}')
+          fh.write(f' pft_idx      = {opts["pft_idx"]}')
+
+       fh.write(f"""
+ mksrf_fvegtyp  = {vegtyp}
+ mksrf_fhrvtyp  = {hrvtyp}
+ mksrf_fsoicol  = {datfil['col']}
+ mksrf_flai     = {datfil['lai']}
+ fsurdat        = {fsurdat_fname}
+ fsurlog        = {logfile_fname}
+ mksrf_fdynuse  = {landuse_timeseries_text_file}
+ fdyndat        = {fdyndat_fname}""")
+
+       if setnumpft:
+          fh.write(setnumpft)
+
+       if opts["urban_skip_abort_on_invalid_data_check"]:
+          fh.write(f' urban_skip_abort_on_invalid_data_check = .true.')
+
+    with open(namelist_fname, "r") as fh:
+       print(fh.readlines())
 
 def main():
    definition = object #Build::Namelistdefinition.new( $nldef_file );
