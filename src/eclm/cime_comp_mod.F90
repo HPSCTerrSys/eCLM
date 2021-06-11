@@ -40,7 +40,9 @@ module cime_comp_mod
   use mct_mod            ! mct_ wrappers for mct lib
   use perf_mod
   use ESMF
-
+#if defined(USE_OASIS)
+  use mod_oasis
+#endif
   !----------------------------------------------------------------------------
   ! component model interfaces (init, run, final methods)
   !----------------------------------------------------------------------------
@@ -583,6 +585,7 @@ contains
   subroutine cime_pre_init1(esmf_log_option)
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
+
     !----------------------------------------------------------
     !| Initialize MCT and MPI communicators and IO
     !----------------------------------------------------------
@@ -593,13 +596,25 @@ contains
     logical :: comp_iamin(num_inst_total)
     character(len=seq_comm_namelen) :: comp_name(num_inst_total)
     integer :: it
-    integer :: driver_id
+    integer :: driver_id, oas_comp_id
     integer :: driver_comm
 
     call mpi_init(ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
+
+#if defined(USE_OASIS)
+    call oasis_init_comp  (oas_comp_id, 'eCLM', ierr)
+    if (ierr /= 0) then
+      call oasis_abort(oas_comp_id, 'cime_pre_init1', 'oasis_init_comp error')
+    end if
+    call oasis_get_localcomm(global_comm, ierr)
+    if (ierr /= 0) then
+      call oasis_abort(oas_comp_id, 'cime_pre_init1', 'oasis_get_localcomm error')
+    end if
+#else
     call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
+#endif
 
     comp_comm = MPI_COMM_NULL
     time_brun = mpi_wtime()
@@ -4135,6 +4150,10 @@ contains
             mpicom=mpicom_GLOID)
     endif
 
+#if defined(USE_OASIS)
+    call oasis_terminate (ierr)
+    call shr_mpi_chkerr(ierr,subname//' oasis_terminate')
+#endif
     call t_finalizef()
 
   end subroutine cime_final
