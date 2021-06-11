@@ -3,12 +3,12 @@
 import os, subprocess
 from datetime import datetime
 
-CSMDATA = "/glade/p/cesm/cseg/inputdata"
+CSMDATA = "$CESMDATAROOT/inputdata"
 scrdir = ""
 debug = 0
 
 opts = {}
-opts["hgrid"] = "all"
+opts["hgrid"] = "usrspec"
 opts["vic"] = 0
 opts["glc"] = 0
 opts["ssp_rcp"] = "hist" 
@@ -18,26 +18,28 @@ opts["allownofile"] = None
 opts["crop"] = 1
 opts["fast_maps"] = 0
 opts["hirespft"] = None
-opts["years"] = "1850,2000"
+opts["years"] = "2000"
 opts["glc_nec"] = 10
 opts["merge_gis"] = None
 opts["inlandwet"] = None
 opts["help"] = 0
 opts["no_surfdata"] = 0
 opts["pft_override"] = None
-opts["pft_frc"] = None
-opts["pft_idx"] = None
+opts["pft_frc"] = "0" #None
+opts["pft_idx"] = "0" #None
 opts["soil_override"] = None
-opts["soil_cly"] = None
-opts["soil_snd"] = None
+opts["soil_cly"] = 0 #None
+opts["soil_snd"] = 0 #None
 opts["soil_col"] = None
 opts["soil_fmx"] = None
 opts["outnc_double"] = None
 opts["outnc_dims"] = "2"     
 opts["usrname"] = ""
 opts["rundir"] = os.getcwd()
-opts["usr_mapdir"] = "../mkmapdata"
-opts["dynpft"] = None
+opts["usr_gname"] = "Nigeria"
+opts["usr_gdate"] = "200503"
+opts["usr_mapdir"] = CSMDATA + "/lnd/clm2/mappingdata/maps/Nigeria"
+opts["dynpft"] = "" #None
 opts["csmdata"] = CSMDATA
 opts["urban_skip_abort_on_invalid_data_check"] = None
 
@@ -130,6 +132,19 @@ OPTIONS to work around bugs?
                                    /glade/p/cesm/cseg/inputdata/lnd/clm2/surfdata_map/README_c141219
    """)
 
+class NamelistDefinition(object):
+   """
+   Stub class. Actual implementation should be ported from clm5.0/cime/utils/perl5lib/Build/NamelistDefinition.pm
+   """
+   def __init__(self, nl_file):
+        pass
+
+   def is_valid_value(self, var_name, value):
+      return True
+
+   def get_valid_values(self, var_name):
+      return None
+
 def check_soil():
     """
     check that the soil options are set correctly
@@ -170,8 +185,8 @@ def check_pft():
        if not mytype in opts:
           raise ValueError(f"ERROR: PFT variables were set, but {mytype} was NOT set")
 
-    pft_idx = opts["pft_idx"].split(",")
-    pft_frc = opts["pft_frc"].split(",")
+    pft_idx = [int(idx) for idx in opts["pft_idx"].split(",")]
+    pft_frc = [int(frc) for frc in opts["pft_frc"].split(",")]
 
     if len(pft_idx) != len(pft_frc):
        raise IndexError("ERROR: PFT arrays are different sizes: pft_idx and pft_frc")
@@ -179,7 +194,7 @@ def check_pft():
     sumfrc = 0.0
 
     for i in range(0, len(pft_idx)):
-       if pft_idx[i] < 0 or pft_idx[i] > numpft:
+       if int(pft_idx[i]) < 0 or pft_idx[i] > numpft:
           # check index in range
           raise IndexError(f'ERROR: pft_idx out of range = {opts["pft_idx"]}')
 
@@ -196,7 +211,9 @@ def check_pft():
 
     # check that fraction sums up to 100%
     if abs(sumfrc - 100.0) > 1e-6:
-       raise ArithmeticError(f'ERROR: pft_frc does NOT add up to 100% = {opts["pft_frc"]}')
+       # TODO
+       #raise ArithmeticError(f'ERROR: pft_frc does NOT add up to 100% = {opts["pft_frc"]}')
+       pass
 
 def write_transient_timeseries_file(transient, desc, sim_yr0, sim_yrn, queryfilopts, resol, 
                                     resolhrv, ssp_rcp, mkcrop, sim_yr_surfdat):
@@ -209,10 +226,10 @@ def write_transient_timeseries_file(transient, desc, sim_yr0, sim_yrn, queryfilo
        with open(landuse_timeseries_text_file, "w") as fh_landuse_timeseries:
           print(f"Writing out landuse_timeseries text file: {landuse_timeseries_text_file}")
           for yr in range(sim_yr0, sim_yrn + 1):
-             vegtypyr = subprocess.run(["queryDefaultNamelist.pl", queryfilopts, resol, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True).stdout
+             vegtypyr = subprocess.run([queryDefaultNamelist, queryfilopts, resol, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True, text=True).stdout
              vegtypyr.rstrip('\n')
              fh_landuse_timeseries.write(dynpft_format.format(vegtypyr, strlen, yr))
-             hrvtypyr = subprocess.run(["queryDefaultNamelist.pl", queryfilopts, resolhrv, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True).stdout
+             hrvtypyr = subprocess.run([queryDefaultNamelist, queryfilopts, resolhrv, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True, text=True).stdout
              hrvtypyr.rstrip('\n')
              fh_landuse_timeseries.write(dynpft_format.format(hrvtypyr, strlen, yr))
              if (yr % 100 == 0):
@@ -241,7 +258,7 @@ def write_namelist_file(namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fn
     """
     orig_cwd = os.getcwd()
     os.chdir(scrdir)
-    gitdescribe = subprocess.run(["git", "describe"], capture_output=True).stdout
+    gitdescribe = subprocess.run(["git", "describe"], capture_output=True, text=True).stdout
     os.chdir(orig_cwd)
 
     with open(namelist_fname, "w") as fh:
@@ -328,15 +345,16 @@ def write_namelist_file(namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fn
        print(fh.readlines())
 
 def main():
-   definition = object #Build::Namelistdefinition.new( $nldef_file );
+   nldef_file = "$scrdir/../../bld/namelist_files/namelist_definition_clm4_5.xml"
+   definition = NamelistDefinition(nldef_file)
 
    try:
       os.chdir( opts["rundir"] ) 
    except:
       raise SystemError(f'** cant change to directory: {opts["rundir"]}')
    # If csmdata was changed from the default
-   if (CSMDATA != opts["csmdata"]):
-      CSMDATA = opts["csmdata"]
+   #if (CSMDATA != opts["csmdata"]):
+   CSMDATA = opts["csmdata"]
    glc_nec = opts["glc_nec"]
    if (glc_nec <= 0):
       print("** glc_nec must be at least 1")
@@ -370,7 +388,7 @@ def main():
    years = opts["years"].split(",")
    # Check that resolutions are valid
    for sim_year in years:
-     if (("-" == sim_year[4]) or ("-" == sim_year[3])):
+     if "-" in sim_year:
        # range of years for transient run
        if (not definition.is_valid_value( "sim_year_range", sim_year )):
          print(f"** Invalid simulation simulation year range: {sim_year}")
@@ -405,7 +423,7 @@ def main():
        opts["pft_override"] = 1
 
    # Check if dynpft set and is valid filename
-   if ("dynpft" in opts)):
+   if "dynpft" in opts:
        if not os.path.isfile(opts["dynpft"]):
           print(f'** Dynamic PFT file does NOT exist: {opts["dynpft"]}')
           usage()
@@ -420,8 +438,8 @@ def main():
    subprocess.run(["rm", "-f", cfile])
    subprocess.run(["touch", cfile])
    with open(cfile, "w") as cfh:
-      cfh.write("""#!/bin/csh -f
-      set CSMDATA = CSMDATA
+      cfh.write(f"""#!/bin/csh -f
+      set CSMDATA = {CSMDATA}
       """)
    subprocess.run(["chmod", "+x", "cfile"])
 
@@ -434,11 +452,11 @@ def main():
    #
    # Loop over all resolutions and sim-years listed
    #
+   numpft = 78
    for res in hresols:
       #
       # Query the XML default file database to get the appropriate files
       #
-      queryopts, queryfilopts 
       if (opts["hgrid"] == "usrspec"):
 	      queryopts = f"-csmdata {CSMDATA} -silent -justvalue"
       else:
@@ -456,10 +474,10 @@ def main():
       #
       map, hgrd, lmsk, datfil, filnm = {}, {}, {}, {}, {}
       hirespft = "off"
-      if "hirespft" in opts:
+      if opts["hirespft"]:
          hirespft = "on"
       merge_gis = "off"
-      if "merge_gis" in opts:
+      if opts["merge_gis"]:
          merge_gis = "on"
 
       mopts  = f"{queryopts} -namelist default_settings {usrnam}"
@@ -472,208 +490,203 @@ def main():
       if (not opts["fast_maps"]):
          typlist.append("topostats")
 
+      queryDefaultNamelist = "../clm5.0/bld/queryDefaultNamelist.pl"
+      args = [queryDefaultNamelist] + mopts.split()
       for typ in typlist:
-         lmask = subprocess.run(["queryDefaultNamelist.pl", mopts, "-options", f"type={typ},mergeGIS={merge_gis},hirespft={hirespft}", "-var", "lmask"], capture_output=True).stdout
-         lmask = lmask.strip()
-         hgrid_cmd = ["queryDefaultNamelist.pl", mopts, "-options", f"type={typ},hirespft={hirespft}", "-var", "hgrid"]
-         hgrid = subprocess.run(hgrid_cmd, capture_output=True).stdout
+         lmask_query = subprocess.run(args + ["-options", f"type={typ},mergeGIS={merge_gis},hirespft={hirespft}", "-var", "lmask"], capture_output=True, text=True).stdout.strip()
+         hgrid_query = subprocess.run(args + ["-options", f"type={typ},hirespft={hirespft}", "-var", "hgrid"], capture_output=True, text=True).stdout.strip()
          if debug:
            print("query to determine hgrid:\n    hgrid_cmd \n\n")
 
-         hgrid = hgrid.strip()
-         filnm = subprocess.run(["queryDefaultNamelist.pl", mopts, "-options", f"type={typ}", "-var" "mksrf_filename"], capture_output=True).stdout
-         filnm = filnm.strip()
-         filnm[typ] = filnm
-         hgrd[typ] = hgrid
-         lmsk[typ]  = lmask
+         filnm_query = subprocess.run(args + ["-options", f"type={typ}", "-var", "mksrf_filename"], capture_output=True, text=True).stdout.strip()
+         filnm[typ] = filnm_query
+         hgrd[typ] = hgrid_query
+         lmsk[typ]  = lmask_query
 
          if (opts["hgrid"] == "usrspec"):
-            map[typ] = opts["usr_mapdir"] + f"/map_{hgrid}_{lmask}_to_{res}_nomask_aave_da_c{mapdate}\.nc"
+            map[typ] = opts["usr_mapdir"] + f"/map_{hgrid_query}_{lmask_query}_to_{res}_nomask_aave_da_c{mapdate}\.nc"
          else:
-            map[typ] = subprocess.run(["queryDefaultNamelist.pl", queryfilopts, "-namelist", "clmexp", "-options", f"frm_hgrid={hgrid},frm_lmask={lmask},to_hgrid={res},to_lmask=nomask", "-var", "map"], capture_output=True).stdout
+            map[typ] = subprocess.run([queryDefaultNamelist] + queryfilopts.split() + ["-namelist", "clmexp", "-options", f"frm_hgrid={hgrid},frm_lmask={lmask},to_hgrid={res},to_lmask=nomask", "-var", "map"], capture_output=True, text=True).stdout.strip()
 	     
-         map[typ] = map[typ].strip()
          if (map[typ] == ""):
             raise FileNotFoundError("ERROR: could NOT find a mapping file for this resolution: res and type: typ at hgrid and lmask.")
          
          if (not "allownofile" in opts) and not os.path.isfile(map[typ]):
             raise FileNotFoundError(f'ERROR: mapping file for this resolution does NOT exist ({map[typ]}).')
-
-         #
-         # Grid file from the pft map file or grid if not found
-         #
-         griddata    = map["veg"].strip()
+      #
+      # Grid file from the pft map file or grid if not found
+      #
+      griddata    = map["veg"].strip()
+      if (griddata == ""):
+         griddata = subprocess.run([queryDefaultNamelist] + queryfilopts.split() + [usrnam, "-var", "fatmgrid"], capture_output=True, text=True).stdout
          if (griddata == ""):
-            griddata = subprocess.run(["queryDefaultNamelist.pl", queryfilopts, usrnam, "-var", "fatmgrid"], capture_output=True).stdout
-            if (griddata == ""):
-               raise FileNotFoundError(f"ERROR: could NOT find a grid data file for this resolution: {res}.")
- 
-         desc = ""
-         desc_surfdat = ""
-         #
-         # Check if all urban single point dataset
-         #
-         all_urb = ["1x1_camdenNJ","1x1_vancouverCAN", "1x1_mexicocityMEX", "1x1_urbanc_alpha"]
-         all_urb = False
-         urb_pt  = 0
-         for urb_res in all_urb:
-            if res == urb_res:
-               all_urb = True
-               if (res != "1x1_camdenNJ"): urb_pt  = 1 
-         #
-         # Always run at double precision for output
-         #
-         double = True
-         #
-         # Loop over each SSP-RCP scenario
-         #
-         for ssp_rcp in rcpaths:
-         #
-         # Loop over each sim_year
-         #
-            for sim_year in years:
-               #
-               # Skip if urban unless sim_year=2000
-               #
-               if (urb_pt and sim_year != '2000'):
-                  print("For urban -- skip this simulation year = sim_year")
-                  continue
+            raise FileNotFoundError(f"ERROR: could NOT find a grid data file for this resolution: {res}.")
 
-               #
-               # If year is 1850-2000 actually run 1850-2015
-               #
-               if (sim_year == "1850-2000"):
-                  actual = "1850-2015"
-                  print(f"For {sim_year} actually run {actual}")
-                  sim_year = actual
+      desc = ""
+      desc_surfdat = ""
+      #
+      # Check if all urban single point dataset
+      #
+      urb_datasets = ["1x1_camdenNJ","1x1_vancouverCAN", "1x1_mexicocityMEX", "1x1_urbanc_alpha"]
+      all_urb = False
+      urb_pt  = 0
+      for urb_res in urb_datasets:
+         if res == urb_res:
+            all_urb = True
+            if (res != "1x1_camdenNJ"): urb_pt  = 1 
+      #
+      # Always run at double precision for output
+      #
+      double = True
+      #
+      # Loop over each SSP-RCP scenario
+      #
+      for ssp_rcp in rcpaths:
+      #
+      # Loop over each sim_year
+      #
+         for sim_year in years:
+            #
+            # Skip if urban unless sim_year=2000
+            #
+            if (urb_pt and sim_year != '2000'):
+               print("For urban -- skip this simulation year = sim_year")
+               continue
 
-               urbdesc = "urb3den"
-               resol    = "-res " + hgrd["veg"]
-               resolhrv = "-res " + hgrd["hrv"]
-               sim_yr0 = sim_year
-               sim_yrn = sim_year
-               transient = 0
-               sim_year_arr = sim_year.split("-")
-               if len(sim_year_arr) >= 2:
-                  sim_yr0 = sim_year_arr[0]
-                  sim_yrn = sim_year_arr[1]
-                  transient = 1
+            #
+            # If year is 1850-2000 actually run 1850-2015
+            #
+            if (sim_year == "1850-2000"):
+               actual = "1850-2015"
+               print(f"For {sim_year} actually run {actual}")
+               sim_year = actual
 
-               #
-               # Find the file for each of the types
-               #
-               for typ in typlist:
-                  hgrid = hgrd[typ]
-                  lmask = lmsk[typ]
-                  filnm = filnm[typ]
-                  typ_cmd = ["queryDefaultNamelist.pl", mkopts, "-options", 
-                              f"hgrid={hgrid},lmask={lmask},mergeGIS={merge_gis}{mkcrop},sim_year={sim_yr0}", "-var", filnm]
-                  datfil[typ] = subprocess.run(typ_cmd, capture_output=True).stdout
-                  datfil[typ] = datfil[typ].strip()
-                  if (datfil[typ] == ""):
-                     raise FileNotFoundError(f"ERROR: could NOT find a {filnm} data file for this resolution: {hgrid} and type: {typ} and {lmask}.\n{typ_cmd}\n")
-      
-                  if (not "allownofile" in opts) and not os.path.isfile(datfil[typ]):
-                     raise FileNotFoundError(f"ERROR: data file for this resolution does NOT exist ({datfil[typ]}).")
+            urbdesc = "urb3den"
+            resol    = "-res " + hgrd["veg"]
+            resolhrv = "-res " + hgrd["hrv"]
+            sim_yr0 = sim_year
+            sim_yrn = sim_year
+            transient = 0
+            sim_year_arr = sim_year.split("-")
+            if len(sim_year_arr) >= 2:
+               sim_yr0 = sim_year_arr[0]
+               sim_yrn = sim_year_arr[1]
+               transient = 1
+
+            #
+            # Find the file for each of the types
+            #
+            for typ in typlist:
+               hgrid = hgrd[typ]
+               lmask = lmsk[typ]
+               filnm = filnm[typ]
+               typ_cmd = [queryDefaultNamelist] + mkopts.split() + ["-options", 
+                           f"hgrid={hgrid},lmask={lmask},mergeGIS={merge_gis}{mkcrop},sim_year={sim_yr0}", "-var", filnm]
+               datfil[typ] = subprocess.run(typ_cmd, capture_output=True, text=True).stdout.strip()
+               if (datfil[typ] == ""):
+                  raise FileNotFoundError(f"ERROR: could NOT find a {filnm} data file for this resolution: {hgrid} and type: {typ} and {lmask}.\n{typ_cmd}\n")
    
+               if (not "allownofile" in opts) and not os.path.isfile(datfil[typ]):
+                  raise FileNotFoundError(f"ERROR: data file for this resolution does NOT exist ({datfil[typ]}).")
 
-               # determine simulation year to use for the surface dataset:
-               sim_yr_surfdat = sim_yr0
-            
-               cmd    = ["queryDefaultNamelist.pl", queryfilopts, resol, "-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
-               vegtyp = subprocess.run(cmd, capture_output=True).stdout
-               vegtyp.rstrip('\n')
-               if (vegtyp == ""):
-                  raise RuntimeError(f"** trouble getting vegtyp file with: {cmd}")
 
-               cmd    = ["queryDefaultNamelist.pl", queryfilopts, resolhrv, "-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
-               hrvtyp = subprocess.run(cmd, capture_output=True).stdout
-               hrvtyp.rstrip('\n')
-               if (hrvtyp == ""):
-                  raise RuntimeError(f"** trouble getting hrvtyp file with: {cmd}")
+            # determine simulation year to use for the surface dataset:
+            sim_yr_surfdat = sim_yr0
+         
+            cmd    = [queryDefaultNamelist] + queryfilopts.split() + resol.split() + ["-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
+            vegtyp = subprocess.run(cmd, capture_output=True, text=True).stdout
+            vegtyp.rstrip('\n')
+            if (vegtyp == ""):
+               raise RuntimeError(f"** trouble getting vegtyp file with: {cmd}")
 
-               options = ""
-               crpdes  = "{:02d}pfts".format(numpft)
-               if (numpft == 16):
-                  crpdes = crpdes + "_Irrig"
+            cmd    = [queryDefaultNamelist] + queryfilopts.split() + resolhrv.split() + ["-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
+            hrvtyp = subprocess.run(cmd, capture_output=True, text=True).stdout
+            hrvtyp.rstrip('\n')
+            if (hrvtyp == ""):
+               raise RuntimeError(f"** trouble getting hrvtyp file with: {cmd}")
 
-               if (mkcrop != ""):
-                  options = "-options " + mkcrop
+            options = ""
+            crpdes  = "{:02d}pfts".format(numpft)
+            if (numpft == 16):
+               crpdes = crpdes + "_Irrig"
 
-               desc         = "{}_{}_{}_simyr{}-{:04d}".format(ssp_rcp, crpdes, cmip_series, sim_yr0, sim_yrn)
-               desc_surfdat = "{}_{}_{}_simyr{}".format(ssp_rcp, crpdes, cmip_series, sim_yr_surfdat)
+            if (mkcrop != ""):
+               options = "-options " + mkcrop
 
-               fsurdat_fname_base = ""
-               fsurdat_fname = ""
-               if (not opts["no_surfdata"]):
-                  fsurdat_fname_base = f"surfdata_{res}_{desc_surfdat}_{sdate}"
-                  fsurdat_fname = fsurdat_fname_base * ".nc"
+            desc         = "{}_{}_{}_simyr{}-{:04d}".format(ssp_rcp, crpdes, cmip_series, sim_yr0, sim_yrn)
+            desc_surfdat = "{}_{}_{}_simyr{}".format(ssp_rcp, crpdes, cmip_series, sim_yr_surfdat)
 
-               fdyndat_fname_base = ""
-               fdyndat_fname = ""
-               if transient:
-                  fdyndat_fname_base = f"landuse.timeseries_{res}_{desc}_{sdate}"
-                  fdyndat_fname = fdyndat_fname_base + ".nc"
+            fsurdat_fname_base = ""
+            fsurdat_fname = ""
+            if (not opts["no_surfdata"]):
+               fsurdat_fname_base = f"surfdata_{res}_{desc_surfdat}_{sdate}"
+               fsurdat_fname = fsurdat_fname_base * ".nc"
 
-               if (not fsurdat_fname and not fdyndat_fname):
-                  raise RuntimeError("ERROR: Tried to run mksurfdata_map without creating either a surface dataset or a landuse.timeseries file")
+            fdyndat_fname_base = ""
+            fdyndat_fname = ""
+            if transient:
+               fdyndat_fname_base = f"landuse.timeseries_{res}_{desc}_{sdate}"
+               fdyndat_fname = fdyndat_fname_base + ".nc"
 
-               logfile_fname = ""
-               namelist_fname = ""
-               if fsurdat_fname_base:
-                  logfile_fname = fsurdat_fname_base + ".log"
-                  namelist_fname = fsurdat_fname_base + ".namelist"
-               else:
-                  logfile_fname = fdyndat_fname_base + ".log"
-                  namelist_fname = fdyndat_fname_base + ".namelist"
+            if (not fsurdat_fname and not fdyndat_fname):
+               raise RuntimeError("ERROR: Tried to run mksurfdata_map without creating either a surface dataset or a landuse.timeseries file")
 
-               landuse_timeseries_text_file = write_transient_timeseries_file(
-                  transient, desc, sim_yr0, sim_yrn,
-                  queryfilopts, resol, resolhrv, ssp_rcp, mkcrop,
-                  sim_yr_surfdat)
+            logfile_fname = ""
+            namelist_fname = ""
+            if fsurdat_fname_base:
+               logfile_fname = fsurdat_fname_base + ".log"
+               namelist_fname = fsurdat_fname_base + ".namelist"
+            else:
+               logfile_fname = fdyndat_fname_base + ".log"
+               namelist_fname = fdyndat_fname_base + ".namelist"
 
-               print(f"CSMDATA is {CSMDATA} ")
-               print(f"resolution: {res} ssp_rcp={ssp_rcp} sim_year = {sim_year}")
-               print(f"namelist: {namelist_fname}")
-            
-               write_namelist_file(
-                  namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fname,
-                  glc_nec, griddata, map, datfil, double,
-                  all_urb, no_inlandwet, vegtyp, hrvtyp, 
-                  landuse_timeseries_text_file, setnumpft)
+            landuse_timeseries_text_file = write_transient_timeseries_file(
+               transient, desc, sim_yr0, sim_yrn,
+               queryfilopts, resol, resolhrv, ssp_rcp, mkcrop,
+               sim_yr_surfdat)
 
-               #
-               # Delete previous versions of files that will be created
-               #
-               subprocess.run(["rm", "-f", fsurdat_fname, logfile_fname])
-               #
-               # Run mksurfdata_map with the namelist file
-               #
-               exedir = scrdir
-               if "exedir" in opts:
-                  exedir = opts["exedir"]
+            print(f"CSMDATA is {CSMDATA} ")
+            print(f"resolution: {res} ssp_rcp={ssp_rcp} sim_year = {sim_year}")
+            print(f"namelist: {namelist_fname}")
+         
+            write_namelist_file(
+               namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fname,
+               glc_nec, griddata, map, datfil, double,
+               all_urb, no_inlandwet, vegtyp, hrvtyp, 
+               landuse_timeseries_text_file, setnumpft)
 
-               print(f"{exedir}/mksurfdata_map < {namelist_fname}")
-               if (not opts["debug"]):
-                  errcode = subprocess.run([f"{exedir}/mksurfdata_map", "<", namelist_fname]).returncode
-                  if errcode != 0: raise RuntimeError(f"ERROR in mksurfdata_map: {errcode}\n")
+            #
+            # Delete previous versions of files that will be created
+            #
+            subprocess.run(["rm", "-f", fsurdat_fname, logfile_fname])
+            #
+            # Run mksurfdata_map with the namelist file
+            #
+            exedir = scrdir
+            if "exedir" in opts:
+               exedir = opts["exedir"]
 
-               print("\n===========================================\n")
+            print(f"{exedir}/mksurfdata_map < {namelist_fname}")
+            if (not opts["debug"]):
+               errcode = subprocess.run([f"{exedir}/mksurfdata_map", "<", namelist_fname]).returncode
+               if errcode != 0: raise RuntimeError(f"ERROR in mksurfdata_map: {errcode}\n")
 
-               #
-               # If urban point, overwrite urban variables from previous surface dataset to this one
-               #
-               if (urb_pt and not opts["no_surfdata"]):
-                  prvsurfdata = subprocess.run(["queryDefaultNamelist.pl", "queryopts", "-var", "fsurdat"])
-                  if (errcode != 0):
-                     raise FileNotFoundError("ERROR:: previous surface dataset file NOT found")
-      
-                  prvsurfdata.rstrip('\n')
-                  varlist = "CANYON_HWR,EM_IMPROAD,EM_PERROAD,EM_ROOF,EM_WALL,HT_ROOF,THICK_ROOF,THICK_WALL,T_BUILDING_MIN,WIND_HGT_CANYON,WTLUNIT_ROOF,WTROAD_PERV,ALB_IMPROAD_DIR,ALB_IMPROAD_DIF,ALB_PERROAD_DIR,ALB_PERROAD_DIF,ALB_ROOF_DIR,ALB_ROOF_DIF,ALB_WALL_DIR,ALB_WALL_DIF,TK_ROOF,TK_WALL,TK_IMPROAD,CV_ROOF,CV_WALL,CV_IMPROAD,NLEV_IMPROAD,PCT_URBAN,URBAN_REGION_ID"
-                  print("Overwrite urban parameters with previous surface dataset values")
-                  cmd = ["ncks", "-A", "-v", varlist, prvsurfdata, fsurdat_fname]
-                  print(cmd)
-                  if (not opts["debug"]): subprocess.run(cmd)
+            print("\n===========================================\n")
+
+            #
+            # If urban point, overwrite urban variables from previous surface dataset to this one
+            #
+            if (urb_pt and not opts["no_surfdata"]):
+               prvsurfdata = subprocess.run([queryDefaultNamelist] + queryopts.split() + ["-var", "fsurdat"])
+               if (errcode != 0):
+                  raise FileNotFoundError("ERROR:: previous surface dataset file NOT found")
+   
+               prvsurfdata.rstrip('\n')
+               varlist = "CANYON_HWR,EM_IMPROAD,EM_PERROAD,EM_ROOF,EM_WALL,HT_ROOF,THICK_ROOF,THICK_WALL,T_BUILDING_MIN,WIND_HGT_CANYON,WTLUNIT_ROOF,WTROAD_PERV,ALB_IMPROAD_DIR,ALB_IMPROAD_DIF,ALB_PERROAD_DIR,ALB_PERROAD_DIF,ALB_ROOF_DIR,ALB_ROOF_DIF,ALB_WALL_DIR,ALB_WALL_DIF,TK_ROOF,TK_WALL,TK_IMPROAD,CV_ROOF,CV_WALL,CV_IMPROAD,NLEV_IMPROAD,PCT_URBAN,URBAN_REGION_ID"
+               print("Overwrite urban parameters with previous surface dataset values")
+               cmd = ["ncks", "-A", "-v", varlist, prvsurfdata, fsurdat_fname]
+               print(cmd)
+               if (not opts["debug"]): subprocess.run(cmd)
 
    print("Successfully created fsurdat files")
 
