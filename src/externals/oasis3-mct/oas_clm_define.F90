@@ -2,12 +2,23 @@ module oas_clm_define
 ! Based from https://github.com/HPSCTerrSys/TSMP/blob/master/bldsva/intf_oas3/clm3_5/oas3/oas_clm_define.F90
 ! [Work-in-progress]
     use mod_oasis
-
     implicit none
 
 contains
 
     subroutine oas_define_grid()
+        use shr_kind_mod , only : r8 => shr_kind_r8
+        use pio          , only : file_desc_t
+        use ncdio_pio
+
+        character(len=4)         :: grid_name='eclm'
+        integer                  :: n_lon, n_lat            ! dimensions in the 2 directions of space
+        integer                  :: n_cells                 ! n_lon * n_lat
+        real(r8)                 :: lon(:,:), lat(:,:)      ! longitudes and latitudes
+        real(r8)                 :: mask(:,:)                ! latitudes
+        type(file_desc_t)        :: ncid                    ! netcdf id
+        character(len=256)       :: filepath, domain_file  ! local file name
+
         ! -----------------------------------------------------------------
         ! ... Define the elements, i.e. specify the corner points for each
         !     volume element. 
@@ -24,6 +35,12 @@ contains
         !  using latlon%edges :  global edges (N,E,S,W)
         call oasis_start_grids_writing(1)
 
+        filepath = '../../domain.lnd.NRW_300x300.190619.nc'
+        call getfil(filepath, domain_file, 0)
+        call ncd_pio_openfile (ncid, trim(domain_file), 0)
+
+        ! Determine dimensions
+        call ncd_inqfdims(ncid, isgrid2d, n_lon, n_lat, n_cells)
         ! SUBROUTINE oasis_write_grid(cgrid, nx, ny, lon, lat)
         !    ''' Writes longitudes and latitudes for a model grid '''
         !    character(len=*),         intent (in) :: cgrid      !< grid name
@@ -32,7 +49,7 @@ contains
         !    real(kind=ip_double_p),   intent (in) :: lon(:,:)   !< longitudes
         !    real(kind=ip_double_p),   intent (in) :: lat(:,:)   !< latitudes
         !    integer(kind=ip_intwp_p), intent (in),optional :: partid  !< partition id if nonglobal data
-        call oasis_write_grid(clgrd, ndlon*ndlat, 1, tmp_2D(:,1), tmp_2D(:,2))
+        call oasis_write_grid(grid_name, n_lon, n_lat, lon(:,1), lat(:,2))
 
         ! SUBROUTINE oasis_write_corner(cgrid, nx, ny, nc, clon, clat)
         !    ''' writes the longitudes and latitudes of the grid cell corners. '''
@@ -43,7 +60,7 @@ contains
         !    real(kind=ip_double_p),   intent (in) :: clon(:,:,:) !< corner longitudes
         !    real(kind=ip_double_p),   intent (in) :: clat(:,:,:) !< corner latitudes
         !    integer(kind=ip_intwp_p), intent (in),optional :: partid  !< partition id if nonglobal data
-        call oasis_write_corner(clgrd, ndlon*ndlat, 1, 4, tmp_2D(:,1:4), tmp_2D(:,5:8))
+        call oasis_write_corner(grid_name, n_lon, n_lat, 4, lon(:,1:4), lat(:,5:8))
 
         ! SUBROUTINE oasis_write_mask(cgrid, nx, ny, mask)
         !    ''' create a new masks file or add a land sea mask to an existing masks file '''
@@ -52,7 +69,7 @@ contains
         !    integer(kind=ip_intwp_p), intent (in) :: ny          !< global ny size
         !    integer(kind=ip_intwp_p), intent (in) :: mask(:,:)   !< mask array
         !    integer(kind=ip_intwp_p), intent (in),optional :: partid  !< partition id if nonglobal data
-        call oasis_write_mask(clgrd, ndlon*ndlat, 1, oas_mask)
+        call oasis_write_mask(grid_name, n_lon, n_lat, mask)
 
         call oasis_terminate_grids_writing()
     end subroutine
