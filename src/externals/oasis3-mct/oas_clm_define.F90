@@ -1,16 +1,15 @@
 module oas_clm_define
 ! Based from https://github.com/HPSCTerrSys/TSMP/blob/master/bldsva/intf_oas3/clm3_5/oas3/oas_clm_define.F90
 ! [Work-in-progress]
+    use shr_kind_mod , only : r8 => shr_kind_r8
+    use pio          , only : file_desc_t
+    use ncdio_pio
     use mod_oasis
     implicit none
 
 contains
 
     subroutine oas_define_grid()
-        use shr_kind_mod , only : r8 => shr_kind_r8
-        use pio          , only : file_desc_t
-        use ncdio_pio
-
         character(len=4)         :: grid_name='eclm'
         integer                  :: n_lon, n_lat            ! dimensions in the 2 directions of space
         integer                  :: n_cells                 ! n_lon * n_lat
@@ -75,6 +74,16 @@ contains
     end subroutine
 
     subroutine oas_define_partition()
+        integer :: n_lon, n_lat      ! dimensions in the 2 directions of space
+        integer :: grid_id           ! id returned by oasis_def_partition
+        integer :: partition_def(4)  ! shape of arrays passed to PSMILe
+
+        ! Compute global offsets and local extents
+        partition_def(1) = 3              ! ORANGE style partition
+        partition_def(2) = 1              ! partitions number
+        partition_def(3) = 0              ! Global offset
+        partition_def(4) = n_lon*n_lat    ! Local extent
+
         ! SUBROUTINE oasis_def_partition (id_part, kparal, kinfo, ig_size)
         !    ''' define a decomposition '''
         !    INTEGER(kind=ip_intwp_p)              ,intent(out) :: id_part  !< field decomposition id
@@ -82,13 +91,32 @@ contains
         !    INTEGER(kind=ip_intwp_p), optional    ,intent(out) :: kinfo    !< return code
         !    INTEGER(kind=ip_intwp_p), optional    ,intent(in)  :: ig_size  !< total size of partition
         !    character(len=*)        , optional    ,intent(in)  :: name     !< name of partition
-        call oasis_def_partition(igrid, igparal, nerror)
+        call oasis_def_partition(grid_id, partition_def, nerror)
     end subroutine oas_define_partition
 
     subroutine oas_define_coupling_fields()
         ! --------------------
         !      Sent fields
         ! --------------------
+        type :: FLD_CPL          ! Type for coupling field information
+            logical             ::   laction   ! To be coupled or not
+            character(len = 12) ::   clname    ! Name of the coupling field
+            character(len = 3)  ::   ref       ! Type of the coupling field
+            character(len = 1)  ::   clgrid    ! Grid type
+            integer             ::   nid       ! Id of the field
+            integer             ::   level     ! # of soil layer
+        end type FLD_CPL
+        type(FLD_CPL), dimension(nmaxfld)  :: srcv, ssnd    ! Coupling fields
+        integer, parameter                 :: nmaxfld=200   ! Maximum number of coupling fields    
+        integer                            :: fld_nodims(2) ! Not used anymore in OASIS3-MCT
+        integer                            :: fld_shape(2)  ! min & max index for each dim of the coupling field
+        integer                            :: i, errcode
+
+        fld_nodims(1) = 1             ! Dimension number of exchanged arrays
+        fld_nodims(2) = 1             ! number of bundles (always 1 for OASIS3)
+        fld_shape(1)  = 1             ! minimum index for each dimension of the coupling field array
+        fld_shape(2)  = ndlon*ndlat   ! maximum index for each dimension of the coupling field array
+
         ssnd(1)%clname  = 'CLM_TAUX'      !  zonal wind stress
         ssnd(2)%clname  = 'CLM_TAUY'      !  meridional wind stress
         ssnd(3)%clname  = 'CLMLATEN'      !  total latent heat flux (W/m**2)
@@ -197,11 +225,20 @@ contains
         !    INTEGER(kind=ip_i4_p),intent(in)  :: id_var_shape(2*id_var_nodims(1)) !< size of field
         !    INTEGER(kind=ip_i4_p),intent(in)  :: ktype        !< type of coupling field
         !    INTEGER(kind=ip_i4_p),intent(out),optional :: kinfo    !< return code
-        ! Announce send variables
-        call oasis_def_var(ssnd(ji)%nid, ssnd(ji)%clname, igrid, var_nodims, OASIS_Out, ipshape, OASIS_Real, nerror)
-        ! Announce received variables
-        call oasis_def_var(srcv(ji)%nid, srcv(ji)%clname, igrid, var_nodims, OASIS_In, ipshape, OASIS_Real, nerror)
 
+        ! Announce send variables
+        do i = 1, nmaxfld     
+            if (ssnd(i)%laction) THEN 
+                call oasis_def_var(ssnd(i)%nid, ssnd(i)%clname, grid_id, fld_nodims, OASIS_Out, fld_shape, OASIS_Real, errcode)
+            end if
+        end do
+
+        ! Announce received variables
+        do i = 1, nmaxfld     
+            if (srcv(i)%laction) THEN 
+                call oasis_def_var(srcv(i)%nid, srcv(i)%clname, grid_id, fld_nodims, OASIS_In, fld_shape, OASIS_Real, errcode)
+            end if
+        end do
     end subroutine oas_define_coupling_fields
 
 end module oas_clm_define
