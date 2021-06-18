@@ -25,11 +25,11 @@ opts["inlandwet"] = None
 opts["help"] = 0
 opts["no_surfdata"] = 0
 opts["pft_override"] = None
-opts["pft_frc"] = "0" #None
-opts["pft_idx"] = "0" #None
+opts["pft_frc"] = None
+opts["pft_idx"] = None
 opts["soil_override"] = None
-opts["soil_cly"] = 0 #None
-opts["soil_snd"] = 0 #None
+opts["soil_cly"] = None
+opts["soil_snd"] = None
 opts["soil_col"] = None
 opts["soil_fmx"] = None
 opts["outnc_double"] = None
@@ -39,7 +39,7 @@ opts["rundir"] = os.getcwd()
 opts["usr_gname"] = "Nigeria"
 opts["usr_gdate"] = "200503"
 opts["usr_mapdir"] = CSMDATA + "/lnd/clm2/mappingdata/maps/Nigeria"
-opts["dynpft"] = "" #None
+opts["dynpft"] = None
 opts["csmdata"] = CSMDATA
 opts["urban_skip_abort_on_invalid_data_check"] = None
 
@@ -221,34 +221,38 @@ def write_transient_timeseries_file(transient, desc, sim_yr0, sim_yrn, queryfilo
     """
     strlen = 195
     dynpft_format = "{0:<{1}} {2:04d}"
+    landuse_timeseries_text_file = ""
     if transient:
-       landuse_timeseries_text_file = f"landuse_timeseries_{desc}.txt"
-       with open(landuse_timeseries_text_file, "w") as fh_landuse_timeseries:
-          print(f"Writing out landuse_timeseries text file: {landuse_timeseries_text_file}")
-          for yr in range(sim_yr0, sim_yrn + 1):
-             vegtypyr = subprocess.run([queryDefaultNamelist, queryfilopts, resol, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True, text=True).stdout
-             vegtypyr.rstrip('\n')
-             fh_landuse_timeseries.write(dynpft_format.format(vegtypyr, strlen, yr))
-             hrvtypyr = subprocess.run([queryDefaultNamelist, queryfilopts, resolhrv, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True, text=True).stdout
-             hrvtypyr.rstrip('\n')
-             fh_landuse_timeseries.write(dynpft_format.format(hrvtypyr, strlen, yr))
-             if (yr % 100 == 0):
-                print("year:", yr)
-       print("Done writing file")
-    elif opts["pft_override"] and "dynpft" in opts:
-       landuse_timeseries_text_file = opts["dynpft"]
-    else:
-       landuse_timeseries_text_file = f"landuse_timeseries_override_{desc}.txt"
-       with open(landuse_timeseries_text_file, "w") as fh_landuse_timeseries:
-          frstpft = (f'<pft_f>{opts["pft_frc"]}</pft_f>' +
-                     f'<pft_i>{opts["pft_frc"]}</pft_i>' +
-                      '<harv>0,0,0,0,0</harv><graz>0</graz>')
-          print(f"Writing out landuse_timeseries text file: {landuse_timeseries_text_file}")
-          l = len(frstpft)
-          if (l > strlen):
-             raise ValueError(f"ERROR PFT line is too long ({l}): {frstpft}")
-          fh_landuse_timeseries.write(frstpft, sim_yr_surfdat)
-       print("Done writing file")
+       if (opts["dynpft"] is None and not opts["pft_override"]):
+         landuse_timeseries_text_file = f"landuse_timeseries_{desc}.txt"
+         queryDefaultNamelist = "/home/p.rigor/Codes/00_CLM/GH_CLM5.0/bld/queryDefaultNamelist.pl"
+         with open(landuse_timeseries_text_file, "w") as fh_landuse_timeseries:
+            print(f"Writing out landuse_timeseries text file: {landuse_timeseries_text_file}")
+            for yr in range(sim_yr0, sim_yrn + 1):
+               vegtypyr = subprocess.run([queryDefaultNamelist, queryfilopts, resol, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True, text=True).stdout
+               vegtypyr.rstrip('\n')
+               fh_landuse_timeseries.write(dynpft_format.format(vegtypyr, strlen, yr))
+               hrvtypyr = subprocess.run([queryDefaultNamelist, queryfilopts, resolhrv, "-options", f"sim_year={yr},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"], capture_output=True, text=True).stdout
+               hrvtypyr.rstrip('\n')
+               fh_landuse_timeseries.write(dynpft_format.format(hrvtypyr, strlen, yr))
+               if (yr % 100 == 0):
+                  print("year:", yr)
+         print("Done writing file")
+       elif opts["pft_override"] and "dynpft" in opts:
+         landuse_timeseries_text_file = opts["dynpft"]
+       else:
+         landuse_timeseries_text_file = f"landuse_timeseries_override_{desc}.txt"
+         with open(landuse_timeseries_text_file, "w") as fh_landuse_timeseries:
+            frstpft = (f'<pft_f>{opts["pft_frc"]}</pft_f>' +
+                        f'<pft_i>{opts["pft_frc"]}</pft_i>' +
+                        '<harv>0,0,0,0,0</harv><graz>0</graz>')
+            print(f"Writing out landuse_timeseries text file: {landuse_timeseries_text_file}")
+            l = len(frstpft)
+            if (l > strlen):
+               raise ValueError(f"ERROR PFT line is too long ({l}): {frstpft}")
+            fh_landuse_timeseries.write(dynpft_format.format(frstpft, strlen, sim_yr_surfdat))
+            print("Done writing file")
+    return landuse_timeseries_text_file
 
 def write_namelist_file(namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fname,
                         glc_nec, griddata, map, datfil, double,
@@ -256,10 +260,12 @@ def write_namelist_file(namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fn
                         landuse_timeseries_text_file, setnumpft):
     """
     """
-    orig_cwd = os.getcwd()
-    os.chdir(scrdir)
-    gitdescribe = subprocess.run(["git", "describe"], capture_output=True, text=True).stdout
-    os.chdir(orig_cwd)
+   # TODO: Read `git describe` output from scrdir=clm5.0/tools/mksurfdata_map
+   #  orig_cwd = os.getcwd()
+   #  os.chdir(scrdir)
+   #  gitdescribe = subprocess.run(["git", "describe"], capture_output=True, text=True).stdout
+   #  os.chdir(orig_cwd)
+    gitdescribe = "release-clm5.0.34-24-gdc5ea974 ../CESMDATAROOT/inputdata/lnd/clm2/surfdata_map"
 
     with open(namelist_fname, "w") as fh:
        fh.write(f"""&clmexp
@@ -345,7 +351,8 @@ def write_namelist_file(namelist_fname, logfile_fname, fsurdat_fname, fdyndat_fn
        print(fh.readlines())
 
 def main():
-   nldef_file = "$scrdir/../../bld/namelist_files/namelist_definition_clm4_5.xml"
+   clm5 = "" # set full path to CLM5
+   nldef_file = f"{clm5}/bld/namelist_files/namelist_definition_clm4_5.xml"
    definition = NamelistDefinition(nldef_file)
 
    try:
@@ -411,19 +418,18 @@ def main():
    # CMIP series input data is corresponding to
    cmip_series = "CMIP6"
    # Check if soil set
-   if ("soil_cly" in opts or \
-         "soil_snd" in opts):
+   if (opts["soil_cly"] is not None and opts["soil_snd"] is not None):
        check_soil()
        opts["soil_override"] = 1
 
    # Check if pft set
    if (not opts["crop"]): numpft = 16   # First set numpft if crop is off
-   if ("pft_frc" in opts or "pft_idx" in opts):
+   if (opts["pft_frc"] is not None and opts["pft_idx"] is not None):
        check_pft( )
        opts["pft_override"] = 1
 
    # Check if dynpft set and is valid filename
-   if "dynpft" in opts:
+   if opts["dynpft"] is not None:
        if not os.path.isfile(opts["dynpft"]):
           print(f'** Dynamic PFT file does NOT exist: {opts["dynpft"]}')
           usage()
@@ -441,13 +447,13 @@ def main():
       cfh.write(f"""#!/bin/csh -f
       set CSMDATA = {CSMDATA}
       """)
-   subprocess.run(["chmod", "+x", "cfile"])
+   subprocess.run(["chmod", "+x", cfile])
 
    surfdir = "lnd/clm2/surfdata"
 
    # string to add to options for crop off or on
-   mkcrop_off = ",crop='on'"
-   mkcrop_on  = ",crop='on'"
+   mkcrop_off = ",crop=on"
+   mkcrop_on  = ",crop=on"
 
    #
    # Loop over all resolutions and sim-years listed
@@ -490,7 +496,7 @@ def main():
       if (not opts["fast_maps"]):
          typlist.append("topostats")
 
-      queryDefaultNamelist = "../clm5.0/bld/queryDefaultNamelist.pl"
+      queryDefaultNamelist = f"{clm5}/bld/queryDefaultNamelist.pl"
       args = [queryDefaultNamelist] + mopts.split()
       for typ in typlist:
          lmask_query = subprocess.run(args + ["-options", f"type={typ},mergeGIS={merge_gis},hirespft={hirespft}", "-var", "lmask"], capture_output=True, text=True).stdout.strip()
@@ -577,14 +583,10 @@ def main():
             # Find the file for each of the types
             #
             for typ in typlist:
-               hgrid = hgrd[typ]
-               lmask = lmsk[typ]
-               filnm = filnm[typ]
-               typ_cmd = [queryDefaultNamelist] + mkopts.split() + ["-options", 
-                           f"hgrid={hgrid},lmask={lmask},mergeGIS={merge_gis}{mkcrop},sim_year={sim_yr0}", "-var", filnm]
+               typ_cmd = [queryDefaultNamelist] + mkopts.split() + ["-options", f"hgrid={hgrd[typ]},lmask={lmsk[typ]},mergeGIS={merge_gis}{mkcrop},sim_year={sim_yr0}", "-var", filnm[typ]]
                datfil[typ] = subprocess.run(typ_cmd, capture_output=True, text=True).stdout.strip()
                if (datfil[typ] == ""):
-                  raise FileNotFoundError(f"ERROR: could NOT find a {filnm} data file for this resolution: {hgrid} and type: {typ} and {lmask}.\n{typ_cmd}\n")
+                  raise FileNotFoundError(f"ERROR: could NOT find a {filnm[typ]} data file for this resolution: {hgrd[typ]} and type: {typ} and {lmsk[typ]}.\n{typ_cmd}\n")
    
                if (not "allownofile" in opts) and not os.path.isfile(datfil[typ]):
                   raise FileNotFoundError(f"ERROR: data file for this resolution does NOT exist ({datfil[typ]}).")
@@ -593,15 +595,15 @@ def main():
             # determine simulation year to use for the surface dataset:
             sim_yr_surfdat = sim_yr0
          
-            cmd    = [queryDefaultNamelist] + queryfilopts.split() + resol.split() + ["-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
-            vegtyp = subprocess.run(cmd, capture_output=True, text=True).stdout
-            vegtyp.rstrip('\n')
+            cmd    = [queryDefaultNamelist] + queryfilopts.split() + resol.split() + \
+            ["-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
+            vegtyp = subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
             if (vegtyp == ""):
                raise RuntimeError(f"** trouble getting vegtyp file with: {cmd}")
 
-            cmd    = [queryDefaultNamelist] + queryfilopts.split() + resolhrv.split() + ["-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
-            hrvtyp = subprocess.run(cmd, capture_output=True, text=True).stdout
-            hrvtyp.rstrip('\n')
+            cmd    = [queryDefaultNamelist] + queryfilopts.split() + resolhrv.split() + \
+            ["-options", f"sim_year={sim_yr_surfdat}{mkcrop},ssp_rcp={ssp_rcp}{mkcrop}", "-var", "mksrf_fvegtyp", "-namelist", "clmexp"]
+            hrvtyp = subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
             if (hrvtyp == ""):
                raise RuntimeError(f"** trouble getting hrvtyp file with: {cmd}")
 
@@ -613,14 +615,14 @@ def main():
             if (mkcrop != ""):
                options = "-options " + mkcrop
 
-            desc         = "{}_{}_{}_simyr{}-{:04d}".format(ssp_rcp, crpdes, cmip_series, sim_yr0, sim_yrn)
+            desc = "{}_{}_{}_simyr{}-{:04d}".format(ssp_rcp, crpdes, cmip_series, sim_yr0, int(sim_yrn))
             desc_surfdat = "{}_{}_{}_simyr{}".format(ssp_rcp, crpdes, cmip_series, sim_yr_surfdat)
 
             fsurdat_fname_base = ""
             fsurdat_fname = ""
             if (not opts["no_surfdata"]):
                fsurdat_fname_base = f"surfdata_{res}_{desc_surfdat}_{sdate}"
-               fsurdat_fname = fsurdat_fname_base * ".nc"
+               fsurdat_fname = fsurdat_fname_base + ".nc"
 
             fdyndat_fname_base = ""
             fdyndat_fname = ""
@@ -662,8 +664,8 @@ def main():
             #
             # Run mksurfdata_map with the namelist file
             #
-            exedir = scrdir
-            if "exedir" in opts:
+            exedir = f"{clm5}/tools/mksurfdata_map" # TODO: read value from scrdir
+            if opts["exedir"] is not None:
                exedir = opts["exedir"]
 
             print(f"{exedir}/mksurfdata_map < {namelist_fname}")
