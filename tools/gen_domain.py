@@ -2,6 +2,8 @@
 
 import os
 import numpy as np
+from math import pi
+from datetime import datetime
 from netCDF4 import Dataset
 #-------------------------------------------------------------------------------
 # PURPOSE:
@@ -140,7 +142,7 @@ def gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, user
         if (not complf):
             # Determine ocn mask on ocn grid
             omask = fid.variables['mask' + suffix][:]
-            ofrac = c0
+            ofrac = np.zeros(n)
             omask[omask != 0] = c1
         else:
             #----------------------------------------------------------------------------
@@ -153,18 +155,18 @@ def gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, user
             row = fid.variables['row'][:]
             S = fid.variables['S'][:]
             mask_a = fid.variables['mask_a'][:]
-            frac_a = [c0]
+            frac_a = np.zeros(n)
             # where (mask_a /= 0) frac_a = [c1]
 
             #--- compute ocean fraction on atm grid ---
-            ofrac = c0
+            ofrac = np.zeros(n)
             for k in range(ns):
-                ofrac(row[k]) = ofrac(row[k]) + frac_a(col[k])*S[k]
+                ofrac[row[k]] = ofrac[row[k]] + frac_a[col[k]]*S[k]
 
                 #--- convert to land fraction, 1.0-frac and ---
                 #--- trap errors and modify computed frac ---
-            lmask = [0]*n
-            omask = [1]*n
+            lmask = np.zeros(n)
+            omask = np.ones(n)
             lfrac_min = fmaxval
             lfrac_max = fminval
             for k in range(n):
@@ -197,9 +199,9 @@ def gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, user
             if (ni > 1 and nj == 1):
                 if (dst_grid_rank != 2):
                     raise NotImplementedError("pole_fix not appropriate for unstructured grid")
-            for i in range(dst_grid_dims(1)):
-                yc(i)      = -c90
-                yc(n-dst_grid_dims(1)+i) =  c90
+            for i in range(dst_grid_dims[0]):
+                yc[i] = -c90
+                yc[n-dst_grid_dims[0]+i] = c90
 
 
         #-----------------------------------------------------------------
@@ -214,8 +216,8 @@ def gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, user
         print("nf = ", nf)
         if (nf == 1):
             if (src_grid_rank == 2):
-                ni = src_grid_dims(1)
-                nj = src_grid_dims(2)
+                ni = src_grid_dims[0]
+                nj = src_grid_dims[1]
             print("create ", fn_out)
             fid = Dataset(fn_out, "w", format="NETCDF4")
             print("write ", fn_out)
@@ -226,9 +228,9 @@ def gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, user
             print("successfully created domain file ", fn_out)
         elif (nf == 2):
             if (dst_grid_rank == 2):
-                ni = dst_grid_dims(1)
-                nj = dst_grid_dims(2)
-            end if
+                ni = dst_grid_dims[0]
+                nj = dst_grid_dims[1]
+
             fid = Dataset(fn_out_lnd, "w", format="NETCDF4")
             print("write ", fn_out_lnd)
             write_file(fid, fmap, units_xc, units_yc, n, ni, nj, nv, \
@@ -248,6 +250,7 @@ def gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, user
 def usage_exit (arg):
     """
     """
+    print(arg)
     print(" Purpose:")
     print("    Given a SCRIP map matrix data file from the ocean grid ")
     print("    (where the mask is defined) to the land grid, gen_domain ")
@@ -284,15 +287,104 @@ def usage_exit (arg):
     print("      ocean domain on the ocean grid ")
     print(" ")
 
-def write_file(fid, fmap, units_xc, units_yc, n, ni, nj, nv, \
+def write_file(fid: Dataset, fmap, units_xc, units_yc, n, ni, nj, nv, \
        xc, yc, xv, yv, area, mask, frac, suffix, eps, pole_fix, \
        fmaxval, fminval, str_da, str_db, str_grido, str_grida):
-    # TODO
-    pass
+    version = 'SVN $Id: gen_domain.F90 65202 2014-11-06 21:07:45Z mlevy@ucar.edu $'
+
+    # Set netCDF global attributes
+    fid.title = "CESM domain data: "
+    fid.Conventions = "CF-1.0"
+    fid.source_code = version
+    fid.SVN_url = " $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/gen_domain/trunk/src/gen_domain.F90 $"
+    fid.Compiler_Optimized = "FALSE"
+    fid.hostname = os.uname().nodename
+    fid.history = "created by {}, {}".format("user", datetime.now())
+    fid.source = fmap
+    fid.map_domain_a = str_da
+    fid.map_domain_b = str_db
+    fid.map_grid_file_ocn = str_grido
+    fid.map_grid_file_atm = str_grida
+    fid.user_comment = ""
+
+    # dimension data
+    fid.createDimension("n", n)   # of points total
+    fid.createDimension("ni", ni) # of points wrt i
+    fid.createDimension("nj", nj) # of points wrt j
+    fid.createDimension("nv", nv) # of verticies per cell
+
+    # define data -- coordinates, input grid
+    fid.createVariable("xc","f4",("nj","ni"))
+    fid.variables["xc"].long_name = "longitude of grid cell center"
+    fid.variables["xc"].units = "degrees_east"
+    fid.variables["xc"].bounds = "xv"
+
+    fid.createVariable("yc","f4",("nj","ni"))
+    fid.variables["yc"].long_name = "latitude of grid cell center"
+    fid.variables["yc"].units = "degrees_north"
+    fid.variables["yc"].bounds = "yv"
+    if pole_fix:
+        fid.variables["yc"].filter1 = "set_fv_pole_yc ON, yc = -+90 at j=1,j=nj"
+    
+    fid.createVariable("xv","f4",("nj", "ni", "nv"))
+    fid.variables["xv"].long_name = "longitude of grid cell verticies"
+    fid.variables["xv"].units = "degrees_east"
+
+    fid.createVariable("yv","f4",("nj", "ni", "nv"))
+    fid.variables["yv"].long_name = "latitude of grid cell verticies"
+    fid.variables["yv"].units = "degrees_north"
+
+    fid.createVariable("mask","i4",("nj","ni"))
+    fid.variables["mask"].long_name = "domain mask"
+    fid.variables["mask"].note = "unitless"
+    fid.variables["mask"].coordinates = "xc yc"
+    fid.variables["mask"].comment = "0 value indicates cell is not active"
+
+    fid.createVariable("area","f4",("nj","ni"))
+    fid.variables["area"].long_name = "area of grid cell in radians squared"
+    fid.variables["area"].coordinates = "xc yc"
+    fid.variables["area"].units = "radian2"
+
+    fid.createVariable("frac","f4",("nj","ni"))
+    fid.variables["frac"].long_name = "fraction of grid cell that is active"
+    fid.variables["frac"].coordinates = "xc yc"
+    fid.variables["frac"].note = "unitless"
+    fid.variables["frac"].filter1 = f"error if frac> 1.0+eps or frac < 0.0-eps; eps = {eps}"
+    fid.variables["frac"].filter2 = f"limit frac to [fminval,fmaxval]; fminval={fminval}, fmaxval={fmaxval}"
+
+    if units_xc == "radians":
+        xc = xc * 100 / pi
+        xv = xv * 100 / pi
+        units_xc = "degrees"
+
+    if units_yc == "radians":
+        yc = yc * 100 / pi
+        yv = yv * 100 / pi
+        units_yc = "degrees"
+    
+    fid.variables["xc"][:,:] = xc
+    fid.variables["yc"][:,:] = yc
+    fid.variables["xv"][:,:,:] = xv
+    fid.variables["yv"][:,:,:] = yv
+    fid.variables["mask"][:,:] = mask
+    fid.variables["area"][:,:] = area
+    fid.variables["frac"][:,:] = frac
 
 def main():
-    # TODO
-    pass
+    # TODO: read these params from command line
+    set_fv_pole_yc = 0
+    fmap = "$CESMDATAROOT/inputdata/lnd/clm2/mappingdata/maps/Nigeria/map_0.9x1.25_GRDC_to_Nigeria_nomask_aave_da_c200503.nc"
+    fn1_out = 'Nigeria'
+    fn2_out = 'Nigeria'
+    usercomment = 'null'
+
+    if (fmap == 'null' or fn1_out == 'null' or fn2_out== 'null'):
+        usage_exit ('Must specify all the following arguments')
+    cdate = "c{}".format(datetime.now().strftime("%Y%m%d"))
+    fn1_out_ocn = f"domain.ocn.{fn1_out}.{cdate}.nc"
+    fn2_out_lnd = f"domain.lnd.{fn2_out}_{fn1_out}.{cdate}.nc"
+    fn2_out_ocn = f"domain.ocn.{fn2_out}_{fn1_out}.{cdate}.nc"
+    gen_domain (fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, usercomment)
 
 if __name__ == "__main__":
    main()
