@@ -34,6 +34,7 @@ if (USE_OASIS)
     target_sources(${PROJECT_NAME} 
         PRIVATE
             oasis3/oas_defineMod.F90
+            oasis3/oas_vardefMod.F90
     )
 endif()
 target_sources(${PROJECT_NAME} 
