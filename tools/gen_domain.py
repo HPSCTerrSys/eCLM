@@ -149,19 +149,19 @@ def gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, user
             print("compute frac")
             #----------------------------------------------------------------------------
 
-            lmask = []
-            lfrac = []
+            lmask = np.zeros(n)
+            lfrac = np.zeros(n)
             col = fid.variables['col'][:]
             row = fid.variables['row'][:]
             S = fid.variables['S'][:]
             mask_a = fid.variables['mask_a'][:]
             frac_a = np.zeros(n)
-            # where (mask_a /= 0) frac_a = [c1]
+            # where (mask_a /= 0) frac_a = [c1] TODO
 
             #--- compute ocean fraction on atm grid ---
             ofrac = np.zeros(n)
             for k in range(ns):
-                ofrac[row[k]] = ofrac[row[k]] + frac_a[col[k]]*S[k]
+                ofrac[row[k]-1] = ofrac[row[k]-1] + frac_a[col[k]-1]*S[k]
 
                 #--- convert to land fraction, 1.0-frac and ---
                 #--- trap errors and modify computed frac ---
@@ -362,13 +362,13 @@ def write_file(fid: Dataset, fmap, units_xc, units_yc, n, ni, nj, nv, \
         yv = yv * 100 / pi
         units_yc = "degrees"
     
-    fid.variables["xc"][:,:] = xc
-    fid.variables["yc"][:,:] = yc
-    fid.variables["xv"][:,:,:] = xv
-    fid.variables["yv"][:,:,:] = yv
-    fid.variables["mask"][:,:] = mask
-    fid.variables["area"][:,:] = area
-    fid.variables["frac"][:,:] = frac
+    fid.variables["xc"][:,:] = xc.reshape((nj,ni))
+    fid.variables["yc"][:,:] = yc.reshape((nj,ni))
+    fid.variables["xv"][:,:,:] = xv.reshape((nj,ni,nv))
+    fid.variables["yv"][:,:,:] = yv.reshape((nj,ni,nv))
+    fid.variables["mask"][:,:] = mask.reshape((nj,ni))
+    fid.variables["area"][:,:] = area.reshape((nj,ni))
+    fid.variables["frac"][:,:] = frac.reshape((nj,ni))
 
 def main():
     # TODO: read these params from command line
