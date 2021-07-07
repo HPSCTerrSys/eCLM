@@ -50,7 +50,7 @@ contains
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use clm_varcon       , only : denh2o, denice
     use clm_varctl       , only : use_vichydro
-    use clm_varpar       , only : nlevgrnd, nlevurb
+    use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage, PerchedLateralFlow, LateralFlowPowerLaw
     use SoilWaterMovementMod , only : use_aquifer_layer
@@ -106,7 +106,9 @@ contains
          qflx_rsub_sat      => waterflux_inst%qflx_rsub_sat_col      , & ! soil saturation excess [mm h2o/s]  
          qflx_drain         => waterflux_inst%qflx_drain_col         , & ! sub-surface runoff (mm H2O /s) 
          qflx_surf          => waterflux_inst%qflx_surf_col          , & ! surface runoff (mm H2O /s)      
-         qflx_infl          => waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)   
+         qflx_infl          => waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)
+         qflx_rootsoi       => waterflux_inst%qflx_rootsoi_col       , & ! root and soil water exchange [mm H2O/s] [+ into root]
+         qflx_parflow_col   => waterflux_inst%qflx_parflow_col       , & ! source/sink flux passed to ParFlow for each soil layer
          qflx_qrgwl         => waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes
          qflx_runoff        => waterflux_inst%qflx_runoff_col        , & ! total runoff 
                                                                          ! (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
@@ -114,7 +116,7 @@ contains
          qflx_runoff_r      => waterflux_inst%qflx_runoff_r_col      , & ! Rural total runoff 
                                                                          ! (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
          qflx_ice_runoff_snwcp => waterflux_inst%qflx_ice_runoff_snwcp_col, &  ! solid runoff from snow capping (mm H2O /s)
-         qflx_irrig         => irrigation_inst%qflx_irrig_col          & ! irrigation flux (mm H2O /s)   
+         qflx_irrig         => irrigation_inst%qflx_irrig_col          & ! irrigation flux (mm H2O /s)
          )
 
       ! Determine time step and step size
@@ -218,6 +220,17 @@ contains
 
       end do
 
+      ! Calculate here the source/sink term for ParFlow
+      do j = 1, nlevsoi
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            if (j == 1) then
+               qflx_parflow(c,j) = qflx_infl(c) - qflx_rootsoi(c,j)
+            else 
+               qflx_parflow(c,j) = -qflx_rootsoi_col(c,j) 
+            end if
+         end do
+      end do
     end associate
 
  end subroutine HydrologyDrainage
