@@ -1,33 +1,69 @@
 module oas_defineMod
-  use domainMod , only : ldomain
   use mod_oasis
   implicit none
   save
   private
 
   public  :: oas_definitions_init
-
-  integer :: grid_id     ! id returned by oasis_def_partition
   integer :: ierror
-  integer :: n_gridcells ! lats x lons
 contains
 
-  subroutine oas_definitions_init()
-    use spmdMod      , only : masterproc, mpicom
+  subroutine oas_definitions_init(bounds)
+    use spmdMod      , only : masterproc
+    use clm_varpar   , only : nlevsoi
+    use decompMod    , only : bounds_type
+    use oas_vardefMod
 
-    call mpi_barrier(mpicom, ierror)
+    type(bounds_type) , intent(in)  :: bounds
+    integer          :: partition(3)
+    integer          :: grid_id       ! id returned by oasis_def_partition
+    integer          :: var_nodims(2)
+    integer          :: var_shape(1)  ! not used by oasis_def_var
+    character(len=2) :: soil_layer         
+    integer          :: i, n_grid_points
+
     if (masterproc) then
-      n_gridcells = ldomain%ns
       call define_grid()
-      call define_partition()
-      call define_cpl_flds()
-      call oasis_enddef(ierror)
     end if
+
+    ! -----------------------------------------------------------------
+    ! ... Define partition
+    ! -----------------------------------------------------------------
+    n_grid_points = (bounds%endg - bounds%begg) + 1
+    partition(1) = 1                ! Apple style partition
+    partition(2) = bounds%begg - 1  ! Global offset
+    partition(3) = n_grid_points    ! # of grid cells allocated to this MPI task
+    call oasis_def_partition(grid_id, partition, ierror)
+
+    ! -----------------------------------------------------------------
+    ! ... Define coupling fields
+    ! -----------------------------------------------------------------
+    var_nodims(1) = 1               ! var_nodims(1) is not used anymore in OASIS
+    var_nodims(2) = 1               ! number of fields in a bundle
+
+    allocate(et_loss(nlevsoi))
+    allocate(watsat(nlevsoi))
+    allocate(psi(nlevsoi))
+
+    do i = 1, nlevsoi
+      write (soil_layer, '(I2.2)') i ! soil layer index (01-10)
+
+      et_loss(i)%name = 'CLMFLX'//soil_layer ! Evapotranspiration fluxes sent to Parflow
+      watsat(i)%name  = 'CLMSAT'//soil_layer ! Water saturation received from Parflow
+      psi(i)%name     = 'CLMPSI'//soil_layer ! Pressure head received from Parflow
+
+      call oasis_def_var(et_loss(i)%id, et_loss(i)%name, grid_id, var_nodims, OASIS_Out, var_shape, OASIS_Real, ierror) 
+      call oasis_def_var(watsat(i)%id, watsat(i)%name, grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
+      call oasis_def_var(psi(i)%id, psi(i)%name, grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
+    end do
+
+    ! End definition phase
+    call oasis_enddef(ierror)
   end subroutine oas_definitions_init
 
   subroutine define_grid()
     use shr_kind_mod , only : r8 => shr_kind_r8
-
+    use domainMod    , only : ldomain
     character(len=4), parameter   :: grid_name='gclm'
     integer,          parameter   :: SOUTH = 1
     integer,          parameter   :: NORTH = 2
@@ -40,13 +76,14 @@ contains
     real(kind=r8)                 :: center, offset, neighbor
     integer                       :: write_grid_files
     integer                       :: i, j
-    integer                       :: n_lons, n_lats
+    integer                       :: n_lons, n_lats, n_gridcells
 
     call oasis_start_grids_writing(write_grid_files)
 
     if (write_grid_files == 1) then
       n_lons = ldomain%ni
       n_lats = ldomain%nj
+      n_gridcells = ldomain%ns
 
       ! -----------------------------------------------------------------
       ! ... Define centers
@@ -129,67 +166,4 @@ contains
       deallocate(oas_lon, oas_lat, oas_corner_lon, oas_corner_lat, oas_mask, corner_lon, corner_lat)
     end if
   end subroutine define_grid
-
-  subroutine define_partition()
-    integer :: partition_def(4)  ! shape of arrays passed to PSMILe
-
-    ! Compute global offsets and local extents
-    partition_def(1) = 3           ! ORANGE style partition
-    partition_def(2) = 1           ! partitions number
-    partition_def(3) = 0           ! Global offset
-    partition_def(4) = n_gridcells ! Local extent
-    call oasis_def_partition(grid_id, partition_def, ierror)
-  end subroutine define_partition
-
-  subroutine define_cpl_flds()
-    use oas_vardefMod
-   
-    integer          :: var_nodims(2) 
-    integer          :: fld_shape(2)
-    character(len=2) :: soil_layer         
-    integer          :: i, i_100, i_110
-    
-    ! Disable coupling fields by default
-    ssnd(1:MAX_OAS_CPL_FIELDS)%laction = .false.
-    srcv(1:MAX_OAS_CPL_FIELDS)%laction = .false.
-
-    ! ----------------------------
-    ! CLM-Parflow fields (101-120)
-    ! ----------------------------
-    do i = 1, MAX_SOIL_LAYERS
-      i_100 = 100+i
-      i_110 = 110+i
-      write (soil_layer, '(I2.2)') i ! soil layer index (01-10)
-
-      ! Evapotranspiration fluxes sent to Parflow
-      ssnd(i_100)%clname  = 'CLMFLX'//soil_layer
-      ssnd(i_100)%laction = .true.
-
-      ! Water saturation received from Parflow
-      srcv(i_100)%ref     = 'SAT'
-      srcv(i_100)%clname  = 'CLMSAT'//soil_layer
-      srcv(i_100)%level   = i
-      srcv(i_100)%laction = .true.
-
-      ! Pressure head received from Parflow
-      srcv(i_110)%ref     = 'PSI'      
-      srcv(i_110)%clname  = 'CLMPSI'//soil_layer
-      srcv(i_110)%level   = i
-      srcv(i_110)%laction = .true.
-    end do
-
-    var_nodims(1) = 1               ! var_nodims(1) is not used anymore in OASIS
-    var_nodims(2) = 1               ! number of fields in a bundle
-    fld_shape(:)  = [1,n_gridcells] ! min & max index for each dim of the coupling field array
-
-    ! Announce send and receive variables
-    do i = 1, MAX_OAS_CPL_FIELDS
-      if (ssnd(i)%laction) then 
-        call oasis_def_var(ssnd(i)%nid, ssnd(i)%clname, grid_id, var_nodims, OASIS_Out, fld_shape, OASIS_Real, ierror)
-      end if
-      if (srcv(i)%laction) then 
-        call oasis_def_var(srcv(i)%nid, srcv(i)%clname, grid_id, var_nodims, OASIS_In,  fld_shape, OASIS_Real, ierror)
-      end if
-    end do
-  end subroutine define_cpl_flds
 end module oas_defineMod

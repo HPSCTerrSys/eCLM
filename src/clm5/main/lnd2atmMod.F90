@@ -411,12 +411,12 @@ contains
          waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
          lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
-    do j = 1, nlevsoi
-       do g = bounds%begg, bounds%endg
-          ! TODO: Verify questionable factor 3.6/dz(g,j) !
-          waterstate_inst%qflx_parflow_grc(g) = waterstate_inst%qflx_parflow_grc(g)*3.6_r8/dz(g,j)
-       enddo
-    enddo
+! TODO: Verify questionable factor 3.6/dz(g,j) !
+!     do j = 1, nlevsoi
+!        do g = bounds%begg, bounds%endg    
+!           lnd2atm_inst%qflx_parflow_grc(g) = lnd2atm_inst%qflx_parflow_grc(g)*3.6_r8/col%dz(g,j)
+!        enddo
+!     enddo
 
   end subroutine lnd2atm
 

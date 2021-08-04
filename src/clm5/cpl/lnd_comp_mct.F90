@@ -233,7 +233,7 @@ contains
 
 #if defined(USE_OASIS)
     ! Initialize OASIS3-MCT
-    call oas_definitions_init()
+    call oas_definitions_init(bounds)
 #endif
     ! Finish initializing clm
 

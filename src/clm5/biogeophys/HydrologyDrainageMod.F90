@@ -108,7 +108,7 @@ contains
          qflx_surf          => waterflux_inst%qflx_surf_col          , & ! surface runoff (mm H2O /s)      
          qflx_infl          => waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)
          qflx_rootsoi       => waterflux_inst%qflx_rootsoi_col       , & ! root and soil water exchange [mm H2O/s] [+ into root]
-         qflx_parflow_col   => waterflux_inst%qflx_parflow_col       , & ! source/sink flux passed to ParFlow for each soil layer
+         qflx_parflow       => waterflux_inst%qflx_parflow_col       , & ! source/sink flux passed to ParFlow for each soil layer
          qflx_qrgwl         => waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes
          qflx_runoff        => waterflux_inst%qflx_runoff_col        , & ! total runoff 
                                                                          ! (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
@@ -227,7 +227,7 @@ contains
             if (j == 1) then
                qflx_parflow(c,j) = qflx_infl(c) - qflx_rootsoi(c,j)
             else 
-               qflx_parflow(c,j) = -qflx_rootsoi_col(c,j) 
+               qflx_parflow(c,j) = -qflx_rootsoi(c,j) 
             end if
          end do
       end do
