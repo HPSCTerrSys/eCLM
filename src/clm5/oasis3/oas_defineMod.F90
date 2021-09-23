@@ -117,7 +117,7 @@ contains
       enddo
     
       do i = 1, n_lons
-        if (j == 1) then
+        if (i == 1) then
           neighbor = ldomain%lonc(i+1)
         else
           neighbor = ldomain%lonc(i-1)
