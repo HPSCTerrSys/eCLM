@@ -40,9 +40,9 @@ install (FILES ${GPTL_BLD_DIR}/lib/libgptl.a TYPE LIB)
 # ===========
 #     MCT
 # ===========
-option(USE_OASIS "Use OASIS3-MCT library." OFF)
-if (NOT USE_OASIS)
-    add_library(mct INTERFACE IMPORTED GLOBAL)
+option(BUILD_MCT "Use built-in MCT library." ON)
+add_library(mct INTERFACE IMPORTED GLOBAL)
+if (BUILD_MCT)
     set(MCT_BLD_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct)
     file(MAKE_DIRECTORY ${MCT_BLD_DIR}/include ${MCT_BLD_DIR}/lib)
     ExternalProject_Add(mct_external
@@ -64,6 +64,12 @@ if (NOT USE_OASIS)
     target_link_libraries(mct INTERFACE libmct.a libmpeu.a)
     add_dependencies(mct mct_external) 
     install (FILES ${MCT_BLD_DIR}/lib/libmct.a ${MCT_BLD_DIR}/lib/libmpeu.a TYPE LIB)
+else()
+    find_package(MCT REQUIRED)
+    if (${MCT_FOUND})
+        target_include_directories(mct SYSTEM INTERFACE ${MCT_INCLUDE_DIR})
+        target_link_libraries(mct INTERFACE ${MCT_LIBRARIES})
+    endif()
 endif()
 
 # ===========

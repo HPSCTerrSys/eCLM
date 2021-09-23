@@ -8,7 +8,7 @@
 
 
 find_path(PSMILE_INCLUDE_DIR NAMES mod_oasis.mod PATH_SUFFIXES psmile.MPI1 lib/psmile.MPI1 build/lib/psmile.MPI1)
-find_path(MCT_INCLUDE_DIR NAMES mct_mod.mod PATH_SUFFIXES mct lib/mct build/lib/mct)
+find_path(MCT_INCLUDE_DIR NAMES oas_mct_mod.mod PATH_SUFFIXES mct lib/mct build/lib/mct)
 find_path(SCRIP_INCLUDE_DIR NAMES remap_conservative.mod PATH_SUFFIXES scrip lib/scrip build/lib/scrip)
 
 find_library(PSMILE_LIB NAMES psmile.MPI1 PATH_SUFFIXES lib)
