@@ -1,72 +1,83 @@
-# Finds the NetCDF Fortran library. Defines the following variables:
+# Finds the NetCDF C and Fortran libraries. If found, the CMake target
+# NetCDF::NetCDFF will be created and the following variables will be defined:
 #
-#  NetCDF_FOUND: Whether NetCDF was found or not.
-#  NetCDF_INCLUDE_DIR: Include directory necessary to use NetCDF.
-#  NetCDF_LIBRARIES: Libraries necessary to use NetCDF.
-#  NetCDF_VERSION: The version of NetCDF found.
-#  NetCDF_HAS_PARALLEL: Whether or not NetCDF was found with parallel IO support.
-#  NetCDF::NetCDF: A target to use with `target_link_libraries`.
+# - NetCDF_FOUND
+# - NetCDF_C_INCLUDEDIR
+# - NetCDF_HAS_PARALLEL
+# - NetCDF_F90_INCLUDEDIR
+# - NetCDF_F90_LIBRARIES
+#
+# Basic usage:
+#
+#  find_package(NetCDF)
+#  if(NetCDF_FOUND)
+#     target_link_libraries(mylibrary PUBLIC NetCDF::NetCDFF)
+#  endif()
 #
 
 find_package(PkgConfig QUIET)
 include(FindPackageHandleStandardArgs)
 
-# Detect NetCDF_HAS_PARALLEL feature from the netCDF C library.
-# Try to find CMake-built netCDF-C.
-find_package(_NetCDF_C NAMES netCDF)
-if(_NetCDF_C_FOUND)
-   set(NetCDF_HAS_PARALLEL "${netCDF_HAS_PARALLEL}")
-   get_filename_component(_NetCDF_C_CONFIG_DIR ${_NetCDF_C_CONFIG} DIRECTORY)
-endif()
+set(NetCDF_HAS_PARALLEL FALSE)
 
-# If netCDF-C was not found, try finding it using pkg-config.
-if (NOT DEFINED NetCDF_HAS_PARALLEL AND PkgConfig_FOUND)
-   pkg_check_modules(_NetCDF_C QUIET netcdf IMPORTED_TARGET)
-   if (_NetCDF_C_FOUND)
-      # Regex copied from https://github.com/Kitware/VTK/blob/181e6ba2/CMake/FindNetCDF.cmake#L13
-      file(STRINGS "${_NetCDF_C_INCLUDEDIR}/netcdf_meta.h" _netcdf_lines
-         REGEX "#define[ \t]+NC_HAS_PARALLEL[ \t]")
+# Try to find netCDF-C via CMake config files
+find_package(NetCDF_C QUIET NAMES netCDF)
+if(NetCDF_C_FOUND)
+   get_target_property(NetCDF_C_INCLUDEDIR netCDF::netcdf INTERFACE_INCLUDE_DIRECTORIES)
+   set(NetCDF_HAS_PARALLEL "${netCDF_HAS_PARALLEL}")
+   get_filename_component(NetCDF_C_CONFIG_DIR ${NetCDF_C_CONFIG} DIRECTORY)
+elseif(PkgConfig_FOUND)
+   # If not found, try to find again via pkg-config
+   pkg_check_modules(NetCDF_C QUIET netcdf IMPORTED_TARGET)
+   if (NetCDF_C_FOUND)
+      # Extract NC_HAS_PARALLEL value from netcdf_meta.h. Copied from https://github.com/Kitware/VTK/blob/181e6ba2/CMake/FindNetCDF.cmake#L13
+      file(STRINGS "${NetCDF_C_INCLUDEDIR}/netcdf_meta.h" _netcdf_lines
+          REGEX "#define[ \t]+NC_HAS_PARALLEL[ \t]")
       string(REGEX REPLACE ".*NC_HAS_PARALLEL[ \t]*([0-1]+).*" "\\1" NetCDF_HAS_PARALLEL "${_netcdf_lines}")
    endif()
 endif()
 
-if (NOT DEFINED NetCDF_HAS_PARALLEL)
-   message(WARNING "NetCDF C library was not found. Assuming NetCDF_HAS_PARALLEL=FALSE ...")
-   set(NetCDF_HAS_PARALLEL FALSE)
+
+if (NetCDF_C_FOUND)
+   message(STATUS "Found NetCDF_C version ${NetCDF_C_VERSION}")
+   if (NetCDF_HAS_PARALLEL)
+      message(STATUS "NetCDF C built with parallel I/O support.")
+      # parallel I/O explained here: https://github.com/Unidata/netcdf-c/blob/v4.7.0/INSTALL.md#building-with-parallel-io-support-build_parallel
+   endif()
 endif()
 
-# Try to find CMake-built netCDF-Fortran.
-find_package(_NetCDF_F90 QUIET NAMES netCDF-Fortran HINTS ${_NetCDF_C_CONFIG_DIR})
-if(_NetCDF_F90_FOUND AND TARGET netCDF::netcdff)
-   get_target_property(NetCDF_INCLUDE_DIR netCDF::netcdff INTERFACE_INCLUDE_DIRECTORIES)
-   set(NetCDF_LIBRARIES netCDF::netcdff)
-   set(NetCDF_VERSION "${_NetCDF_F90_VERSION}")
+# Try to find netCDF-Fortran via CMake config files
+find_package(NetCDF_F90 QUIET NAMES netCDF-Fortran HINTS ${NetCDF_C_CONFIG_DIR})
+if(NetCDF_F90_FOUND AND TARGET netCDF::netcdff)
+   get_target_property(NetCDF_F90_INCLUDEDIR netCDF::netcdff INTERFACE_INCLUDE_DIRECTORIES)
+   set(NetCDF_F90_LIBRARIES netCDF::netcdff)
 elseif(PkgConfig_FOUND)
-   # Try finding netCDF-Fortran using pkg-config.
-   pkg_check_modules(_NetCDF_F90 QUIET netcdf-fortran IMPORTED_TARGET)
-   if (_NetCDF_F90_FOUND)
-      set(NetCDF_INCLUDE_DIR "${_NetCDF_F90_INCLUDEDIR}")
-      set(NetCDF_LIB_DIR "${_NetCDF_F90_LIBDIR}")
-      set(NetCDF_LIBRARIES "${_NetCDF_F90_LIBRARIES}")
-      set(NetCDF_VERSION "${_NetCDF_F90_VERSION}")
+   # If not found, try to find again via pkg-config
+   pkg_check_modules(NetCDF_F90 QUIET netcdf-fortran IMPORTED_TARGET)
+   if (NetCDF_F90_FOUND)
+      # instead of includedir, fmoddir contains the actual path to netcdf.mod 
+      pkg_get_variable(NetCDF_F90_INCLUDEDIR netcdf-fortran fmoddir)
    endif()
 endif()
 
 find_package_handle_standard_args(NetCDF
-   REQUIRED_VARS NetCDF_INCLUDE_DIR NetCDF_LIBRARIES
-   VERSION_VAR NetCDF_VERSION)
+   REQUIRED_VARS NetCDF_C_INCLUDEDIR NetCDF_F90_INCLUDEDIR NetCDF_F90_LIBRARIES
+   VERSION_VAR NetCDF_F90_VERSION)
 
 if(NetCDF_FOUND AND NOT TARGET NetCDF::NetCDFF)
    add_library(NetCDF::NetCDFF INTERFACE IMPORTED)
-   target_include_directories(NetCDF::NetCDFF INTERFACE ${NetCDF_INCLUDE_DIR})
-   target_link_libraries(NetCDF::NetCDFF INTERFACE ${NetCDF_LIBRARIES})
-   if(DEFINED NetCDF_LIB_DIR)
-      target_link_directories(NetCDF::NetCDFF INTERFACE ${NetCDF_LIB_DIR})
+   target_include_directories(NetCDF::NetCDFF INTERFACE ${NetCDF_C_INCLUDEDIR} ${NetCDF_F90_INCLUDEDIR})
+   target_link_libraries(NetCDF::NetCDFF INTERFACE ${NetCDF_F90_LIBRARIES})
+   if(DEFINED NetCDF_C_LIBDIR)
+      target_link_directories(NetCDF::NetCDFF INTERFACE ${NetCDF_C_LIBDIR})
+   endif()
+   if(DEFINED NetCDF_F90_LIBDIR)
+      target_link_directories(NetCDF::NetCDFF INTERFACE ${NetCDF_F90_LIBDIR})
    endif()
 endif()
 
-unset(_NetCDF_C_DIR)
-unset(_NetCDF_C_FOUND)
-unset(_NetCDF_C_CONFIG_DIR)
-unset(_NetCDF_F90_DIR)
-unset(_NetCDF_F90_FOUND)
+unset(NetCDF_C_DIR)
+unset(NetCDF_C_FOUND)
+unset(NetCDF_C_CONFIG_DIR)
+unset(NetCDF_F90_DIR)
+unset(NetCDF_F90_FOUND)
