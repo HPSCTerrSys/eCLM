@@ -9,7 +9,7 @@ Unlike CLM5, there are no built-in batch scripts in eCLM. It is up to system mai
 
 This section shows you how to install eCLM on your local machine. If you are a user in [IBG-3] and wish to run eCLM on JSC supercomputers, please check out the [eCLM-JSC] repo.
 
-### Minumum system requirements
+### Minimum system requirements
 
 * MPI 3.1
 * netCDF-C 4.7.4
@@ -40,7 +40,6 @@ cmake -S src -B "$BUILD_DIR" \
 Additionally, you may specify these optional build variables.
 
 * `CMAKE_BUILD_TYPE=DEBUG|RELEASE`. Defaults to `RELEASE`.
-* `BUILD_MCT=TRUE|FALSE`. Defaults to `TRUE`, meaning eCLM will build its internal MCT library. If set to `FALSE`, you must specify the path to external MCT library via `CMAKE_PREFIX_PATH`.
 * `CMAKE_PREFIX_PATH`. Semicolon-separated list of paths (i.e. *install prefixes*) where external libraries might be found. You may need to specify this if CMake cannot find some of the required libraries (e.g. NetCDF, PnetCDF, LAPACK).
 
 2. Build and install eCLM.
@@ -72,7 +71,7 @@ tar xf 1x1_wuestebach.tar.gz -C 1x1_wuestebach
 
 # Generate namelists
 cd 1x1_wuestebach
-export TEST_DIR="$(pwd)"
+export DATA_DIR="$(pwd)"
 clm5nl-gen wtb_1x1.toml
 
 # Validate namelists
