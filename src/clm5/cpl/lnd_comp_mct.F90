@@ -64,6 +64,9 @@ contains
     use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
     use clm_cpl_indices  , only : clm_cpl_indices_set
     use mct_mod          , only : mct_aVect_init, mct_aVect_zero, mct_gsMap_lsize
+#if defined(USE_OASIS)
+    use oas_defineMod    , only : oas_definitions_init
+#endif
     use ESMF
     !
     ! !ARGUMENTS:
@@ -228,6 +231,10 @@ contains
     call mct_aVect_init(l2x_l, rList=seq_flds_l2x_fields, lsize=lsize)
     call mct_aVect_zero(l2x_l)
 
+#if defined(USE_OASIS)
+    ! Initialize OASIS3-MCT
+    call oas_definitions_init(bounds)
+#endif
     ! Finish initializing clm
 
     call initialize2()

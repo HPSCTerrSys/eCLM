@@ -30,6 +30,14 @@ foreach(f90in_file IN LISTS F90IN_FILES)
 endforeach()
 
 target_sources(${PROJECT_NAME} PRIVATE ${PREPROCESSED_F90_FILES})
+if (USE_OASIS)
+    target_sources(${PROJECT_NAME} 
+        PRIVATE
+            oasis3/oas_defineMod.F90
+            oasis3/oas_vardefMod.F90
+            oasis3/oas_sendReceiveMod.F90
+    )
+endif()
 target_sources(${PROJECT_NAME} 
     PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}/ncdio_pio.F90  

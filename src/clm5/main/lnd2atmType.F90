@@ -10,7 +10,7 @@ module lnd2atmType
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use abortutils    , only : endrun
   use decompMod     , only : bounds_type
-  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use clm_varpar    , only : numrad, ndst, nlevgrnd, nlevsoi !ndst = number of dust bins.
   use clm_varcon    , only : spval
   use clm_varctl    , only : iulog, use_lch4
   use shr_megan_mod , only : shr_megan_mechcomps_n
@@ -68,9 +68,10 @@ module lnd2atmType
      real(r8), pointer :: qflx_rofliq_qgwl_grc    (:)   => null() ! rof liq -- glacier, wetland and lakes water balance residual component
      real(r8), pointer :: qflx_rofliq_h2osfc_grc  (:)   => null() ! rof liq -- surface water runoff component
      real(r8), pointer :: qflx_rofliq_drain_perched_grc    (:)   => null() ! rof liq -- perched water table runoff component
-     real(r8), pointer :: qflx_rofice_grc    (:)   => null() ! rof ice forcing
-     real(r8), pointer :: qflx_liq_from_ice_col(:) => null() ! liquid runoff from converted ice runoff
-     real(r8), pointer :: qirrig_grc         (:)   => null() ! irrigation flux
+     real(r8), pointer :: qflx_rofice_grc         (:)   => null() ! rof ice forcing
+     real(r8), pointer :: qflx_liq_from_ice_col   (:)   => null() ! liquid runoff from converted ice runoff
+     real(r8), pointer :: qflx_parflow_grc        (:,:) => null() ! source/sink flux per soil layer sent to ParFlow [mm H2O/m^2/s] [- out from root]
+     real(r8), pointer :: qirrig_grc              (:)   => null() ! irrigation flux
 
    contains
 
@@ -174,9 +175,10 @@ contains
     allocate(this%qflx_rofliq_qgwl_grc    (begg:endg))       ; this%qflx_rofliq_qgwl_grc    (:)   =ival
     allocate(this%qflx_rofliq_h2osfc_grc  (begg:endg))       ; this%qflx_rofliq_h2osfc_grc    (:)   =ival
     allocate(this%qflx_rofliq_drain_perched_grc    (begg:endg))       ; this%qflx_rofliq_drain_perched_grc    (:)   =ival
-    allocate(this%qflx_rofice_grc    (begg:endg))            ; this%qflx_rofice_grc    (:)   =ival
-    allocate(this%qflx_liq_from_ice_col(begc:endc))          ; this%qflx_liq_from_ice_col(:) = ival
-    allocate(this%qirrig_grc         (begg:endg))            ; this%qirrig_grc         (:)   =ival
+    allocate(this%qflx_rofice_grc      (begg:endg))          ; this%qflx_rofice_grc      (:)   =ival
+    allocate(this%qflx_liq_from_ice_col(begc:endc))          ; this%qflx_liq_from_ice_col(:)   =ival
+    allocate(this%qflx_parflow_grc     (begg:endg,1:nlevsoi)); this%qflx_parflow_grc     (:,:) =ival
+    allocate(this%qirrig_grc           (begg:endg))          ; this%qirrig_grc           (:)   =ival
 
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
@@ -260,7 +262,7 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use histFileMod, only : hist_addfld1d
+    use histFileMod, only : hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
     class(lnd2atm_type) :: this
@@ -323,6 +325,11 @@ contains
             avgflag='A', long_name='Gridcell net adjustment to net carbon exchange passed to atm. for methane production', &
             ptr_lnd=this%nem_grc)
     end if
+
+    this%qflx_parflow_grc(begg:endg, :) = 0._r8
+    call hist_addfld2d (fname='QPARFLOW_TO_OASIS', units='mm H2O/m2/s', type2d='levsoi', &
+         avgflag='A', long_name='source/sink flux per soil layer sent to ParFlow', &
+         ptr_lnd=this%qflx_parflow_grc, default='inactive')
 
   end subroutine InitHistory
 
