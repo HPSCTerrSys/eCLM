@@ -8,7 +8,7 @@ module atm2lndType
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod   , only : errMsg => shr_log_errMsg
-  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use clm_varpar    , only : numrad, ndst, nlevgrnd, nlevsoi !ndst = number of dust bins.
   use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_cndv, use_fates, use_luna
   use decompMod     , only : bounds_type
@@ -116,6 +116,7 @@ module atm2lndType
      real(r8), pointer :: forc_flood_grc                (:)   => null() ! rof flood (mm/s)
      real(r8), pointer :: volr_grc                      (:)   => null() ! rof volr total volume (m3)
      real(r8), pointer :: volrmch_grc                   (:)   => null() ! rof volr main channel (m3)
+     real(r8), pointer :: parflow_psi_grc               (:,:) => null() ! Parflow pressure head
 
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
@@ -540,9 +541,10 @@ contains
     allocate(this%forc_snow_downscaled_col      (begc:endc))        ; this%forc_snow_downscaled_col      (:)   = ival
 
     ! rof->lnd
-    allocate(this%forc_flood_grc                (begg:endg))        ; this%forc_flood_grc                (:)   = ival
-    allocate(this%volr_grc                      (begg:endg))        ; this%volr_grc                      (:)   = ival
-    allocate(this%volrmch_grc                   (begg:endg))        ; this%volrmch_grc                   (:)   = ival
+    allocate(this%forc_flood_grc                (begg:endg))          ; this%forc_flood_grc              (:)   = ival
+    allocate(this%volr_grc                      (begg:endg))          ; this%volr_grc                    (:)   = ival
+    allocate(this%volrmch_grc                   (begg:endg))          ; this%volrmch_grc                 (:)   = ival
+    allocate(this%parflow_psi_grc               (begg:endg,1:nlevsoi)); this%parflow_psi_grc             (:,:) = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -577,7 +579,7 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use histFileMod, only : hist_addfld1d
+    use histFileMod, only : hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
@@ -607,6 +609,11 @@ contains
     call hist_addfld1d (fname='VOLRMCH',  units='m3',  &
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
+
+     this%parflow_psi_grc(begg:endg, :) = 0._r8
+     call hist_addfld2d (fname='PARFLOW_PSI', units='MPa', type2d='levsoi', &
+          avgflag='A', long_name='Parflow pressure head', &
+          ptr_lnd=this%parflow_psi_grc, default='inactive')
 
     this%forc_wind_grc(begg:endg) = spval
     call hist_addfld1d (fname='WIND', units='m/s',  &

@@ -11,7 +11,7 @@ module lnd2atmMod
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use shr_fire_emis_mod    , only : shr_fire_emis_mechcomps_n
-  use clm_varpar           , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevsoi !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_lch4
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
@@ -156,7 +156,7 @@ contains
     real(r8)                    , intent(in)    :: net_carbon_exchange_grc( bounds%begg: )  ! net carbon exchange between land and atmosphere, positive for source (gC/m2/s)
     !
     ! !LOCAL VARIABLES:
-    integer  :: c, g  ! indices
+    integer  :: c, g, j  ! indices
     real(r8) :: qflx_ice_runoff_col(bounds%begc:bounds%endc) ! total column-level ice runoff
     real(r8) :: eflx_sh_ice_to_liq_grc(bounds%begg:bounds%endg) ! sensible heat flux generated from the ice to liquid conversion, averaged to gridcell
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
@@ -405,6 +405,18 @@ contains
     do g = bounds%begg, bounds%endg
        waterstate_inst%tws_grc(g) = waterstate_inst%tws_grc(g) + atm2lnd_inst%volr_grc(g) / grc%area(g) * 1.e-3_r8
     enddo
+
+    ! Calculate Parflow water fluxes
+    call c2g( bounds, nlevsoi, &
+         waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
+         lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
+         c2l_scale_type= 'unity',  l2g_scale_type='unity' )
+! TODO: Verify questionable factor 3.6/dz(g,j) !
+!     do j = 1, nlevsoi
+!        do g = bounds%begg, bounds%endg    
+!           lnd2atm_inst%qflx_parflow_grc(g) = lnd2atm_inst%qflx_parflow_grc(g)*3.6_r8/col%dz(g,j)
+!        enddo
+!     enddo
 
   end subroutine lnd2atm
 

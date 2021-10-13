@@ -112,4 +112,11 @@ target_sources(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC pio mct gptl)
+if (USE_OASIS)
+    find_package(OASIS3MCT REQUIRED)
+    if (OASIS3MCT_FOUND)
+        target_link_libraries(${PROJECT_NAME} PUBLIC OASIS3MCT::OASIS3MCT)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC USE_OASIS)
+    endif()
+endif()
 install (TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
