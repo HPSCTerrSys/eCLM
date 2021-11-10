@@ -39,23 +39,11 @@ contains
     ! ... Define coupling fields
     ! -----------------------------------------------------------------
     var_nodims(1) = 1               ! var_nodims(1) is not used anymore in OASIS
-    var_nodims(2) = 1               ! number of fields in a bundle
+    var_nodims(2) = nlevsoi         ! number of fields in a bundle
 
-    allocate(et_loss(nlevsoi))
-    allocate(watsat(nlevsoi))
-    allocate(psi(nlevsoi))
-
-    do i = 1, nlevsoi
-      write (soil_layer, '(I2.2)') i ! soil layer index (01-10)
-
-      et_loss(i)%name = 'CLMFLX'//soil_layer ! Evapotranspiration fluxes sent to Parflow
-      watsat(i)%name  = 'CLMSAT'//soil_layer ! Water saturation received from Parflow
-      psi(i)%name     = 'CLMPSI'//soil_layer ! Pressure head received from Parflow
-
-      call oasis_def_var(et_loss(i)%id, et_loss(i)%name, grid_id, var_nodims, OASIS_Out, var_shape, OASIS_Real, ierror) 
-      call oasis_def_var(watsat(i)%id, watsat(i)%name, grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
-      call oasis_def_var(psi(i)%id, psi(i)%name, grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
-    end do
+    call oasis_def_var(oas_et_loss_id, "ECLM_ET", grid_id, var_nodims, OASIS_Out, var_shape, OASIS_Real, ierror) 
+    call oasis_def_var(oas_sat_id, "ECLM_SAT", grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
+    call oasis_def_var(oas_psi_id, "ECLM_PSI", grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
 
     ! End definition phase
     call oasis_enddef(ierror)
