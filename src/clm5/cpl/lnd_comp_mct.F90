@@ -12,6 +12,10 @@ module lnd_comp_mct
   use mct_mod          , only : mct_avect, mct_gsmap, mct_gGrid
   use decompmod        , only : bounds_type, ldecomp
   use lnd_import_export, only : lnd_import, lnd_export
+#if defined(USE_OASIS)
+  use oas_defineMod     , only : oas_definitions_init
+  use oas_sendReceiveMod, only : oas_receive, oas_send
+#endif
   !
   ! !public member functions:
   implicit none
@@ -64,9 +68,6 @@ contains
     use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
     use clm_cpl_indices  , only : clm_cpl_indices_set
     use mct_mod          , only : mct_aVect_init, mct_aVect_zero, mct_gsMap_lsize
-#if defined(USE_OASIS)
-    use oas_defineMod    , only : oas_definitions_init
-#endif
     use ESMF
     !
     ! !ARGUMENTS:
@@ -331,6 +332,7 @@ contains
     integer      :: tod                  ! CLM current time of day (sec)
     integer      :: dtime                ! time step increment (sec)
     integer      :: nstep                ! time step index
+    integer      :: time_elapsed         ! elapsed time (dtime * nstep)
     logical      :: rstwr_sync           ! .true. ==> write restart file before returning
     logical      :: rstwr                ! .true. ==> write restart file before returning
     logical      :: nlend_sync           ! Flag signaling last time-step
@@ -411,7 +413,6 @@ contains
          atm2lnd_inst = atm2lnd_inst, &
          glc2lnd_inst = glc2lnd_inst)
     call t_stopf ('lc_lnd_import')
-
     ! Use infodata to set orbital values if updated mid-run
 
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
@@ -434,9 +435,10 @@ contains
        ! Determine doalb based on nextsw_cday sent from atm model
 
        nstep = get_nstep()
+       time_elapsed = dtime * nstep
        caldayp1 = get_curr_calday(offset=dtime)
        if (nstep == 0) then
-	  doalb = .false. 	
+          doalb = .false.
        else if (nstep == 1) then 
           doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8) 
        else
@@ -451,8 +453,10 @@ contains
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
+#if defined(USE_OASIS)
+       call oas_receive(bounds, time_elapsed, atm2lnd_inst)
+#endif
        ! Run clm 
-
        call t_barrierf('sync_clm_run1', mpicom)
        call t_startf ('clm_run')
        call t_startf ('shr_orb_decl')
@@ -463,8 +467,10 @@ contains
        call clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate, rof_prognostic)
        call t_stopf ('clm_run')
 
+#if defined(USE_OASIS)
+       call oas_send(bounds, time_elapsed, lnd2atm_inst)
+#endif
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
-       
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_inst, lnd2glc_inst, l2x_l%rattr)
        call t_stopf ('lc_lnd_export')
@@ -474,7 +480,6 @@ contains
        call t_startf ('lc_clm2_adv_timestep')
        call advance_timestep()
        call t_stopf ('lc_clm2_adv_timestep')
-
     end do
 
     ! Check that internal clock is in sync with master clock

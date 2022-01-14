@@ -10,17 +10,23 @@ contains
 
   subroutine oas_definitions_init(bounds)
     use spmdMod      , only : masterproc
-    use clm_varpar   , only : nlevsoi
-    use decompMod    , only : bounds_type
+    use clm_varpar   , only : nlevsoi, nlevgrnd
+    use decompMod    , only : bounds_type, ldecomp
+    use domainMod    , only : ldomain
     use oas_vardefMod
 
-    type(bounds_type) , intent(in)  :: bounds
-    integer          :: partition(3)
-    integer          :: grid_id       ! id returned by oasis_def_partition
-    integer          :: var_nodims(2)
-    integer          :: var_shape(1)  ! not used by oasis_def_var
-    character(len=2) :: soil_layer         
-    integer          :: i, n_grid_points
+    type(bounds_type) , intent(in)  :: bounds ! start and end gridcell indices for this MPI task
+
+    ! oasis_def_partition
+    integer, allocatable :: partition(:)      ! partition descriptor; input to oasis_def_partition
+    integer              :: gcell_start       ! starting gridcell index
+    integer              :: gcell_previous    ! gridcell index from previous loop iteration
+    integer              :: k, g              ! array/loop indices
+    integer              :: grid_id           ! id returned after call to oasis_def_partition
+
+    ! oasis_def_var
+    integer              :: var_nodims(2)     ! var dimension parameters
+    integer              :: var_shape(1)      ! unused dummy input to oasis_def_var
 
     if (masterproc) then
       call define_grid()
@@ -29,33 +35,51 @@ contains
     ! -----------------------------------------------------------------
     ! ... Define partition
     ! -----------------------------------------------------------------
-    n_grid_points = (bounds%endg - bounds%begg) + 1
-    partition(1) = 1                ! Apple style partition
-    partition(2) = bounds%begg - 1  ! Global offset
-    partition(3) = n_grid_points    ! # of grid cells allocated to this MPI task
+    allocate(partition(200))
+    partition(:) = 0; k = 0
+
+    ! Use ORANGE partitioning scheme. This scheme defines an ensemble
+    ! of gridcell segments. See OASIS3-MCT User's guide for more info.
+    partition(1) = 3
+
+    ! Mark 1st segment
+    gcell_start = ldecomp%gdc2glo(bounds%begg)
+    partition(2) = 1
+    gcell_previous = gcell_start
+
+    ! Capture segments by detecting segment boundaries. A boundary is 
+    ! detected when the current and previous gridcells are not consecutive.
+    do g = bounds%begg+1, bounds%endg
+      if (ldecomp%gdc2glo(g) - gcell_previous /= 1) then
+        ! Previous segment complete; its partition params could now be defined
+        partition(3+k) = gcell_start - 1                  ! segment global offset (0-based)
+        partition(4+k) = gcell_previous - gcell_start + 1 ! segment length
+        k = k + 2
+  
+        gcell_start  = ldecomp%gdc2glo(g) ! current gridcell marks the start of a new segment 
+        partition(2) = partition(2) + 1   ! increment number of segments
+      end if
+      gcell_previous = ldecomp%gdc2glo(g)
+    enddo
+
+    ! Define partition params for last segment
+    partition(3+k) = gcell_start - 1
+    partition(4+k) = gcell_previous - gcell_start + 1
+
     call oasis_def_partition(grid_id, partition, ierror)
+    deallocate(partition)
 
     ! -----------------------------------------------------------------
     ! ... Define coupling fields
     ! -----------------------------------------------------------------
-    var_nodims(1) = 1               ! var_nodims(1) is not used anymore in OASIS
-    var_nodims(2) = 1               ! number of fields in a bundle
+    var_nodims(1) = 1         ! unused
+    var_nodims(2) = nlevsoi   ! number of fields in a bundle
 
-    allocate(et_loss(nlevsoi))
-    allocate(watsat(nlevsoi))
-    allocate(psi(nlevsoi))
-
-    do i = 1, nlevsoi
-      write (soil_layer, '(I2.2)') i ! soil layer index (01-10)
-
-      et_loss(i)%name = 'CLMFLX'//soil_layer ! Evapotranspiration fluxes sent to Parflow
-      watsat(i)%name  = 'CLMSAT'//soil_layer ! Water saturation received from Parflow
-      psi(i)%name     = 'CLMPSI'//soil_layer ! Pressure head received from Parflow
-
-      call oasis_def_var(et_loss(i)%id, et_loss(i)%name, grid_id, var_nodims, OASIS_Out, var_shape, OASIS_Real, ierror) 
-      call oasis_def_var(watsat(i)%id, watsat(i)%name, grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
-      call oasis_def_var(psi(i)%id, psi(i)%name, grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
-    end do
+    call oasis_def_var(oas_et_loss_id, "ECLM_ET", grid_id, var_nodims, OASIS_Out, var_shape, OASIS_Real, ierror) 
+    
+    var_nodims(2) = nlevgrnd  ! number of fields in a bundle
+    call oasis_def_var(oas_sat_id, "ECLM_SAT", grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
+    call oasis_def_var(oas_psi_id, "ECLM_PSI", grid_id, var_nodims, OASIS_In, var_shape, OASIS_Real, ierror)
 
     ! End definition phase
     call oasis_enddef(ierror)

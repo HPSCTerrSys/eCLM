@@ -8,9 +8,6 @@ module lnd_import_export
   use atm2lndType  , only: atm2lnd_type
   use glc2lndMod   , only: glc2lnd_type 
   use clm_cpl_indices
-#if defined(USE_OASIS)
-  use oas_sendReceiveMod
-#endif
   !
   implicit none
   !===============================================================================
@@ -279,9 +276,7 @@ contains
          index_x2l_Flgg_hflx = index_x2l_Flgg_hflx, &
          index_x2l_Sg_icemask = index_x2l_Sg_icemask, &
          index_x2l_Sg_icemask_coupled_fluxes = index_x2l_Sg_icemask_coupled_fluxes)
-#if defined(USE_OASIS)
-    call oas_receive(bounds, atm2lnd_inst)
-#endif
+
   end subroutine lnd_import
 
   !===============================================================================
@@ -428,9 +423,7 @@ contains
        end if
 
     end do
-#if defined(USE_OASIS)
-    call oas_send(bounds, lnd2atm_inst)
-#endif
+
   end subroutine lnd_export
 
 end module lnd_import_export

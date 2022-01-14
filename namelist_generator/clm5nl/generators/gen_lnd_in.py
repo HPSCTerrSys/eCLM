@@ -391,7 +391,7 @@ def setup_logic_lnd_frac():
 def setup_logic_co2_type():
     _nl.clm_inparm.co2_type = _opts["co2_type"]
     if _opts["co2_type"] == "constant":     
-        if _opts["co2_ppmv"] is None:
+        if "co2_ppmv" not in _opts:
             if _opts["sim_year"] == 2100:
                 ssp_co2_defaults = {"SSP5-8.5":1135.2, "SSP5-3.4":496.6, "SSP1-2.6":445.6}
                 _nl.clm_inparm.co2_ppmv = ssp_co2_defaults.get(_opts["ssp_rcp"], "Invalid ssp_rcp value")
@@ -420,7 +420,7 @@ def setup_logic_start_type():
         _nl.clm_inparm.override_nsrest = _opts["override_nsrest"]
     
     if my_start_type == "branch":
-        if _opts["nrevsn"] is None:
+        if "nrevsn" not in _opts:
             error("nrevsn is required for a branch type.")
         else:
             _nl.clm_inparm.nrevsn = _opts["nrevsn"]
@@ -433,12 +433,12 @@ def setup_logic_start_type():
         _nl.clm_inparm.use_init_interp = True
 
 def setup_logic_delta_time():
-    if _opts["l_ncpl"] is None:
+    if "l_ncpl" not in _opts:
         _nl.clm_inparm.dtime = 1800
     else:
         if _opts["l_ncpl"] <= 0: 
             error("bad value for -l_ncpl option")
-        if _opts["dtime"] is None:
+        if "dtime" not in _opts:
             _nl.clm_inparm.dtime = int((3600 * 24) / _opts["l_ncpl"])
         else:
             error("can NOT set both -l_ncpl option (via LND_NCPL env variable) AND dtime namelist variable.")
@@ -601,20 +601,20 @@ def setup_logic_surface_dataset():
 
 def setup_logic_initial_conditions():
     if _opts["clm_start_type"] == "cold":
-        if not _user_nl["finidat"] is None:
+        if "finidat" in _user_nl:
             print("""
             WARNING: setting finidat (either explicitly in your user_nl_clm or by doing a hybrid or branch RUN_TYPE) is 
             incomptable with using a cold start (by setting CLM_FORCE_COLDSTART=on)
             Overridding input finidat file with one specifying that this is a cold start from arbitrary initial conditions.""")
         _opts["finidat"] = "' '"
-    elif not _user_nl["finidat"] is None and _user_nl["finidat"] == "' '":
+    elif "finidat" in _user_nl and _user_nl["finidat"] == "' '":
         error("""You are setting finidat to blank which signals arbitrary initial conditions.
         But, CLM_FORCE_COLDSTART is off which is a contradiction. For arbitrary initial conditions just use the CLM_FORCE_COLDSTART option
         To do a cold-start set ./xmlchange CLM_FORCE_COLDSTART=on, and remove the setting of finidat in the user_nl_clm file""")
     
-    if _user_nl["finidat"] is None:
+    if "finidat" not in _user_nl:
         #TODO
-        pass
+        assert False, "No implementation yet for  \"if \"finidat\" not in _user_nl\" (TODO)"
     else:
         _nl.clm_inparm.finidat = _user_nl["finidat"]
 
