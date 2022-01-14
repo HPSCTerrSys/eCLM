@@ -11,7 +11,7 @@ module WaterstateType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_luna
-  use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno   
+  use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
   use clm_varcon     , only : spval
   use LandunitType   , only : lun                
   use ColumnType     , only : col                
@@ -54,7 +54,7 @@ module WaterstateType
      real(r8), pointer :: ice1_grc               (:)   ! grc initial gridcell total h2o ice content
      real(r8), pointer :: ice2_grc               (:)   ! grc post land cover change total ice content
      real(r8), pointer :: tws_grc                (:)   ! grc total water storage (mm H2O)
-
+     real(r8), pointer :: pfl_psi_col            (:,:) ! ParFlow pressure head   COUP_OAS_PFL
      real(r8), pointer :: total_plant_stored_h2o_col(:) ! col water that is bound in plants, including roots, sapwood, leaves, etc
                                                         ! in most cases, the vegetation scheme does not have a dynamic
                                                         ! water storage in plants, and thus 0.0 is a suitable for the trivial case.
@@ -190,6 +190,7 @@ contains
     allocate(this%h2osoi_liqvol_col      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol_col      (:,:) = nan
     allocate(this%h2osoi_ice_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col         (:,:) = nan
     allocate(this%h2osoi_liq_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col         (:,:) = nan
+    allocate(this%pfl_psi_col            (begc:endc,1:nlevgrnd))           ; this%pfl_psi_col            (:,:) = nan
     allocate(this%h2osoi_ice_tot_col     (begc:endc))                     ; this%h2osoi_ice_tot_col     (:)   = nan
     allocate(this%h2osoi_liq_tot_col     (begc:endc))                     ; this%h2osoi_liq_tot_col     (:)   = nan
     allocate(this%h2ocan_patch           (begp:endp))                     ; this%h2ocan_patch           (:)   = nan  
@@ -288,6 +289,11 @@ contains
     call hist_addfld2d (fname='H2OSOI',  units='mm3/mm3', type2d='levsoi', &
          avgflag='A', long_name='volumetric soil water (vegetated landunits only)', &
          ptr_col=this%h2osoi_vol_col, l2g_scale_type='veg')
+
+   data2dptr => this%pfl_psi_col(begc:endc,1:nlevgrnd)
+   call hist_addfld2d (fname='PFL_PSI',  units='mm', type2d='levgrnd', &
+              avgflag='A', long_name='ParFlow pressure head', &
+              ptr_col=this%pfl_psi_col, l2g_scale_type='veg')
 
     if ( use_soil_moisture_streams )then
        data2dptr => this%h2osoi_vol_prs_grc(begg:endg,1:nlevsoi)
@@ -747,6 +753,7 @@ contains
       ! and urban pervious road (other urban columns have zero soil water)
 
       this%h2osoi_vol_col(bounds%begc:bounds%endc,         1:) = spval
+      this%pfl_psi_col(bounds%begc:bounds%endc,            1:) = -1000._r8
       this%h2osoi_vol_prs_grc(bounds%begg:bounds%endg,     1:) = spval
       this%h2osoi_liq_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval
       this%h2osoi_ice_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval

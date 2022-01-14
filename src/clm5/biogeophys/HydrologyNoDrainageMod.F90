@@ -156,6 +156,7 @@ contains
          h2osno_top         => waterstate_inst%h2osno_top_col         , & ! Output: [real(r8) (:)   ]  mass of snow in top layer (col) [kg]    
          wf                 => waterstate_inst%wf_col                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m 
          wf2                => waterstate_inst%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 
+         pfl_psi            => waterstate_inst%pfl_psi_col            , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
 
          watsat             => soilstate_inst%watsat_col              , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          sucsat             => soilstate_inst%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)             
@@ -163,6 +164,7 @@ contains
          smp_l              => soilstate_inst%smp_l_col               , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]            
          smpmin             => soilstate_inst%smpmin_col              , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
          soilpsi            => soilstate_inst%soilpsi_col               & ! Output: [real(r8) (:,:) ]  soil water potential in each soil layer (MPa)
+
          )
 
       ! Determine step size
@@ -198,9 +200,12 @@ contains
       
       if ( use_fates ) call clm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, soilstate_inst, waterflux_inst)
       
-      call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-           soilhydrology_inst, soilstate_inst, waterflux_inst, waterstate_inst, temperature_inst, &
-           canopystate_inst, energyflux_inst, soil_water_retention_curve)
+      ! -- clm3.5/src/biogeophys/SoilHydrologyMod.F90
+      ! if not COUP_OAS_PFL
+      !call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+      !     soilhydrology_inst, soilstate_inst, waterflux_inst, waterstate_inst, temperature_inst, &
+      !     canopystate_inst, energyflux_inst, soil_water_retention_curve)
+      ! end if
 
       if (use_vichydro) then
          ! mapping soilmoist from CLM to VIC layers for runoff calculations

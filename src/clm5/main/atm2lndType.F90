@@ -544,7 +544,7 @@ contains
     allocate(this%forc_flood_grc                (begg:endg))          ; this%forc_flood_grc              (:)   = ival
     allocate(this%volr_grc                      (begg:endg))          ; this%volr_grc                    (:)   = ival
     allocate(this%volrmch_grc                   (begg:endg))          ; this%volrmch_grc                 (:)   = ival
-    allocate(this%parflow_psi_grc               (begg:endg,1:nlevsoi)); this%parflow_psi_grc             (:,:) = ival
+    allocate(this%parflow_psi_grc               (begg:endg,1:nlevgrnd)); this%parflow_psi_grc             (:,:) = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -611,7 +611,7 @@ contains
          ptr_lnd=this%volrmch_grc)
 
      this%parflow_psi_grc(begg:endg, :) = 0._r8
-     call hist_addfld2d (fname='PARFLOW_PSI', units='MPa', type2d='levsoi', &
+     call hist_addfld2d (fname='PARFLOW_PSI', units='MPa', type2d='levgrnd', &
           avgflag='A', long_name='Parflow pressure head', &
           ptr_lnd=this%parflow_psi_grc, default='inactive')
 

@@ -257,13 +257,18 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
 
+         ! clm3.5/bld/usr.src/SoilHydrologyMod.F90
+         ! if COUP_OAS_PFL
+         qflx_surf(c) = 0._r8
+
+         !else
          ! assume qinmax large relative to qflx_top_soil in control
-         if (origflag == 1) then
-            qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
-         else
-            ! only send fast runoff directly to streams
-            qflx_surf(c) =   fsat(c) * qflx_top_soil(c)
-         endif
+         !if (origflag == 1) then
+         !   qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
+         !else
+         !   ! only send fast runoff directly to streams
+         !   qflx_surf(c) =   fsat(c) * qflx_top_soil(c)
+         !endif
       end do
 
       ! Determine water in excess of ponding limit for urban roof and impervious road.

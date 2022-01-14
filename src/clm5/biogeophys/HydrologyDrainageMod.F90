@@ -140,11 +140,13 @@ contains
               soilhydrology_inst, soilstate_inst, &
               waterstate_inst, waterflux_inst)
 
-         
-         call LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
-              num_urbanc, filter_urbanc,&
-              soilhydrology_inst, soilstate_inst, &
-              waterstate_inst, waterflux_inst)
+         ! clm3.5/bld/usr.src/SoilHydrologyMod.F90
+         ! if not COUP_OAS_PFL
+         ! to comment or not?
+         !call LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
+         !     num_urbanc, filter_urbanc,&
+         !     soilhydrology_inst, soilstate_inst, &
+         !     waterstate_inst, waterflux_inst)
 
       endif
 
@@ -220,14 +222,17 @@ contains
 
       end do
 
+      ! COUP_OAS_PFL
       ! Calculate here the source/sink term for ParFlow
       do j = 1, nlevsoi
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
             if (j == 1) then
-               qflx_parflow(c,j) = qflx_infl(c) - qflx_rootsoi(c,j)
+               ! From SoilWaterPlantSinkMod:
+               ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
+               qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) * 3.6_r8 / dz(c,j)
             else 
-               qflx_parflow(c,j) = -qflx_rootsoi(c,j) 
+               qflx_parflow(c,j) = -qflx_rootsoi(c,j) * 3.6_r8 / dz(c,j)
             end if
          end do
       end do

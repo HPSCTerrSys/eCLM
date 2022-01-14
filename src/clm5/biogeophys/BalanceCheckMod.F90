@@ -227,6 +227,8 @@ contains
           errh2osno               =>    waterstate_inst%errh2osno_col           , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
           endwb                   =>    waterstate_inst%endwb_col               , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
           total_plant_stored_h2o_col => waterstate_inst%total_plant_stored_h2o_col, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
+          pfl_psi                 =>    waterstate_inst%pfl_psi_col             , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+
           qflx_rootsoi_col        =>    waterflux_inst%qflx_rootsoi_col         , & ! Input   [real(r8) (:)   ]  water loss in soil layers to root uptake (mm H2O/s)
                                                                                     !                            (ie transpiration demand, often = transpiration)
           qflx_rain_grnd_col      =>    waterflux_inst%qflx_rain_grnd_col       , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
@@ -260,7 +262,6 @@ contains
           qflx_ice_dynbal         =>    waterflux_inst%qflx_ice_dynbal_grc      , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
           snow_sources            =>    waterflux_inst%snow_sources_col         , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
           snow_sinks              =>    waterflux_inst%snow_sinks_col           , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
-
           qflx_irrig              =>    irrigation_inst%qflx_irrig_col          , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
 
           qflx_glcice_dyn_water_flux => glacier_smb_inst%qflx_glcice_dyn_water_flux_col, & ! Input: [real(r8) (:)]  water flux needed for balance check due to glc_dyn_runoff_routing (mm H2O/s) (positive means addition of water to the system)
@@ -329,7 +330,27 @@ contains
 
           ! add qflx_drain_perched and qflx_flood
           if (col%active(c)) then
-
+          ! -- clm3.5/bld/usr.src/BalanceCheckMod.F90
+          ! if COUP_OAS_PFL
+            if (pfl_psi(c,1) > 0) then
+             errh2o(c) = endwb(c) - begwb(c) &
+                  - pfl_psi(c,1)             &
+                  - (forc_rain_col(c)        &
+                  + forc_snow_col(c)         &
+                  + qflx_floodc(c)           &
+                  + qflx_irrig(c)            &
+                  + qflx_glcice_dyn_water_flux(c) &
+                  - qflx_evap_tot(c)         &
+                  - qflx_surf(c)             &
+                  - qflx_h2osfc_surf(c)      &
+                  - qflx_qrgwl(c)            &
+                  - qflx_drain(c)            &
+                  - qflx_drain_perched(c)    &
+                  - qflx_ice_runoff_snwcp(c) &
+                  - qflx_ice_runoff_xs(c)    &
+                  - qflx_snwcp_discarded_liq(c) &
+                  - qflx_snwcp_discarded_ice(c)) * dtime
+            else
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c)        &
                   + forc_snow_col(c)         &
@@ -346,7 +367,7 @@ contains
                   - qflx_ice_runoff_xs(c)    &
                   - qflx_snwcp_discarded_liq(c) &
                   - qflx_snwcp_discarded_ice(c)) * dtime
-
+            end if 
           else
 
              errh2o(c) = 0.0_r8
@@ -356,12 +377,14 @@ contains
        end do
 
        found = .false.
-       do c = bounds%begc, bounds%endc
-          if (abs(errh2o(c)) > 1.e-9_r8) then
-             found = .true.
-             indexc = c
-          end if
-       end do
+       ! if not COUP_OAS_PFL
+       !do c = bounds%begc, bounds%endc
+       !   if (abs(errh2o(c)) > 1.e-9_r8) then
+       !      found = .true.
+       !      indexc = c
+       !   end if
+       !end do
+       ! end if
 
        if ( found ) then
 

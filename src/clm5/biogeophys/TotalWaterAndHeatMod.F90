@@ -251,19 +251,26 @@ contains
           ice_mass(c) = ice_mass(c) + h2osno(c)
        end if
 
-       if (col%hydrologically_active(c)) then
-          ! It's important to exclude non-hydrologically-active points, because some of
-          ! them have wa set, but seemingly incorrectly (set to 4000).
+      ! -- clm3.5/bld/usr.src/BalanceCheckMod.F90
+      ! -- clm3.5/bld/usr.src/Hydrology2Mod.F90
+      ! COUP_OAS_PFL
+      ! - ignore water aquifer on begwb and endwb calculations
+      !  if (col%hydrologically_active(c)) then
+      !     ! It's important to exclude non-hydrologically-active points, because some of
+      !     ! them have wa set, but seemingly incorrectly (set to 4000).
 
-          ! NOTE(wjs, 2017-03-23) We subtract aquifer_water_baseline because water in the
-          ! unconfined aquifer is in some senses a virtual water pool. For CLM45 physics,
-          ! it isn't clear to me if this subtraction is the "right" thing to do (it can
-          ! lead to a net negative value, though that's probably okay). But we definitely
-          ! want to do it for CLM5 physics: there, wa stays fixed at 5000 for
-          ! hydrologically-active columns, yet this apparently doesn't interact with the
-          ! system, so we don't want to count that water mass in the total column water.
-          liquid_mass(c) = liquid_mass(c) + (wa(c) - aquifer_water_baseline)
-       end if
+      !     ! NOTE(wjs, 2017-03-23) We subtract aquifer_water_baseline because water in the
+      !     ! unconfined aquifer is in some senses a virtual water pool. For CLM45 physics,
+      !     ! it isn't clear to me if this subtraction is the "right" thing to do (it can
+      !     ! lead to a net negative value, though that's probably okay). But we definitely
+      !     ! want to do it for CLM5 physics: there, wa stays fixed at 5000 for
+      !     ! hydrologically-active columns, yet this apparently doesn't interact with the
+      !     ! system, so we don't want to count that water mass in the total column water.
+
+      !     ! 
+      !     
+      !     liquid_mass(c) = liquid_mass(c) + (wa(c) - aquifer_water_baseline)
+      ! end if
 
        if (col%itype(c) == icol_roof .or. col%itype(c) == icol_sunwall &
             .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_road_imperv) then
