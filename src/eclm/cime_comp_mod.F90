@@ -582,7 +582,7 @@ contains
   !*******************************************************************************
   !===============================================================================
 
-  subroutine cime_pre_init1(esmf_log_option)
+  subroutine cime_pre_init1(esmf_log_option, pdaf_comm, pdaf_id, pdaf_max)
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
 
@@ -591,7 +591,9 @@ contains
     !----------------------------------------------------------
 
     character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
-
+    integer, optional, intent(in) :: pdaf_comm
+    integer, optional, intent(in) :: pdaf_id
+    integer, optional, intent(in) :: pdaf_max
     integer, dimension(num_inst_total) :: comp_id, comp_comm, comp_comm_iam
     logical :: comp_iamin(num_inst_total)
     character(len=seq_comm_namelen) :: comp_name(num_inst_total)
@@ -612,15 +614,21 @@ contains
       call oasis_abort(oas_comp_id, 'cime_pre_init1', 'oasis_get_localcomm error')
     end if
 #else
-    call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
-    call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
+    if (present(pdaf_comm)) then
+      global_comm = pdaf_comm
+      !write(*,*) "PDAF_COMM present"
+    else
+      call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
+      call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
+    end if
 #endif
 
     comp_comm = MPI_COMM_NULL
     time_brun = mpi_wtime()
 
     !--- Initialize multiple driver instances, if requested ---
-    call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id)
+    call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id, &
+                       pdaf_id, pdaf_max)
 
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
     !
@@ -632,6 +640,9 @@ contains
     if (num_inst_driver > 1) then
        call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
        write(cpl_inst_tag,'("_",i4.4)') driver_id
+    else if (present(pdaf_id) .and. present(pdaf_max)) then
+       call seq_comm_init(global_comm, driver_comm, NLFileName, &
+                          pdaf_id=pdaf_id, pdaf_max=pdaf_max)
     else
        call seq_comm_init(global_comm, driver_comm, NLFileName)
        cpl_inst_tag = ''
@@ -4224,7 +4235,8 @@ contains
     endif
   end subroutine cime_comp_barriers
 
-  subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
+  subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id, &
+                           pdaf_id, pdaf_max)
     !-----------------------------------------------------------------------
     !
     ! Initialize multiple coupler instances, if requested
@@ -4237,6 +4249,7 @@ contains
     integer , intent(out) :: comm_out
     integer , intent(out)   :: num_inst_driver
     integer , intent(out)   :: id      ! instance ID, starts from 1
+    integer , intent(in), optional :: pdaf_id, pdaf_max
     !
     ! Local variables
     !
@@ -4278,7 +4291,11 @@ contains
             ' : Total PE number must be a multiple of coupler instance number')
     end if
 
-    if (num_inst_driver == 1) then
+    !write(*,*) "just before split", comm_in, pdaf_id, mype, numpes, comm_out
+    if (pdaf_max > 1) then
+      call mpi_comm_split(comm_in, pdaf_id, 0, comm_out, ierr)
+      call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
+    else if (num_inst_driver == 1) then
        call mpi_comm_dup(comm_in, comm_out, ierr)
        call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
     else

@@ -198,7 +198,8 @@ contains
     seq_comm_get_ncomps = ncomps
   end function seq_comm_get_ncomps
 
-  subroutine seq_comm_init(global_comm_in, driver_comm_in, nmlfile, drv_comm_id)
+  subroutine seq_comm_init(global_comm_in, driver_comm_in, nmlfile, drv_comm_id,&
+                           pdaf_id, pdaf_max)
     !----------------------------------------------------------
     !
     ! Arguments
@@ -207,6 +208,8 @@ contains
     integer, intent(in) :: driver_comm_in
     character(len=*), intent(IN) :: nmlfile
     integer, intent(in), optional :: drv_comm_id
+    integer, intent(in), optional :: pdaf_id
+    integer, intent(in), optional :: pdaf_max
     !
     ! Local variables
     !
@@ -405,21 +408,21 @@ contains
     call seq_comm_setcomm(CPLID,pelist,nthreads=cpl_nthreads,iname='CPL')
 
     call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
-         CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id)
+         CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id, pdaf_id, pdaf_max)
     call comp_comm_init(driver_comm, lnd_rootpe, lnd_nthreads, lnd_layout, lnd_ntasks, lnd_pestride, num_inst_lnd, &
-         CPLID, LNDID, CPLLNDID, ALLLNDID, CPLALLLNDID, 'LND', count, drv_comm_id)
+         CPLID, LNDID, CPLLNDID, ALLLNDID, CPLALLLNDID, 'LND', count, drv_comm_id, pdaf_id, pdaf_max)
     call comp_comm_init(driver_comm, ice_rootpe, ice_nthreads, ice_layout, ice_ntasks, ice_pestride, num_inst_ice, &
-         CPLID, ICEID, CPLICEID, ALLICEID, CPLALLICEID, 'ICE', count, drv_comm_id)
+         CPLID, ICEID, CPLICEID, ALLICEID, CPLALLICEID, 'ICE', count, drv_comm_id, pdaf_id, pdaf_max)
     call comp_comm_init(driver_comm, ocn_rootpe, ocn_nthreads, ocn_layout, ocn_ntasks, ocn_pestride, num_inst_ocn, &
-         CPLID, OCNID, CPLOCNID, ALLOCNID, CPLALLOCNID, 'OCN', count, drv_comm_id)
+         CPLID, OCNID, CPLOCNID, ALLOCNID, CPLALLOCNID, 'OCN', count, drv_comm_id, pdaf_id, pdaf_max)
     call comp_comm_init(driver_comm, rof_rootpe, rof_nthreads, rof_layout, rof_ntasks, rof_pestride, num_inst_rof, &
-         CPLID, ROFID, CPLROFID, ALLROFID, CPLALLROFID, 'ROF', count, drv_comm_id)
+         CPLID, ROFID, CPLROFID, ALLROFID, CPLALLROFID, 'ROF', count, drv_comm_id, pdaf_id, pdaf_max)
     call comp_comm_init(driver_comm, glc_rootpe, glc_nthreads, glc_layout, glc_ntasks, glc_pestride, num_inst_glc, &
-         CPLID, GLCID, CPLGLCID, ALLGLCID, CPLALLGLCID, 'GLC', count, drv_comm_id)
+         CPLID, GLCID, CPLGLCID, ALLGLCID, CPLALLGLCID, 'GLC', count, drv_comm_id, pdaf_id, pdaf_max)
     call comp_comm_init(driver_comm, wav_rootpe, wav_nthreads, wav_layout, wav_ntasks, wav_pestride, num_inst_wav, &
-         CPLID, WAVID, CPLWAVID, ALLWAVID, CPLALLWAVID, 'WAV', count, drv_comm_id)
+         CPLID, WAVID, CPLWAVID, ALLWAVID, CPLALLWAVID, 'WAV', count, drv_comm_id, pdaf_id, pdaf_max)
     call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, esp_ntasks, esp_pestride, num_inst_esp, &
-         CPLID, ESPID, CPLESPID, ALLESPID, CPLALLESPID, 'ESP', count, drv_comm_id)
+         CPLID, ESPID, CPLESPID, ALLESPID, CPLALLESPID, 'ESP', count, drv_comm_id, pdaf_id, pdaf_max)
 
     if (count /= ncomps) then
        write(logunit,*) trim(subname),' ERROR in ID count ',count,ncomps
@@ -495,7 +498,8 @@ contains
 
   subroutine comp_comm_init(driver_comm, comp_rootpe, comp_nthreads, comp_layout, &
        comp_ntasks, comp_pestride, num_inst_comp, &
-       CPLID, COMPID, CPLCOMPID, ALLCOMPID, CPLALLCOMPID, name, count, drv_comm_id)
+       CPLID, COMPID, CPLCOMPID, ALLCOMPID, CPLALLCOMPID, name, count, drv_comm_id, &
+       pdaf_id, pdaf_max)
     integer, intent(in) :: driver_comm
     integer, intent(in) :: comp_rootpe
     integer, intent(in) :: comp_nthreads
@@ -510,6 +514,8 @@ contains
     integer, intent(out) :: CPLALLCOMPID
     integer, intent(inout) :: count
     integer, intent(in), optional :: drv_comm_id
+    integer, intent(in), optional :: pdaf_id
+    integer, intent(in), optional :: pdaf_max
     character(len=*), intent(in) :: name
 
     character(len=*), parameter :: subname = "comp_comm_init"
@@ -572,8 +578,13 @@ contains
           pelist(2,1) = cmax(n)
           pelist(3,1) = cstr(n)
        endif
+       !write(*,*) "before seq_comm_set_comm bcast", pelist, DRIVER_COMM
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
-       if (present(drv_comm_id)) then
+       if (present(pdaf_id) .and. present(pdaf_max)) then
+         !write(*,*) "before seq_comm_setcomm", pdaf_id, pdaf_max, mype, n, &
+         !           COMPID(n), pelist, comp_nthreads, name
+         call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=pdaf_id,tinst=pdaf_max)
+       else if (present(drv_comm_id)) then
           call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=drv_comm_id)
        else
           call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=n,tinst=num_inst_comp)
