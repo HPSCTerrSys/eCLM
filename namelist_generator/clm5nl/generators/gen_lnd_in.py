@@ -22,10 +22,10 @@ _nl = lnd_in()
 def build_lnd_in(opts: dict = None, nl_file: str = "lnd_in"):
 
     # Initialize module level variables
-    global _opts, _user_nl
+    global _opts, _user_nl, _nl
     global _nl, _env
-    _opts = opts
-    _user_nl = opts.get("user_nl", {})
+    _opts = opts.get("general_options", {})
+    _user_nl = opts
     _nl = lnd_in()
 
     # set defaults

@@ -24,8 +24,8 @@ _nl = drv_in()
 def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     global _opts, _user_nl, _nl
 
-    _opts = opts
-    _user_nl = opts.get("user_nl", {})
+    _opts = opts.get("general_options", {})
+    _user_nl = opts
     _nl = drv_in()
 
     _opts["ATM_NCPL"] = opts.get("ATM_NCPL", 48)

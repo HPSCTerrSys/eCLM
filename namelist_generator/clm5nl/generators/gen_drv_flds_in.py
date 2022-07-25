@@ -10,13 +10,14 @@ from ..structures import drv_flds_in
 
 __all__ = ['build_drv_flds_in']
 _opts = {}
+_user_nl = {}
 _nl = drv_flds_in()
 
 def build_drv_flds_in(opts: dict = None, nl_file: str = "drv_flds_in"):
     
-    global _opts, _nl
-    _opts = opts
-    _user_nl = opts.get("user_nl", {})
+    global _opts, _user_nl, _nl
+    _opts = opts.get("general_options", {})
+    _user_nl = opts
     _nl = drv_flds_in()
 
     _opts["megan"] = opts.get("megan", "default")
@@ -82,8 +83,8 @@ def setup_logic_megan():
                         "CH3CHO = acetaldehyde",
                         "CH3COOH = acetic_acid",
                         "CH3COCH3 = acetone"]
-            if _opts["megan_factors_file"] is not None:
-                n.megan_factors_file = _opts["megan_factors_file"]
+            if _user_nl["megan_factors_file"] is not None:
+                n.megan_factors_file = _user_nl["megan_factors_file"]
             else:
                 n.megan_factors_file = "atm/cam/chem/trop_mozart/emis/megan21_emis_factors_78pft_c20161108.nc"
         else:
@@ -103,6 +104,6 @@ if __name__ == "__main__":
     opts["drydep"] = False
     opts["fire_emis"] = False
     opts["megan"] = True
-    opts["megan_factors_file"] = "/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc"
+    user_nl["megan_factors_file"] = "/p/scratch/nrw_test_case/megan21_emis_factors_78pft_c20161108.nc"
 
     build_drv_flds_in(opts, user_nl, "drv_flds_in_test")
