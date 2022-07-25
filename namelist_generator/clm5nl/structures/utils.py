@@ -56,6 +56,8 @@ def py2fortran(obj) -> str:
             value = ", ".join(f"'{s}'" for s in obj)
         else:
             value = ", ".join(str(s) for s in obj)
+    elif obj is None:
+        value = "''"
     else:
         value = str(obj)
     return value
