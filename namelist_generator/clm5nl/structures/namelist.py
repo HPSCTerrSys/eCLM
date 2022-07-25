@@ -21,7 +21,7 @@ class Namelist(object):
 
     def __getitem__(self, key):
         if key in self._valid_params:
-            return self._nl[self._valid_params[key]][key]
+            return self._nl[self._valid_params[key]].get(key, None)
         else:
             raise KeyError(f"'{key}' is not a valid {self._name} parameter.")
 
@@ -39,6 +39,13 @@ class Namelist(object):
 
     def keys(self):
         return self._nl.keys()
+
+    def update(self, other=None, **kwargs):
+        if other is not None:
+            for k, v in other.items():
+                self[k] = v
+        for k, v in kwargs.items():
+            self[k] = v
 
     def __str__(self):
         return nml2str(self._nl)

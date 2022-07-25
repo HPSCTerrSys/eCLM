@@ -25,7 +25,8 @@ def build_lnd_in(opts: dict = None, nl_file: str = "lnd_in"):
     global _opts, _user_nl, _nl
     global _nl, _env
     _opts = opts.get("general_options", {})
-    _user_nl = opts
+    _user_nl = opts.copy()
+    _user_nl.pop("general_options", {})
     _nl = lnd_in()
 
     # set defaults
@@ -64,7 +65,10 @@ def build_lnd_in(opts: dict = None, nl_file: str = "lnd_in"):
 
     # this param is needed by drv_flds_in
     _opts["use_fates"] = _nl.clm_inparm.use_fates
-    
+
+    # Set user-specified namelist parameters
+    _nl.update(_user_nl)
+
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "":
         _nl.write(nl_file, lnd_nl_groups())

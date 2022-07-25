@@ -21,7 +21,8 @@ def build_datm_in(opts: dict = None, nl_file: str = "datm_in"):
     global _opts, _user_nl, _nl
 
     _opts = opts.get("general_options", {})
-    _user_nl = opts
+    _user_nl = opts.copy()
+    _user_nl.pop("general_options", {})
     _nl = datm_in()
 
     # Validate inputs
@@ -33,6 +34,9 @@ def build_datm_in(opts: dict = None, nl_file: str = "datm_in"):
     # Build datm_in
     shr_strdata_nml()
     datm_nml()
+
+    # Set user-specified namelist parameters
+    _nl.update(_user_nl)
 
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "": 
