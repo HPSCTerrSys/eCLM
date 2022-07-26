@@ -31,7 +31,7 @@ def build_mosart_in(opts: dict = None, nl_file: str = "mosart_in"):
         n.do_rtm = False
         n.do_rtmflood = False
         n.finidat_rtm = " "
-        n.frivinp_rtm = opts["frivinp_rtm"]
+        n.frivinp_rtm = opts["general_options"]["frivinp_rtm"]
         n.ice_runoff = True 
         n.qgwl_runoff_option = "threshold"
         n.rtmhist_fexcl1 = ""

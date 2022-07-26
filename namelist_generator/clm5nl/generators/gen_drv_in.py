@@ -24,8 +24,9 @@ _nl = drv_in()
 def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     global _opts, _user_nl, _nl
 
-    _opts = opts
-    _user_nl = opts.get("user_nl", {})
+    _opts = opts.get("general_options", {})
+    _user_nl = opts.copy()
+    _user_nl.pop("general_options", {})
     _nl = drv_in()
 
     _opts["ATM_NCPL"] = opts.get("ATM_NCPL", 48)
@@ -57,6 +58,9 @@ def build_drv_in(opts: dict = None, nl_file: str = "drv_in"):
     seq_cplflds_inparm()
     seq_cplflds_userspec()
     seq_flux_mct_inparm()
+
+    # Set user-specified namelist parameters
+    _nl.update(_user_nl)
 
     #Write to file
     if nl_file and Path(nl_file).name.strip() != "":
