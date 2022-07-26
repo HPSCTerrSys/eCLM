@@ -2,7 +2,7 @@ from collections import OrderedDict
 from itertools import filterfalse
 from io import StringIO
 
-NL_COLUMN_WIDTH_MAX = 80
+NL_COLUMN_WIDTH_MAX = 60
 
 def nml2str(nl: dict, grp_names: list = [], fill_missing_groups: bool = True) -> str:
     """
@@ -71,12 +71,18 @@ def wrap(line):
     key = line[:after_eq_sign]
     params = [p.strip() for p in line[after_eq_sign:].split(",")]
     if len(params) > 1:
-        # Key length includes the equal sign and the space after it
+        # Indent length includes the parameter, equal sign, and the space after it
         indent = " " * (len(key) + 1)
-        # Indent parameters based on key length
-        wrapped_lines =  [f"{indent}{p}" for p in params]
-        # Replace indent on the 1st parameter with a leading space
-        wrapped_lines[0] = " " + wrapped_lines[0].strip()
+
+        wrapped_lines = []
+        l = " " + params[0]        # 1st parameter
+        for p in params[1:]:
+            if len(l) < NL_COLUMN_WIDTH_MAX:
+                l += ", " + p
+            else:
+                wrapped_lines.append(l)
+                l = f"{indent}{p}" # start of new line
+        wrapped_lines.append(l)    # last set of parameters
         return key + ",\n".join(wrapped_lines)
     else:
         return line

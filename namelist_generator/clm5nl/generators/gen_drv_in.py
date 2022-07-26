@@ -313,7 +313,7 @@ def seq_timemgr_inparm():
         n.restart_option = _opts.get("RESTART_OPTION", n.stop_option)
         n.restart_ymd = n.stop_ymd
         n.restart_n = n.stop_n
-        print("start_ymd" in n)
+
         # set component coupling frequencies
         base_period  = _opts.get("NCPL_BASE_PERIOD","day")
         if _opts.get("CALENDAR", "NO_LEAP") != 'NO_LEAP' and (base_period == "year" or base_period == "decade"):
