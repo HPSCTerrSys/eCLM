@@ -22,6 +22,9 @@ contains
     integer              :: gcell_previous    ! gridcell index from previous loop iteration
     integer              :: k, g              ! array/loop indices
     integer              :: grid_id           ! id returned after call to oasis_def_partition
+#if defined(COUP_OAS_ICON)
+    integer              :: jg                ! loop counter
+#endif
 
     ! oasis_def_var
     integer              :: var_nodims(2)     ! var dimension parameters
@@ -70,6 +73,8 @@ contains
     ! -----------------------------------------------------------------
     ! ... Define coupling fields
     ! -----------------------------------------------------------------
+
+#if defined(COUP_OAS_PFL)
     var_nodims(1) = 1         ! unused
     var_nodims(2) = nlevsoi   ! number of fields in a bundle
 
@@ -78,6 +83,54 @@ contains
     var_nodims(2) = nlevgrnd  ! number of fields in a bundle
     call oasis_def_var(oas_sat_id, "ECLM_SAT", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
     call oasis_def_var(oas_psi_id, "ECLM_PSI", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
+#endif 
+
+#if defined(COUP_OAS_ICON)
+    var_nodims(1) = 1         ! unused
+    var_nodims(2) = 1         ! number of fields in a bundle
+
+    oas_rcv_meta(1)%clpname = "CLM_TEMPE"
+    oas_rcv_meta(2)%clpname = "CLM_UWIND"
+    oas_rcv_meta(3)%clpname = "CLM_VWIND"
+    oas_rcv_meta(4)%clpname = "CLM_SPWAT"
+    oas_rcv_meta(5)%clpname = "CLM_THICK"
+    oas_rcv_meta(6)%clpname = "CLM_PRESS"
+    oas_rcv_meta(7)%clpname = "CLM_DIRSW"
+    oas_rcv_meta(8)%clpname = "CLM_DIFSW"
+    oas_rcv_meta(9)%clpname = "CLM_LONGW"
+    oas_rcv_meta(10)%clpname = "CLM_CVPRE"
+    oas_rcv_meta(11)%clpname = "CLM_GSPRE"
+
+    oas_snd_meta(1)%clpname = "CLM_INFRA"
+    oas_snd_meta(2)%clpname = "CLM_ALBED"
+    oas_snd_meta(3)%clpname = "CLM_ALBEI"
+    oas_snd_meta(4)%clpname = "CLM_TAUX"
+    oas_snd_meta(5)%clpname = "CLM_TAUY"
+    oas_snd_meta(6)%clpname = "CLM_SHFLX"
+    oas_snd_meta(7)%clpname = "CLM_LHFLX"
+    oas_snd_meta(8)%clpname = "CLM_TGRND"
+
+!    call oasis_def_var(oas_temp_id, "ECLM_TEMP", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
+
+    DO jg = 1, SIZE(oas_rcv_meta)
+      CALL oasis_def_var(oas_rcv_meta(jg)%vid, oas_rcv_meta(jg)%clpname, grid_id, &
+          var_nodims, OASIS_In, OASIS_Real, ierror)
+      IF (ierror /= 0) THEN
+        CALL message('Failure in oasis_def_var for ', oas_rcv_meta(jg)%clpname)
+        CALL oasis_abort(oas_comp_id, oas_comp_name, '')
+      END IF
+    END DO
+
+    DO jg = 1, SIZE(oas_snd_meta)
+      CALL oasis_def_var(oas_snd_meta(jg)%vid, oas_snd_meta(jg)%clpname, oas_part_id, &
+          var_nodims, OASIS_Out, OASIS_Real, ierror)
+      IF (oas_error /= 0) THEN
+        CALL message('Failure in oasis_def_var for ', oas_rcv_meta(jg)%clpname)
+        CALL oasis_abort(oas_comp_id, oas_comp_name, '')
+      END IF
+    END DO
+
+#endif
 
     ! End definition phase
     call oasis_enddef(ierror)
