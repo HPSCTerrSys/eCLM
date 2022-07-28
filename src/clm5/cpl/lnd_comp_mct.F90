@@ -14,7 +14,8 @@ module lnd_comp_mct
   use lnd_import_export, only : lnd_import, lnd_export
 #if defined(USE_OASIS)
   use oas_defineMod     , only : oas_definitions_init
-  use oas_sendReceiveMod, only : oas_receive, oas_send
+  use oas_sendReceiveMod, only : oas_receive, oas_send, &
+                                 oas_receive_icon, oas_send_icon
 #endif
   !
   ! !public member functions:
@@ -415,6 +416,10 @@ contains
     call t_stopf ('lc_lnd_import')
     ! Use infodata to set orbital values if updated mid-run
 
+#if defined(COUP_OAS_ICON)
+       call oas_receive_icon(bounds, time_elapsed, atm2lnd_inst)
+#endif
+
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
 
@@ -453,7 +458,7 @@ contains
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
-#if defined(USE_OASIS)
+#if defined(COUP_OAS_PFL)
        call oas_receive(bounds, time_elapsed, atm2lnd_inst)
 #endif
        ! Run clm 
@@ -467,7 +472,12 @@ contains
        call clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate, rof_prognostic)
        call t_stopf ('clm_run')
 
-#if defined(USE_OASIS)
+
+#if defined(COUP_OAS_ICON)
+       call oas_send_icon(bounds, time_elapsed, lnd2atm_inst)
+#endif
+
+#if defined(COUP_OAS_PFL)
        call oas_send(bounds, time_elapsed, lnd2atm_inst)
 #endif
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
