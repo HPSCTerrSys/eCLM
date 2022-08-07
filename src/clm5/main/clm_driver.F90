@@ -1252,6 +1252,7 @@ contains
          h2osno_old         => waterstate_inst%h2osno_old_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O) at previous time step
          frac_iceold        => waterstate_inst%frac_iceold_col           , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
          pfl_psi            => waterstate_inst%pfl_psi_col               , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+         pfl_h2osoi_liq     => waterstate_inst%pfl_h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
          elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
          esai               => canopystate_inst%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow    
          frac_veg_nosno     => canopystate_inst%frac_veg_nosno_patch     , & ! Output: [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
@@ -1304,10 +1305,8 @@ contains
       do f = 1, num_soilc
         c = filter_soilc(f)
         g = col%gridcell(c)  
-        ! if (h2osoi_ice(c,:) <= 0.1_r8) then !DECOUPLING MOISTURE UPDATE FOR FROZEN SOILS CPS
-        !   pfl_psi(c,k(jn)) = rcv_field(c)
-        ! end if
-        pfl_psi(c,:) = atm2lnd_inst%parflow_psi_grc(g,:)
+        pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
+        pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
       end do
 
     end associate

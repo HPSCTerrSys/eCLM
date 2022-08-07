@@ -21,15 +21,10 @@ contains
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
     type(atm2lnd_type), intent(inout) :: atm2lnd_inst
-    real(kind=r8),      allocatable   :: buffer(:,:)
-    integer                           :: num_grid_points
     integer                           :: info
 
-    num_grid_points = (bounds%endg - bounds%begg) + 1
-    allocate(buffer(num_grid_points, nlevgrnd))
-
-    call oasis_get(oas_psi_id, seconds_elapsed, atm2lnd_inst%parflow_psi_grc, info)
-    call oasis_get(oas_sat_id, seconds_elapsed, buffer, info)
+    call oasis_get(oas_psi_id, seconds_elapsed, atm2lnd_inst%pfl_psi_grc, info)
+    call oasis_get(oas_sat_id, seconds_elapsed, atm2lnd_inst%pfl_h2osoi_liq_grc, info)
 
   end subroutine oas_receive
 
