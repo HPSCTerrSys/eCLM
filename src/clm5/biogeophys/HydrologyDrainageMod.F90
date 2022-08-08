@@ -53,7 +53,7 @@ contains
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage, PerchedLateralFlow, LateralFlowPowerLaw
-    use SoilWaterMovementMod , only : use_aquifer_layer
+    use SoilWaterMovementMod , only : use_aquifer_layer, use_parflow_soilwater
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -224,18 +224,20 @@ contains
 
       ! COUP_OAS_PFL
       ! Calculate here the source/sink term for ParFlow
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            if (j == 1) then
-               ! From SoilWaterPlantSinkMod:
-               ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
-               qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) * 3.6_r8 / dz(c,j)
-            else 
-               qflx_parflow(c,j) = -qflx_rootsoi(c,j) * 3.6_r8 / dz(c,j)
-            end if
+      if (use_parflow_soilwater()) then
+         do j = 1, nlevsoi
+            do fc = 1, num_hydrologyc
+               c = filter_hydrologyc(fc)
+               if (j == 1) then
+                  ! From SoilWaterPlantSinkMod:
+                  ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
+                  qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) * 3.6_r8 / dz(c,j)
+               else 
+                  qflx_parflow(c,j) = -qflx_rootsoi(c,j) * 3.6_r8 / dz(c,j)
+               end if
+            end do
          end do
-      end do
+      end if
     end associate
 
  end subroutine HydrologyDrainage
