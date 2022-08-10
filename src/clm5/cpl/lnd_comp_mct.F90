@@ -416,9 +416,6 @@ contains
     call t_stopf ('lc_lnd_import')
     ! Use infodata to set orbital values if updated mid-run
 
-#if defined(COUP_OAS_ICON)
-       call oas_receive_icon(bounds, time_elapsed, atm2lnd_inst)
-#endif
 
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
@@ -457,6 +454,10 @@ contains
        if (rstwr_sync .and. dosend) rstwr = .true.
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
+
+#if defined(COUP_OAS_ICON)
+       call oas_receive_icon(bounds, time_elapsed, atm2lnd_inst)
+#endif
 
 #if defined(COUP_OAS_PFL)
        call oas_receive(bounds, time_elapsed, atm2lnd_inst)
