@@ -12,6 +12,7 @@ contains
     use spmdMod      , only : masterproc
     use clm_varpar   , only : nlevsoi, nlevgrnd
     use decompMod    , only : bounds_type, ldecomp
+    use shr_log_mod  , only : s_logunit => shr_log_Unit
     use oas_vardefMod
 
     type(bounds_type) , intent(in)  :: bounds ! start and end gridcell indices for this MPI task
@@ -29,9 +30,11 @@ contains
     ! oasis_def_var
     integer              :: var_nodims(2)     ! var dimension parameters
 
+
     if (masterproc) then
       call define_grid()
     end if
+
 
     ! -----------------------------------------------------------------
     ! ... Define partition
@@ -86,29 +89,30 @@ contains
 #endif 
 
 #if defined(COUP_OAS_ICON)
+
     var_nodims(1) = 1         ! unused
     var_nodims(2) = 1         ! number of fields in a bundle
 
-    oas_rcv_meta(1)%clpname = "CLM_TEMPE"
-    oas_rcv_meta(2)%clpname = "CLM_UWIND"
-    oas_rcv_meta(3)%clpname = "CLM_VWIND"
-    oas_rcv_meta(4)%clpname = "CLM_SPWAT"
-    oas_rcv_meta(5)%clpname = "CLM_THICK"
-    oas_rcv_meta(6)%clpname = "CLM_PRESS"
-    oas_rcv_meta(7)%clpname = "CLM_DIRSW"
-    oas_rcv_meta(8)%clpname = "CLM_DIFSW"
-    oas_rcv_meta(9)%clpname = "CLM_LONGW"
-    oas_rcv_meta(10)%clpname = "CLM_CVPRE"
-    oas_rcv_meta(11)%clpname = "CLM_GSPRE"
+    oas_rcv_meta(1)%clpname = "CLMTEMPE"
+    oas_rcv_meta(2)%clpname = "CLMUWIND"
+    oas_rcv_meta(3)%clpname = "CLMVWIND"
+    oas_rcv_meta(4)%clpname = "CLMSPWAT"
+    oas_rcv_meta(5)%clpname = "CLMTHICK"
+    oas_rcv_meta(6)%clpname = "CLMPRESS"
+    oas_rcv_meta(7)%clpname = "CLMDIRSW"
+    oas_rcv_meta(8)%clpname = "CLMDIFSW"
+    oas_rcv_meta(9)%clpname = "CLMLONGW"
+    oas_rcv_meta(10)%clpname = "CLMCVPRE"
+    oas_rcv_meta(11)%clpname = "CLMGSPRE"
 
-    oas_snd_meta(1)%clpname = "CLM_INFRA"
-    oas_snd_meta(2)%clpname = "CLM_ALBED"
-    oas_snd_meta(3)%clpname = "CLM_ALBEI"
-    oas_snd_meta(4)%clpname = "CLM_TAUX"
-    oas_snd_meta(5)%clpname = "CLM_TAUY"
-    oas_snd_meta(6)%clpname = "CLM_SHFLX"
-    oas_snd_meta(7)%clpname = "CLM_LHFLX"
-    oas_snd_meta(8)%clpname = "CLM_TGRND"
+    oas_snd_meta(1)%clpname = "CLMINFRA"
+    oas_snd_meta(2)%clpname = "CLMALBED"
+    oas_snd_meta(3)%clpname = "CLMALBEI"
+    oas_snd_meta(4)%clpname = "CLMTAUX"
+    oas_snd_meta(5)%clpname = "CLMTAUY"
+    oas_snd_meta(6)%clpname = "CLMSHFLX"
+    oas_snd_meta(7)%clpname = "CLMLHFLX"
+    oas_snd_meta(8)%clpname = "CLMTGRND"
 
 !    call oasis_def_var(oas_temp_id, "ECLM_TEMP", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
 
@@ -116,16 +120,16 @@ contains
       CALL oasis_def_var(oas_rcv_meta(jg)%vid, oas_rcv_meta(jg)%clpname, grid_id, &
           var_nodims, OASIS_In, OASIS_Real, ierror)
       IF (ierror /= 0) THEN
-        CALL message('Failure in oasis_def_var for ', oas_rcv_meta(jg)%clpname)
+        write(s_logunit,*) 'Failure in oasis_def_var for ', oas_rcv_meta(jg)%clpname,' Errornum: ',ierror
         CALL oasis_abort(oas_comp_id, oas_comp_name, '')
       END IF
     END DO
 
     DO jg = 1, SIZE(oas_snd_meta)
-      CALL oasis_def_var(oas_snd_meta(jg)%vid, oas_snd_meta(jg)%clpname, oas_part_id, &
+      CALL oasis_def_var(oas_snd_meta(jg)%vid, oas_snd_meta(jg)%clpname, grid_id, &
           var_nodims, OASIS_Out, OASIS_Real, ierror)
-      IF (oas_error /= 0) THEN
-        CALL message('Failure in oasis_def_var for ', oas_rcv_meta(jg)%clpname)
+      IF (ierror /= 0) THEN
+        write(s_logunit,*) 'Failure in oasis_def_var for ', oas_snd_meta(jg)%clpname,' Errornum: ',ierror
         CALL oasis_abort(oas_comp_id, oas_comp_name, '')
       END IF
     END DO
