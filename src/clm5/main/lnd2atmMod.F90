@@ -37,7 +37,7 @@ module lnd2atmMod
   use ColumnType           , only : col
   use LandunitType         , only : lun
   use GridcellType         , only : grc                
-  use landunit_varcon      , only : istice_mec
+  use landunit_varcon      , only : istice_mec, istsoil, istcrop
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -411,12 +411,18 @@ contains
          waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
          lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
-!TODO: Verify questionable factor 3.6/dz(g,j) !
-!     do j = 1, nlevsoi
-!        do g = bounds%begg, bounds%endg    
-!           lnd2atm_inst%qflx_parflow_grc(g,j) = lnd2atm_inst%qflx_parflow_grc(g,j)*3.6_r8/col%dz(g,j)
-!        enddo
-!     enddo
+
+    do c = bounds%begc, bounds%endc
+     if (col%hydrologically_active(c)) then
+       if (col%itype(c) == istsoil .or. col%itype(c) == istcrop) then
+         g = col%gridcell(c)
+         do j = 1, nlevsoi
+           !TODO: Verify scaling factor 3.6/dz(g,j)
+           lnd2atm_inst%qflx_parflow_grc(g,j) = lnd2atm_inst%qflx_parflow_grc(g,j) *3.6_r8/col%dz(c,j)
+         enddo
+       end if
+     end if
+   end do
 
   end subroutine lnd2atm
 

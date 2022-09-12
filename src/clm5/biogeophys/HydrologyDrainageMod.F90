@@ -52,7 +52,7 @@ contains
     use clm_varctl       , only : use_vichydro
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use clm_time_manager , only : get_step_size, get_nstep
-    use SoilHydrologyMod , only : CLMVICMap, Drainage, PerchedLateralFlow, LateralFlowPowerLaw
+    use SoilHydrologyMod , only : CLMVICMap, Drainage, PerchedLateralFlow, LateralFlowPowerLaw, ParFlowDrainage
     use SoilWaterMovementMod , only : use_aquifer_layer, use_parflow_soilwater
     !
     ! !ARGUMENTS:
@@ -107,8 +107,6 @@ contains
          qflx_drain         => waterflux_inst%qflx_drain_col         , & ! sub-surface runoff (mm H2O /s) 
          qflx_surf          => waterflux_inst%qflx_surf_col          , & ! surface runoff (mm H2O /s)      
          qflx_infl          => waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)
-         qflx_rootsoi       => waterflux_inst%qflx_rootsoi_col       , & ! root and soil water exchange [mm H2O/s] [+ into root]
-         qflx_parflow       => waterflux_inst%qflx_parflow_col       , & ! source/sink flux passed to ParFlow for each soil layer
          qflx_qrgwl         => waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes
          qflx_runoff        => waterflux_inst%qflx_runoff_col        , & ! total runoff 
                                                                          ! (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
@@ -128,26 +126,29 @@ contains
               soilhydrology_inst, waterstate_inst)
       endif
 
-      if (use_aquifer_layer()) then 
-         call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
-              num_urbanc, filter_urbanc,&
-              temperature_inst, soilhydrology_inst, soilstate_inst, &
-              waterstate_inst, waterflux_inst)
-      else
-         
-         call PerchedLateralFlow(bounds, num_hydrologyc, filter_hydrologyc, &
-              num_urbanc, filter_urbanc,&
-              soilhydrology_inst, soilstate_inst, &
-              waterstate_inst, waterflux_inst)
-
+      if (use_parflow_soilwater()) then
          ! clm3.5/bld/usr.src/SoilHydrologyMod.F90
-         ! if not COUP_OAS_PFL
-         ! to comment or not?
-         !call LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
-         !     num_urbanc, filter_urbanc,&
-         !     soilhydrology_inst, soilstate_inst, &
-         !     waterstate_inst, waterflux_inst)
+         ! ignore drainage calculations in eCLM and instead pass these fluxes to ParFlow 
+         call ParFlowDrainage(bounds, num_hydrologyc, filter_hydrologyc, &
+            num_urbanc, filter_urbanc, waterflux_inst)
+      else
+         if (use_aquifer_layer()) then 
+            call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
+               num_urbanc, filter_urbanc,&
+               temperature_inst, soilhydrology_inst, soilstate_inst, &
+               waterstate_inst, waterflux_inst)
+         else
+            call PerchedLateralFlow(bounds, num_hydrologyc, filter_hydrologyc, &
+               num_urbanc, filter_urbanc,&
+               soilhydrology_inst, soilstate_inst, &
+               waterstate_inst, waterflux_inst)
 
+            call LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
+                num_urbanc, filter_urbanc,&
+                soilhydrology_inst, soilstate_inst, &
+                waterstate_inst, waterflux_inst)
+
+         endif
       endif
 
       do j = 1, nlevgrnd
@@ -221,23 +222,6 @@ contains
          end if
 
       end do
-
-      ! COUP_OAS_PFL
-      ! Calculate here the source/sink term for ParFlow
-      if (use_parflow_soilwater()) then
-         do j = 1, nlevsoi
-            do fc = 1, num_hydrologyc
-               c = filter_hydrologyc(fc)
-               if (j == 1) then
-                  ! From SoilWaterPlantSinkMod:
-                  ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
-                  qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) * 3.6_r8 / dz(c,j)
-               else 
-                  qflx_parflow(c,j) = -qflx_rootsoi(c,j) * 3.6_r8 / dz(c,j)
-               end if
-            end do
-         end do
-      end if
     end associate
 
  end subroutine HydrologyDrainage

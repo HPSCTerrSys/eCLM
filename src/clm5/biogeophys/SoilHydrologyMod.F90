@@ -2338,5 +2338,74 @@ contains
 
    end subroutine RenewCondensation
 
+!#8
+   !-----------------------------------------------------------------------
+   subroutine ParFlowDrainage(bounds, num_hydrologyc, filter_hydrologyc, &
+        num_urbanc, filter_urbanc, waterflux_inst)
+     !
+     ! !DESCRIPTION:
+     ! Calculate subsurface water fluxes which will be sent to ParFlow
+     !
+     ! !USES:
+     use column_varcon    , only : icol_road_perv
+     use clm_varpar       , only : nlevsoi
+     !
+     ! !ARGUMENTS:
+     type(bounds_type)        , intent(in)    :: bounds               
+     integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
+     integer                  , intent(in)    :: num_urbanc           ! number of column urban points in column filter
+     integer                  , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
+     integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
+     type(waterflux_type)     , intent(inout) :: waterflux_inst
+     ! !LOCAL VARIABLES:
+     character(len=32) :: subname = 'ParFlowDrainage'   ! subroutine name
+     integer  :: c,j,fc                                   ! indices
+     !-----------------------------------------------------------------------
+
+     associate(                                                            & 
+          qflx_snwcp_liq     =>    waterflux_inst%qflx_snwcp_liq_col     , & ! excess rainfall due to snow capping (mm H2O /s) [+]
+          qflx_drain         =>    waterflux_inst%qflx_drain_col         , & ! sub-surface runoff (mm H2O /s)
+          qflx_drain_perched =>    waterflux_inst%qflx_drain_perched_col , & ! perched wt sub-surface runoff (mm H2O /s)         
+          qflx_qrgwl         =>    waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes (mm H2O /s)
+          qflx_rsub_sat      =>    waterflux_inst%qflx_rsub_sat_col      , & ! soil saturation excess [mm h2o/s]
+          qflx_infl          =>    waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)
+          qflx_rootsoi       =>    waterflux_inst%qflx_rootsoi_col       , & ! vegetation/soil water exchange (mm H2O/s) (+ = to atm) 
+          qflx_parflow       =>    waterflux_inst%qflx_parflow_col         & ! source/sink flux passed to ParFlow for each soil layer
+          )
+
+         ! COUP_OAS_PFL
+         ! Calculate here the source/sink term for ParFlow
+         do j = 1, nlevsoi
+            do fc = 1, num_hydrologyc
+               c = filter_hydrologyc(fc)
+               if (j == 1) then
+                  ! From SoilWaterPlantSinkMod:
+                  ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
+                  qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) !* 3.6_r8 / dz(c,j)
+               else 
+                  qflx_parflow(c,j) = -qflx_rootsoi(c,j) !* 3.6_r8 / dz(c,j)
+               end if
+            end do
+         end do
+
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            qflx_drain(c)         = -sum(qflx_parflow(c,:)) !0._r8
+            qflx_drain_perched(c) = 0._r8  
+            qflx_rsub_sat(c)      = 0._r8
+            qflx_qrgwl(c)         = qflx_snwcp_liq(c)   ! Set imbalance for snow capping
+         end do
+
+         ! No drainage for urban columns (necessary to account for water balance errors)
+         do fc = 1, num_urbanc
+            c = filter_urbanc(fc)
+            if (col%itype(c) /= icol_road_perv) then
+               qflx_drain(c) = 0._r8
+               ! This must be done for roofs and impervious road (walls will be zero)
+               qflx_qrgwl(c) = qflx_snwcp_liq(c)
+            end if
+         end do
+     end associate
+   end subroutine ParFlowDrainage
 !#0
 end module SoilHydrologyMod
