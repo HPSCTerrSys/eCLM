@@ -61,33 +61,33 @@ contains
     integer                           :: info
     integer                           :: g
 
-    integer ::   jps_t   =  1            ! temperature
-    integer ::   jps_u   =  2            ! u wind
-    integer ::   jps_v   =  3            ! v wind
-    integer ::   jps_qv  =  4            ! specific water vapor content
-    integer ::   jps_ht  =  5            ! thickness of lowest level (m)
-    integer ::   jps_pr  =  6            ! surface pressure (Pa)
-    integer ::   jps_rs  =  7            ! direct shortwave downward radiation (W/m2)
-    integer ::   jps_fs  =  8            ! diffuse shortwave downward radiation (W/m2)
-    integer ::   jps_lw  =  9            ! longwave downward radiation (W/m2) 
-    integer ::   jps_cr  = 10            ! convective rain + snow precipitation      (kg/m2*s)
-    integer ::   jps_gr  = 11            ! convective rain + snow precipitation      (kg/m2*s)
+    integer ::   oas_id_t   =  1            ! temperature (K)
+    integer ::   oas_id_u   =  2            ! u wind (m/s)
+    integer ::   oas_id_v   =  3            ! v wind (m/s)
+    integer ::   oas_id_qv  =  4            ! specific water vapor content ()
+    integer ::   oas_id_ht  =  5            ! thickness of lowest level (m)
+    integer ::   oas_id_pr  =  6            ! surface pressure (Pa)
+    integer ::   oas_id_rs  =  7            ! direct shortwave downward radiation (W/m2)
+    integer ::   oas_id_fs  =  8            ! diffuse shortwave downward radiation (W/m2)
+    integer ::   oas_id_lw  =  9            ! longwave downward radiation (W/m2) 
+    integer ::   oas_id_cr  = 10            ! rain precipitation      (kg/m2*s)
+    integer ::   oas_id_gr  = 11            ! snow precipitation      (kg/m2*s)
 
     num_grid_points = (bounds%endg - bounds%begg) + 1
     allocate(buffer(num_grid_points, 1))
 
-    !    call oasis_get(jps_t, seconds_elapsed, oas_rcv_meta(:,:,jps_t), info)
-    call oasis_get(jps_t,  seconds_elapsed, atm2lnd_inst%forc_t_not_downscaled_grc, info)
-    call oasis_get(jps_u,  seconds_elapsed, atm2lnd_inst%forc_u_grc, info)
-    call oasis_get(jps_v,  seconds_elapsed, atm2lnd_inst%forc_v_grc, info)
-    call oasis_get(jps_qv, seconds_elapsed, atm2lnd_inst%forc_q_not_downscaled_grc, info)
-    call oasis_get(jps_ht, seconds_elapsed, atm2lnd_inst%forc_hgt_grc, info)
-    call oasis_get(jps_pr, seconds_elapsed, atm2lnd_inst%forc_pbot_not_downscaled_grc, info)
-    call oasis_get(jps_rs, seconds_elapsed, atm2lnd_inst%forc_solad_grc(:,1), info)
-    call oasis_get(jps_fs, seconds_elapsed, atm2lnd_inst%forc_solai_grc(:,1), info)
-    call oasis_get(jps_lw, seconds_elapsed, atm2lnd_inst%forc_lwrad_not_downscaled_grc, info)
-    call oasis_get(jps_cr, seconds_elapsed, atm2lnd_inst%forc_rain_not_downscaled_grc, info)
-    call oasis_get(jps_gr, seconds_elapsed, buffer, info)
+    !    call oasis_get(oas_id_t, seconds_elapsed, oas_rcv_meta(:,:,oas_id_t), info)
+    call oasis_get(oas_id_t,  seconds_elapsed, atm2lnd_inst%forc_t_not_downscaled_grc, info)
+    call oasis_get(oas_id_u,  seconds_elapsed, atm2lnd_inst%forc_u_grc, info)
+    call oasis_get(oas_id_v,  seconds_elapsed, atm2lnd_inst%forc_v_grc, info)
+    call oasis_get(oas_id_qv, seconds_elapsed, atm2lnd_inst%forc_q_not_downscaled_grc, info)
+    call oasis_get(oas_id_ht, seconds_elapsed, atm2lnd_inst%forc_hgt_grc, info)
+    call oasis_get(oas_id_pr, seconds_elapsed, atm2lnd_inst%forc_pbot_not_downscaled_grc, info)
+    call oasis_get(oas_id_rs, seconds_elapsed, atm2lnd_inst%forc_solad_grc(:,1), info)
+    call oasis_get(oas_id_fs, seconds_elapsed, atm2lnd_inst%forc_solai_grc(:,1), info)
+    call oasis_get(oas_id_lw, seconds_elapsed, atm2lnd_inst%forc_lwrad_not_downscaled_grc, info)
+    call oasis_get(oas_id_cr, seconds_elapsed, atm2lnd_inst%forc_rain_not_downscaled_grc, info)
+    call oasis_get(oas_id_gr, seconds_elapsed, atm2lnd_inst%forc_snow_not_downscaled_grc, info)
 
     !SPo: some postprocessing of atm2lnd is missing; may better use x2l 
 
