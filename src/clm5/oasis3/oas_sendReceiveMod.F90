@@ -61,17 +61,6 @@ contains
     integer                           :: info
     integer                           :: g
 
-    integer ::   oas_id_t   =  1            ! temperature (K)
-    integer ::   oas_id_u   =  2            ! u wind (m/s)
-    integer ::   oas_id_v   =  3            ! v wind (m/s)
-    integer ::   oas_id_qv  =  4            ! specific water vapor content ()
-    integer ::   oas_id_ht  =  5            ! thickness of lowest level (m)
-    integer ::   oas_id_pr  =  6            ! surface pressure (Pa)
-    integer ::   oas_id_rs  =  7            ! direct shortwave downward radiation (W/m2)
-    integer ::   oas_id_fs  =  8            ! diffuse shortwave downward radiation (W/m2)
-    integer ::   oas_id_lw  =  9            ! longwave downward radiation (W/m2) 
-    integer ::   oas_id_cr  = 10            ! rain precipitation      (kg/m2*s)
-    integer ::   oas_id_gr  = 11            ! snow precipitation      (kg/m2*s)
 
     num_grid_points = (bounds%endg - bounds%begg) + 1
     allocate(buffer(num_grid_points, 1))
@@ -117,14 +106,14 @@ contains
     num_grid_points = (bounds%endg - bounds%begg) + 1
     allocate(aux_buffer(num_grid_points, 1))
 
-     call oasis_put(12, seconds_elapsed,lnd2atm_inst%t_rad_grc, info)         ! "CLM_INFRA"
-     call oasis_put(13, seconds_elapsed,lnd2atm_inst%albd_grc(:,1), info)     ! "CLM_ALBED"
-     call oasis_put(14, seconds_elapsed,lnd2atm_inst%albi_grc(:,1), info)     ! "CLM_ALBEI"
-     call oasis_put(15, seconds_elapsed,lnd2atm_inst%taux_grc, info)          ! "CLM_TAUX"
-     call oasis_put(16, seconds_elapsed,lnd2atm_inst%tauy_grc, info)          ! "CLM_TAUY"
-     call oasis_put(17, seconds_elapsed,lnd2atm_inst%eflx_sh_tot_grc, info)   ! "CLM_SHFLX"
-     call oasis_put(18, seconds_elapsed,lnd2atm_inst%eflx_lh_tot_grc, info)   ! "CLM_LHFLX"
-     call oasis_put(19, seconds_elapsed,lnd2atm_inst%t_sf_grc, info)          ! "CLM_TGRND"
+     call oasis_put(oas_id_it, seconds_elapsed,lnd2atm_inst%t_rad_grc, info)         ! "CLM_INFRA"
+     call oasis_put(oas_id_ad, seconds_elapsed,lnd2atm_inst%albd_grc(:,1), info)     ! "CLM_ALBED"
+     call oasis_put(oas_id_ai, seconds_elapsed,lnd2atm_inst%albi_grc(:,1), info)     ! "CLM_ALBEI"
+     call oasis_put(oas_id_tx, seconds_elapsed,lnd2atm_inst%taux_grc, info)          ! "CLM_TAUX"
+     call oasis_put(oas_id_ty, seconds_elapsed,lnd2atm_inst%tauy_grc, info)          ! "CLM_TAUY"
+     call oasis_put(oas_id_sh, seconds_elapsed,lnd2atm_inst%eflx_sh_tot_grc, info)   ! "CLM_SHFLX"
+     call oasis_put(oas_id_lh, seconds_elapsed,lnd2atm_inst%eflx_lh_tot_grc, info)   ! "CLM_LHFLX"
+     call oasis_put(oas_id_st, seconds_elapsed,lnd2atm_inst%t_sf_grc, info)          ! "CLM_TGRND"
 
   end subroutine oas_send_icon
 
