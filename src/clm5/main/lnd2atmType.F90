@@ -70,7 +70,7 @@ module lnd2atmType
      real(r8), pointer :: qflx_rofliq_drain_perched_grc    (:)   => null() ! rof liq -- perched water table runoff component
      real(r8), pointer :: qflx_rofice_grc         (:)   => null() ! rof ice forcing
      real(r8), pointer :: qflx_liq_from_ice_col   (:)   => null() ! liquid runoff from converted ice runoff
-     real(r8), pointer :: qflx_parflow_grc        (:,:) => null() ! source/sink flux per soil layer sent to ParFlow [mm H2O/m^2/s] [- out from root]
+     real(r8), pointer :: qflx_parflow_grc        (:,:) => null() ! source/sink flux per soil layer sent to ParFlow [1/hr] [- out from root]
      real(r8), pointer :: qirrig_grc              (:)   => null() ! irrigation flux
 
    contains
@@ -327,7 +327,7 @@ contains
     end if
 
     this%qflx_parflow_grc(begg:endg, :) = 0._r8
-    call hist_addfld2d (fname='QPARFLOW_TO_OASIS', units='mm H2O/m2/s', type2d='levsoi', &
+    call hist_addfld2d (fname='QPARFLOW_TO_OASIS', units='1/hr', type2d='levsoi', &
          avgflag='A', long_name='source/sink flux per soil layer sent to ParFlow', &
          ptr_lnd=this%qflx_parflow_grc, default='inactive')
 
