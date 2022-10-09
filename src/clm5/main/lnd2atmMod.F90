@@ -37,7 +37,7 @@ module lnd2atmMod
   use ColumnType           , only : col
   use LandunitType         , only : lun
   use GridcellType         , only : grc                
-  use landunit_varcon      , only : istice_mec
+  use landunit_varcon      , only : istice_mec, istsoil, istcrop
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -157,11 +157,13 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: c, g, j  ! indices
-    real(r8) :: qflx_ice_runoff_col(bounds%begc:bounds%endc) ! total column-level ice runoff
+    real(r8) :: qflx_ice_runoff_col(bounds%begc:bounds%endc)    ! total column-level ice runoff
     real(r8) :: eflx_sh_ice_to_liq_grc(bounds%begg:bounds%endg) ! sensible heat flux generated from the ice to liquid conversion, averaged to gridcell
-    real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
-    real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
-    real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
+    real(r8), parameter :: amC   = 12.0_r8                      ! Atomic mass number for Carbon
+    real(r8), parameter :: amO   = 16.0_r8                      ! Atomic mass number for Oxygen
+    real(r8), parameter :: amCO2 = amC + 2.0_r8*amO             ! Atomic mass number for CO2
+    real(r8), parameter :: m_per_mm = 1.e-3_r8                  ! 0.001 meters per mm
+    real(r8), parameter :: sec_per_hr = 3600                    ! 3600 s in 1 hour
     ! The following converts g of C to kg of CO2
     real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
     !------------------------------------------------------------------------
@@ -430,12 +432,19 @@ contains
          waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
          lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
-! TODO: Verify questionable factor 3.6/dz(g,j) !
-!     do j = 1, nlevsoi
-!        do g = bounds%begg, bounds%endg    
-!           lnd2atm_inst%qflx_parflow_grc(g) = lnd2atm_inst%qflx_parflow_grc(g)*3.6_r8/col%dz(g,j)
-!        enddo
-!     enddo
+
+    do c = bounds%begc, bounds%endc
+     if (col%hydrologically_active(c)) then
+       if (col%itype(c) == istsoil .or. col%itype(c) == istcrop) then
+         g = col%gridcell(c)
+         do j = 1, nlevsoi
+          ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr): 
+          !             1/hr                 =             [mm/s]                 *   [s/hr]   *  [m/mm]  *     [1/m] 
+          lnd2atm_inst%qflx_parflow_grc(g,j) = lnd2atm_inst%qflx_parflow_grc(g,j) * sec_per_hr * m_per_mm * (1/col%dz(c,j))
+         enddo
+       end if
+     end if
+   end do
 
   end subroutine lnd2atm
 
