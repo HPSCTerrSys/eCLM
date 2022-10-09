@@ -1,4 +1,4 @@
-[drv_in]
+[drv_in.general_options]
 case_name = "NRW"
 clm_start_type = "default"
 stop_option = "date"
@@ -7,16 +7,15 @@ stop_ymd = "2017-01-31"
 #stop_n = 4
 ntasks = 96
 
-[lnd_in]
+[lnd_in.general_options]
 bgc_mode = "bgc"
 clm_accelerated_spinup = "off"
-l_ncpl = 48
 lnd_frac = "${CESMDATAROOT}/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
 lnd_tuning_mode = "clm5_0_CRUv7"
 sim_year = "2000"
 sim_year_range = "constant"
 
-[lnd_in.user_nl]
+[lnd_in]
 # files
 finidat = "${CESMDATAROOT}/FSpinup_300x300_NRW.clm2.r.2222-01-01-00000.nc"
 fsnowaging = "${CESMDATAROOT}/snicar_drdt_bst_fit_60_c070416.nc"
@@ -44,10 +43,9 @@ urban_traffic = false
 [drv_flds_in]
 megan_factors_file = "${CESMDATAROOT}/megan21_emis_factors_78pft_c20161108.nc"
   
-[datm_in]
+[datm_in.general_options]
 datm_mode = "CLMCRUNCEPv7"
 datm_presaero = "clim_2000" # DATM prescribed aerosol forcing
-domainfile = "${CESMDATAROOT}/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
 stream_year_first = 2017    # first year of the stream data that will be used
 stream_year_last = 2017     # last  year of the stream data that will be used
 stream_year_align = 2017    # model year that will be aligned with stream data for year_first
@@ -55,7 +53,8 @@ stream_root_dir = "${CESMDATAROOT}/COSMOREA6/forcings"
 stream_files = ["2017-01.nc", "2017-02.nc", "2017-03.nc", "2017-04.nc", "2017-05.nc", "2017-06.nc",
                 "2017-07.nc", "2017-08.nc", "2017-09.nc", "2017-10.nc", "2017-11.nc", "2017-12.nc"]
 
-[datm_in.user_nl]
+[datm_in]
+domainfile = "${CESMDATAROOT}/domain.lnd.300x300_NRW_300x300_NRW.190619.nc"
 dtlimit = [5.1, 5.1, 5.1, 1.5, 1.5]
 mapalgo = ["nn", "nn", "nn", "bilinear", "bilinear"]
 tintalgo = ["nearest", "nearest", "linear", "linear", "lower"]
