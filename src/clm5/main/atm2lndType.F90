@@ -116,11 +116,11 @@ module atm2lndType
      real(r8), pointer :: forc_flood_grc                (:)   => null() ! rof flood (mm/s)
      real(r8), pointer :: volr_grc                      (:)   => null() ! rof volr total volume (m3)
      real(r8), pointer :: volrmch_grc                   (:)   => null() ! rof volr main channel (m3)
-     
+#ifdef COUP_OAS_PFL
      ! parflow->lnd
      real(r8), pointer :: pfl_psi_grc                   (:,:) => null() ! Parflow soil matrix potential [mm] COUP_OAS_PFL
      real(r8), pointer :: pfl_h2osoi_liq_grc            (:,:) => null() ! Parflow H2O soil liquid       [mm] COUP_OAS_PFL
-
+#endif
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
      real(r8), pointer :: af_uwind_grc                  (:)   => null() ! anomaly forcing 
@@ -547,11 +547,11 @@ contains
     allocate(this%forc_flood_grc                (begg:endg))          ; this%forc_flood_grc              (:)   = ival
     allocate(this%volr_grc                      (begg:endg))          ; this%volr_grc                    (:)   = ival
     allocate(this%volrmch_grc                   (begg:endg))          ; this%volrmch_grc                 (:)   = ival
-    
+#ifdef COUP_OAS_PFL  
     ! parflow->lnd
     allocate(this%pfl_psi_grc                   (begg:endg,1:nlevgrnd)); this%pfl_psi_grc            (:,:) = ival
     allocate(this%pfl_h2osoi_liq_grc            (begg:endg,1:nlevgrnd)); this%pfl_h2osoi_liq_grc     (:,:) = ival
-
+#endif
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
     allocate(this%af_precip_grc                 (begg:endg))        ; this%af_precip_grc                 (:)   = ival
@@ -615,7 +615,7 @@ contains
     call hist_addfld1d (fname='VOLRMCH',  units='m3',  &
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
-
+#ifdef COUP_OAS_PFL
      this%pfl_psi_grc(begg:endg, :) = 0._r8
      call hist_addfld2d (fname='PFL_PSI_GRC', units='mm', type2d='levgrnd', &
           avgflag='A', long_name='Parflow pressure head (gridcell)', &
@@ -625,7 +625,7 @@ contains
      call hist_addfld2d (fname='PFL_SOILLIQ_GRC', units='mm', type2d='levgrnd', &
           avgflag='A', long_name='Parflow H2O soil liquid (gridcell)', &
           ptr_lnd=this%pfl_h2osoi_liq_grc, default='inactive')
-
+#endif
     this%forc_wind_grc(begg:endg) = spval
     call hist_addfld1d (fname='WIND', units='m/s',  &
          avgflag='A', long_name='atmospheric wind velocity magnitude', &

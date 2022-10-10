@@ -22,7 +22,7 @@ contains
     integer              :: gcell_previous    ! gridcell index from previous loop iteration
     integer              :: k, g              ! array/loop indices
     integer              :: grid_id           ! id returned after call to oasis_def_partition
-#if defined(COUP_OAS_ICON)
+#ifdef COUP_OAS_ICON
     integer              :: jg                ! loop counter
 #endif
 
@@ -76,7 +76,7 @@ contains
     ! ... Define coupling fields
     ! -----------------------------------------------------------------
 
-#if defined(COUP_OAS_PFL)
+#ifdef COUP_OAS_PFL
     var_nodims(1) = 1         ! unused
     var_nodims(2) = nlevsoi   ! number of fields in a bundle
 
@@ -87,7 +87,7 @@ contains
     call oasis_def_var(oas_psi_id, "ECLM_PSI", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
 #endif 
 
-#if defined(COUP_OAS_ICON)
+#ifdef COUP_OAS_ICON
 
     var_nodims(1) = 1         ! unused
     var_nodims(2) = 1         ! number of fields in a bundle

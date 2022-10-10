@@ -2,11 +2,11 @@ module oas_vardefMod
   implicit none
   save
 
-! #ifdef COUP_OAS_PFL
+#ifdef COUP_OAS_PFL
   integer :: oas_psi_id, oas_et_loss_id, oas_sat_id
-! #endif
+#endif
 
-! #ifdef COUP_OAS_ICON
+#ifdef COUP_OAS_ICON
   INTEGER               :: oas_comp_id
   CHARACTER(len=4)      :: oas_comp_name="eCLM"
 !  TYPE :: t_oas_field
@@ -35,7 +35,6 @@ module oas_vardefMod
   integer ::   oas_id_sh      ! sensible heat flux (W/m2)
   integer ::   oas_id_lh      ! latent heat flux (W/m2)
   integer ::   oas_id_st      ! surface temperature (K)
-
-! #endif 
+#endif
 
 end module oas_vardefMod

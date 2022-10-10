@@ -10,13 +10,19 @@ module oas_sendReceiveMod
   save
   private
 
+#ifdef COUP_OAS_PFL
   public  :: oas_send
   public  :: oas_receive
+#endif
+
+#ifdef COUP_OAS_ICON
   public  :: oas_send_icon
   public  :: oas_receive_icon
-  
+#endif 
+
 contains
 
+#ifdef COUP_OAS_PFL
   subroutine oas_receive(bounds, seconds_elapsed, atm2lnd_inst)
     use atm2lndType, only: atm2lnd_type
 
@@ -44,7 +50,9 @@ contains
     call oasis_put(oas_et_loss_id, seconds_elapsed, lnd2atm_inst%qflx_parflow_grc, info)
     
   end subroutine oas_send
+#endif
 
+#ifdef COUP_OAS_ICON
   subroutine oas_receive_icon(bounds, seconds_elapsed, atm2lnd_inst)
     use atm2lndType, only: atm2lnd_type
 
@@ -111,6 +119,6 @@ contains
      call oasis_put(oas_id_st, seconds_elapsed,lnd2atm_inst%t_sf_grc, info)          ! "CLM_TGRND"
 
   end subroutine oas_send_icon
-
+#endif
 
 end module oas_sendReceiveMod

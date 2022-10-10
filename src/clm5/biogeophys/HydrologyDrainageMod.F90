@@ -52,8 +52,13 @@ contains
     use clm_varctl       , only : use_vichydro
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use clm_time_manager , only : get_step_size, get_nstep
+#if defined(COUP_OAS_PFL)
     use SoilHydrologyMod , only : CLMVICMap, Drainage, PerchedLateralFlow, LateralFlowPowerLaw, ParFlowDrainage
     use SoilWaterMovementMod , only : use_aquifer_layer, use_parflow_soilwater
+#else
+    use SoilHydrologyMod , only : CLMVICMap, Drainage, PerchedLateralFlow, LateralFlowPowerLaw
+    use SoilWaterMovementMod , only : use_aquifer_layer
+#endif
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -125,7 +130,7 @@ contains
          call CLMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
               soilhydrology_inst, waterstate_inst)
       endif
-
+#if defined(COUP_OAS_PFL)
       if (use_parflow_soilwater()) then
          ! clm3.5/bld/usr.src/SoilHydrologyMod.F90
          ! ignore drainage calculations in eCLM and instead pass these fluxes to ParFlow 
@@ -148,7 +153,24 @@ contains
                 soilhydrology_inst, soilstate_inst, &
                 waterstate_inst, waterflux_inst)
 
-         endif
+      endif
+#else
+      if (use_aquifer_layer()) then 
+         call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
+            num_urbanc, filter_urbanc,&
+            temperature_inst, soilhydrology_inst, soilstate_inst, &
+            waterstate_inst, waterflux_inst)
+      else
+         call PerchedLateralFlow(bounds, num_hydrologyc, filter_hydrologyc, &
+            num_urbanc, filter_urbanc,&
+            soilhydrology_inst, soilstate_inst, &
+            waterstate_inst, waterflux_inst)
+
+         call LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
+            num_urbanc, filter_urbanc,&
+            soilhydrology_inst, soilstate_inst, &
+            waterstate_inst, waterflux_inst)
+#endif
       endif
 
       do j = 1, nlevgrnd

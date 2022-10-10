@@ -14,8 +14,12 @@ module lnd_comp_mct
   use lnd_import_export, only : lnd_import, lnd_export
 #if defined(USE_OASIS)
   use oas_defineMod     , only : oas_definitions_init
-  use oas_sendReceiveMod, only : oas_receive, oas_send, &
-                                 oas_receive_icon, oas_send_icon
+#ifdef COUP_OAS_ICON
+  use oas_sendReceiveMod, only : oas_receive_icon, oas_send_icon
+#endif                   
+#ifdef COUP_OAS_PFL
+   use oas_sendReceiveMod, only : oas_receive, oas_send
+#endif
 #endif
   !
   ! !public member functions:
@@ -455,11 +459,11 @@ contains
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
-#if defined(COUP_OAS_ICON)
+#ifdef COUP_OAS_ICON
        call oas_receive_icon(bounds, time_elapsed, atm2lnd_inst)
 #endif
 
-#if defined(COUP_OAS_PFL)
+#ifdef COUP_OAS_PFL
        call oas_receive(bounds, time_elapsed, atm2lnd_inst)
 #endif
        ! Run clm 
