@@ -376,10 +376,11 @@ contains
          rresis        => energyflux_inst%rresis_patch      , & ! Output: [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)  (nlevgrnd)                          
 
          h2osoi_vol    => waterstate_inst%h2osoi_vol_col    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osoi_liqvol => waterstate_inst%h2osoi_liqvol_col , & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
-         pfl_psi       => waterstate_inst%pfl_psi_col         & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
-         ) 
-
+#ifdef COUP_OAS_PFL
+         pfl_psi       => waterstate_inst%pfl_psi_col       , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+#endif
+         h2osoi_liqvol => waterstate_inst%h2osoi_liqvol_col   & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
+         )
       do j = 1,nlevgrnd
          do f = 1, fn
             p = filterp(f)
@@ -392,19 +393,14 @@ contains
                rootr(p,j) = 0._r8
             else
                s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
-
-               !smp_node = max(smpsc(patch%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
-!               call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node)
-!scs
-            
-!scs
+              
+#ifdef COUP_OAS_PFL
                ! clm3.5/bld/usr.src/CanopyFluxesMod.F90
-               ! if COUP_OAS_PFL
                smp_node = max(smpsc(patch%itype(p)), pfl_psi(c,j))
-               ! else
-               ! call soil_water_retention_curve%soil_suction(c, j, s_node, soilstate_inst, smp_node)
-               ! smp_node = max(smpsc(patch%itype(p)), smp_node)
-               ! end if
+#else
+               call soil_water_retention_curve%soil_suction(c, j, s_node, soilstate_inst, smp_node)
+               smp_node = max(smpsc(patch%itype(p)), smp_node)
+#endif
 
                rresis(p,j) = min( (eff_porosity(c,j)/watsat(c,j))* &
                     (smp_node - smpsc(patch%itype(p))) / (smpso(patch%itype(p)) - smpsc(patch%itype(p))), 1._r8)
