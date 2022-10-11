@@ -258,17 +258,14 @@ contains
                wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/dz(c,1)
                fac  = min(1._r8, wx/watsat(c,1))
                fac  = max( fac, 0.01_r8 )
-               ! clm3.5/bld/usr.src/Biogeophysics1Mod.F90
-               ! if COUP_OAS_PFL
 #ifdef COUP_OAS_PFL
+               ! clm3.5/bld/usr.src/Biogeophysics1Mod.F90
                if (pfl_psi(c,1)>= 0.0_r8)  psit = 0._r8
                if (pfl_psi(c,1) < 0.0_r8)  psit = pfl_psi(c,1)
+#else
+               psit = -sucsat(c,1) * fac ** (-bsw(c,1))
+               psit = max(smpmin(c), psit)
 #endif
-               !else
-               !psit = -sucsat(c,1) * fac ** (-bsw(c,1))
-               !psit = max(smpmin(c), psit)
-               !end if
-
                ! modify qred to account for h2osfc
                hr   = exp(psit/roverg/t_soisno(c,1))
                qred = (1._r8 - frac_sno(c) - frac_h2osfc(c))*hr &
