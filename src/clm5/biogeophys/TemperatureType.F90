@@ -24,6 +24,9 @@ module TemperatureType
      ! Temperatures
      real(r8), pointer :: t_veg_patch              (:)   ! patch vegetation temperature (Kelvin)
      real(r8), pointer :: t_skin_patch             (:)   ! patch skin temperature (Kelvin)
+#ifdef COUP_OAS_ICON
+     real(r8), pointer :: t_sf_patch               (:)   ! patch surface temperature (Kelvin)
+#endif
      real(r8), pointer :: t_veg_day_patch          (:)   ! patch daytime  accumulative vegetation temperature (Kelvinx*nsteps), LUNA specific, from midnight to current step
      real(r8), pointer :: t_veg_night_patch        (:)   ! patch night-time accumulative vegetation temperature (Kelvin*nsteps), LUNA specific, from midnight to current step
      real(r8), pointer :: t_veg10_day_patch        (:)   ! 10 day running mean of patch daytime time vegetation temperature (Kelvin), LUNA specific, but can be reused
@@ -190,6 +193,9 @@ contains
     ! Temperatures
     allocate(this%t_veg_patch              (begp:endp))                      ; this%t_veg_patch              (:)   = nan
     allocate(this%t_skin_patch             (begp:endp))                      ; this%t_skin_patch             (:)   = nan
+#ifdef COUP_OAS_ICON
+    allocate(this%t_sf_patch               (begp:endp))                      ; this%t_sf_patch               (:)   = nan
+#endif
     if(use_luna) then
      allocate(this%t_veg_day_patch         (begp:endp))                      ; this%t_veg_day_patch          (:)   = spval
      allocate(this%t_veg_night_patch       (begp:endp))                      ; this%t_veg_night_patch        (:)   = spval
@@ -392,6 +398,13 @@ contains
     call hist_addfld1d(fname='TSKIN', units='K',  &
          avgflag='A', long_name='skin temperature', &
          ptr_patch=this%t_skin_patch, c2l_scale_type='urbans')
+
+#ifdef COUP_OAS_ICON
+    this%t_sf_patch(begp:endp) = spval
+    call hist_addfld1d (fname='TSF', units='K',  &
+         avgflag='A', long_name='surface temperature -- coupled', &
+         ptr_patch=this%t_sf_patch)
+#endif
 
     this%t_grnd_col(begc:endc) = spval
     call hist_addfld1d (fname='TG',  units='K',  &

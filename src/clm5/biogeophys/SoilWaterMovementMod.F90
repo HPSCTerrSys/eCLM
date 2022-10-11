@@ -19,8 +19,9 @@ module SoilWaterMovementMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilWater            ! Calculate soil hydrology   
   public :: init_soilwater_movement
+#ifdef COUP_OAS_PFL
   public :: use_parflow_soilwater
-
+#endif
   private :: soilwater_zengdecker2009
   private :: soilwater_moisture_form
 !  private :: soilwater_mixed_form
@@ -213,14 +214,15 @@ contains
 
    end function use_aquifer_layer
 
-   !------------------------------------------------------------------------------   
+   !------------------------------------------------------------------------------
+#ifdef COUP_OAS_PFL
    logical function use_parflow_soilwater()
       implicit none
 
       use_parflow_soilwater = (soilwater_movement_method == coupled_parflow)
 
    end function use_parflow_soilwater
-
+#endif
 !#3
   !-----------------------------------------------------------------------
   subroutine SoilWater(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -307,14 +309,14 @@ contains
 !!$       call soilwater_head_form(bounds, num_hydrologyc, filter_hydrologyc, &
 !!$            num_urbanc, filter_urbanc, soilhydrology_inst, soilstate_inst, &
 !!$            waterflux_inst, waterstate_inst, temperature_inst)
-
+#ifdef COUP_OAS_PFL
     case (coupled_parflow)
 
       call soilwater_parflow(bounds, num_hydrologyc, filter_hydrologyc, &
            num_urbanc, filter_urbanc, soilhydrology_inst, soilstate_inst, &
            waterflux_inst, waterstate_inst, temperature_inst, &
            canopystate_inst, energyflux_inst, soil_water_retention_curve)
-
+#endif
     case default
 
        call endrun(subname // ':: a SoilWater implementation must be specified!')          
@@ -1441,6 +1443,7 @@ contains
 
 !#8
 !-----------------------------------------------------------------------
+#ifdef COUP_OAS_PFL
    subroutine soilwater_parflow(bounds, num_hydrologyc, &
       filter_hydrologyc, num_urbanc, filter_urbanc, soilhydrology_inst, &
       soilstate_inst, waterflux_inst, waterstate_inst, temperature_inst, &
@@ -1506,7 +1509,7 @@ contains
 
       end associate
    end subroutine soilwater_parflow
-
+#endif
    subroutine compute_hydraulic_properties(c, nlayers, &
         soilhydrology_inst, soilstate_inst, &
         soil_water_retention_curve, vwc_liq, hk ,smp, &
