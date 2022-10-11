@@ -184,9 +184,6 @@ contains
      use clm_time_manager     , only : get_nstep_since_startup_or_lastDA_restart_or_pause
      use CanopyStateType      , only : canopystate_type
      use SurfaceAlbedoType    , only : surfalb_type
-#ifdef COUP_OAS_PFL
-     use SoilWaterMovementMod , only : use_parflow_soilwater
-#endif
      use subgridAveMod
      !
      ! !ARGUMENTS:
@@ -406,13 +403,8 @@ contains
              write(iulog,*)'deltaflux        = ',forc_rain_col(indexc)+forc_snow_col(indexc) - (qflx_evap_tot(indexc) + &
                   qflx_surf(indexc)+qflx_h2osfc_surf(indexc)+qflx_drain(indexc))
 #ifdef COUP_OAS_PFL
-             if (use_parflow_soilwater()) then
-               ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
-               write(iulog,*)'Ignoring water balance error...'
-             else
-               write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
-               call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
-             end if
+             ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
+             write(iulog,*)'Ignoring water balance error...'
 #else
              write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
@@ -446,13 +438,8 @@ contains
              write(iulog,*)'qflx_glcice_dyn_water_flux = ',qflx_glcice_dyn_water_flux(indexc)*dtime
              write(iulog,*)'qflx_rootsoi_col(1:nlevsoil)  = ',qflx_rootsoi_col(indexc,:)*dtime
 #ifdef COUP_OAS_PFL
-             if (use_parflow_soilwater()) then
-               ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
-               write(iulog,*)'Ignoring water balance error...'
-             else
-               write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
-               call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
-             end if
+             ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
+             write(iulog,*)'Ignoring water balance error...'
 #else
              write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
@@ -717,13 +704,8 @@ contains
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
 #ifdef COUP_OAS_PFL
-          if (use_parflow_soilwater()) then
-            ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
-            write(iulog,*)'Ignoring soil balance error...'
-          else
-            write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
-            call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
-          end if
+          ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
+          write(iulog,*)'Ignoring soil balance error...'
 #else
           write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
           call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))

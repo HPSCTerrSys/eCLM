@@ -173,9 +173,6 @@ contains
     ! to ComputeHeatNonLake
     !
     ! !USES:
-#ifdef COUP_OAS_PFL
-    use SoilWaterMovementMod , only : use_parflow_soilwater
-#endif
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds     
     integer                  , intent(in)    :: num_nolakec                 ! number of column non-lake points in column filter
@@ -254,7 +251,10 @@ contains
           ! no liquid water in this case)
           ice_mass(c) = ice_mass(c) + h2osno(c)
        end if
-
+#ifndef COUP_OAS_PFL
+       ! When coupled with ParFlow, ignore water aquifer.
+       ! -- clm3.5/bld/usr.src/BalanceCheckMod.F90
+       ! -- clm3.5/bld/usr.src/Hydrology2Mod.F90
        if (col%hydrologically_active(c)) then
           ! It's important to exclude non-hydrologically-active points, because some of
           ! them have wa set, but seemingly incorrectly (set to 4000).
@@ -267,17 +267,9 @@ contains
           ! hydrologically-active columns, yet this apparently doesn't interact with the
           ! system, so we don't want to count that water mass in the total column water.
 
-          ! When coupled with ParFlow, ignore water aquifer.
-#ifdef COUP_OAS_PFL
-          ! -- clm3.5/bld/usr.src/BalanceCheckMod.F90
-          ! -- clm3.5/bld/usr.src/Hydrology2Mod.F90
-         if (.not. use_parflow_soilwater()) then
-           liquid_mass(c) = liquid_mass(c) + (wa(c) - aquifer_water_baseline)
-         end if
-#else
-         liquid_mass(c) = liquid_mass(c) + (wa(c) - aquifer_water_baseline)
-#endif
+          liquid_mass(c) = liquid_mass(c) + (wa(c) - aquifer_water_baseline)
       end if
+#endif
 
        if (col%itype(c) == icol_roof .or. col%itype(c) == icol_sunwall &
             .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_road_imperv) then
