@@ -11,7 +11,7 @@ contains
   subroutine oas_definitions_init(bounds)
     use spmdMod      , only : masterproc
     use clm_varpar   , only : nlevsoi, nlevgrnd
-    use decompMod    , only : bounds_type, ldecomp
+    use decompMod    , only : ldecomp, bounds_type
     use oas_vardefMod
 
     type(bounds_type) , intent(in)  :: bounds ! start and end gridcell indices for this MPI task
@@ -22,13 +22,18 @@ contains
     integer              :: gcell_previous    ! gridcell index from previous loop iteration
     integer              :: k, g              ! array/loop indices
     integer              :: grid_id           ! id returned after call to oasis_def_partition
+#ifdef COUP_OAS_ICON
+    integer              :: jg                ! loop counter
+#endif
 
     ! oasis_def_var
     integer              :: var_nodims(2)     ! var dimension parameters
 
+
     if (masterproc) then
       call define_grid()
     end if
+
 
     ! -----------------------------------------------------------------
     ! ... Define partition
@@ -70,14 +75,66 @@ contains
     ! -----------------------------------------------------------------
     ! ... Define coupling fields
     ! -----------------------------------------------------------------
+
+#ifdef COUP_OAS_PFL
     var_nodims(1) = 1         ! unused
     var_nodims(2) = nlevsoi   ! number of fields in a bundle
 
-    call oasis_def_var(oas_et_loss_id, "ECLM_ET", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
+    call oasis_def_var(oas_et_loss_id, "ECLM_ET", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) 
     
-    var_nodims(2) = nlevgrnd  ! number of fields in a bundle
-    call oasis_def_var(oas_sat_id, "ECLM_SAT", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
+    var_nodims(2) = nlevgrnd         ! number of fields in a bundle
+    call oasis_def_var(oas_sat_id, "ECLM_SOILLIQ", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
     call oasis_def_var(oas_psi_id, "ECLM_PSI", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
+#endif 
+
+#ifdef COUP_OAS_ICON
+
+    var_nodims(1) = 1         ! unused
+    var_nodims(2) = 1         ! number of fields in a bundle
+
+    ! send to ICON
+    CALL oasis_def_var(oas_id_t,  "CLMTEMPE", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 1 
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMTEMPE.')
+    CALL oasis_def_var(oas_id_u,  "CLMUWIND", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 2
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMUWIND.')
+    CALL oasis_def_var(oas_id_v,  "CLMVWIND", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 3
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMVWIND.')
+    CALL oasis_def_var(oas_id_qv, "CLMSPWAT", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 4
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMSPWAT.')
+    CALL oasis_def_var(oas_id_ht, "CLMTHICK", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 5
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMTHICK.')
+    CALL oasis_def_var(oas_id_pr, "CLMPRESS", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 6
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMPRESS.')
+    CALL oasis_def_var(oas_id_rs, "CLMDIRSW", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 7
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMDIRSW.')
+    CALL oasis_def_var(oas_id_fs, "CLMDIFSW", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 8
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMDIFSW.')
+    CALL oasis_def_var(oas_id_lw, "CLMLONGW", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) ! 9
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMLONGW.')
+    CALL oasis_def_var(oas_id_cr, "CLMCVPRE", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) !10
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMCVPRE.')
+    CALL oasis_def_var(oas_id_gr, "CLMGSPRE", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror) !11
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMGSPRE.')
+
+    ! receive from ICON
+    CALL oasis_def_var(oas_id_it, "CLMINFRA", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !12
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMINFRA.')
+    CALL oasis_def_var(oas_id_ad, "CLMALBED", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !13
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMALBED.')
+    CALL oasis_def_var(oas_id_ai, "CLMALBEI", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !14
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMALBEI.')
+    CALL oasis_def_var(oas_id_tx, "CLMTAUX" , grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !15
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMTAUX.')
+    CALL oasis_def_var(oas_id_ty, "CLMTAUY" , grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !16
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMTAUY.')
+    CALL oasis_def_var(oas_id_sh, "CLMSHFLX", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !17
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMSHFLX.')
+    CALL oasis_def_var(oas_id_lh, "CLMLHFLX", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !18
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMLHFLX.')
+    CALL oasis_def_var(oas_id_st, "CLMTGRND", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !19
+    IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMTGRND.')
+
+#endif
 
     ! End definition phase
     call oasis_enddef(ierror)

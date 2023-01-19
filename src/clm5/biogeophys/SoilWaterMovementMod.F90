@@ -19,6 +19,9 @@ module SoilWaterMovementMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilWater            ! Calculate soil hydrology   
   public :: init_soilwater_movement
+#ifdef COUP_OAS_PFL
+  public :: use_parflow_soilwater
+#endif
   private :: soilwater_zengdecker2009
   private :: soilwater_moisture_form
 !  private :: soilwater_mixed_form
@@ -41,11 +44,12 @@ module SoilWaterMovementMod
 
   ! !PRIVATE DATA MEMBERS:
 
-  ! Solution method 
+  ! Solution method
   integer, parameter :: zengdecker_2009 = 0
   integer, parameter :: moisture_form = 1
   integer, parameter :: mixed_form = 2
   integer, parameter :: head_form = 3
+  integer, parameter :: coupled_parflow = 4
 
   ! Boundary conditions
   integer, parameter :: bc_head  = 0
@@ -210,6 +214,15 @@ contains
 
    end function use_aquifer_layer
 
+   !------------------------------------------------------------------------------
+#ifdef COUP_OAS_PFL
+   logical function use_parflow_soilwater()
+      implicit none
+
+      use_parflow_soilwater = (soilwater_movement_method == coupled_parflow)
+
+   end function use_parflow_soilwater
+#endif
 !#3
   !-----------------------------------------------------------------------
   subroutine SoilWater(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -296,7 +309,14 @@ contains
 !!$       call soilwater_head_form(bounds, num_hydrologyc, filter_hydrologyc, &
 !!$            num_urbanc, filter_urbanc, soilhydrology_inst, soilstate_inst, &
 !!$            waterflux_inst, waterstate_inst, temperature_inst)
+#ifdef COUP_OAS_PFL
+    case (coupled_parflow)
 
+      call soilwater_parflow(bounds, num_hydrologyc, filter_hydrologyc, &
+           num_urbanc, filter_urbanc, soilhydrology_inst, soilstate_inst, &
+           waterflux_inst, waterstate_inst, temperature_inst, &
+           canopystate_inst, energyflux_inst, soil_water_retention_curve)
+#endif
     case default
 
        call endrun(subname // ':: a SoilWater implementation must be specified!')          
@@ -1423,6 +1443,73 @@ contains
 
 !#8
 !-----------------------------------------------------------------------
+#ifdef COUP_OAS_PFL
+   subroutine soilwater_parflow(bounds, num_hydrologyc, &
+      filter_hydrologyc, num_urbanc, filter_urbanc, soilhydrology_inst, &
+      soilstate_inst, waterflux_inst, waterstate_inst, temperature_inst, &
+      canopystate_inst, energyflux_inst, soil_water_retention_curve)
+
+      use shr_kind_mod         , only : r8 => shr_kind_r8
+      use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE,SHR_CONST_G
+      use abortutils           , only : endrun
+      use decompMod            , only : bounds_type
+      use clm_varctl           , only : iulog, use_hydrstress
+      use clm_varcon           , only : denh2o, denice
+      use clm_varpar           , only : nlevgrnd
+      use clm_time_manager     , only : get_step_size, get_nstep
+      use SoilStateType        , only : soilstate_type
+      use SoilHydrologyType    , only : soilhydrology_type
+      use TemperatureType      , only : temperature_type
+      use WaterFluxType        , only : waterflux_type
+      use WaterStateType       , only : waterstate_type
+      use EnergyFluxType       , only : energyflux_type
+      use CanopyStateType      , only : canopystate_type
+      use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
+      use PatchType            , only : patch
+      use ColumnType           , only : col
+      !
+      ! !ARGUMENTS:
+      implicit none
+      type(bounds_type)       , intent(in)    :: bounds               ! bounds
+      integer                 , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
+      integer                 , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
+      integer                 , intent(in)    :: num_urbanc           ! number of column urban points in column filter
+      integer                 , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
+      type(soilhydrology_type), intent(inout) :: soilhydrology_inst
+      type(soilstate_type)    , intent(inout) :: soilstate_inst
+      type(waterflux_type)    , intent(inout) :: waterflux_inst
+      type(waterstate_type)   , intent(inout) :: waterstate_inst
+      type(temperature_type)  , intent(in)    :: temperature_inst
+      type(canopystate_type)  , intent(inout) :: canopystate_inst
+      type(energyflux_type)   , intent(in)    :: energyflux_inst
+      class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
+
+      integer  :: c,j,fc                    ! indices
+
+      associate(&
+         smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]         
+         h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
+         pfl_psi           =>    waterstate_inst%pfl_psi_col          & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
+         )  ! end associate statement
+
+
+         ! COUP_OAS_PFL
+         ! TODO
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+
+            do j = 1, nlevgrnd
+               h2osoi_liq(c,j) = pfl_h2osoi_liq(c,j)
+               if (pfl_psi(c,j) <= 0) then
+                  smp_l(c,j) = pfl_psi(c,j)
+               end if
+            end do
+         end do
+
+      end associate
+   end subroutine soilwater_parflow
+#endif
    subroutine compute_hydraulic_properties(c, nlayers, &
         soilhydrology_inst, soilstate_inst, &
         soil_water_retention_curve, vwc_liq, hk ,smp, &

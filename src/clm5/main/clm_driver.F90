@@ -427,7 +427,8 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_nolakep, filter(nc)%nolakep, &
             filter(nc)%num_soilp  , filter(nc)%soilp,   &
-            canopystate_inst, waterstate_inst, waterflux_inst, energyflux_inst)
+            filter(nc)%num_soilc  , filter(nc)%soilc,   &
+            canopystate_inst, waterstate_inst, waterflux_inst, energyflux_inst, atm2lnd_inst)
 
        call topo_inst%UpdateTopo(bounds_clump, &
             filter(nc)%num_icemecc, filter(nc)%icemecc, &
@@ -1206,7 +1207,8 @@ contains
        num_nolakec, filter_nolakec, &
        num_nolakep, filter_nolakep, &
        num_soilp  , filter_soilp, &
-       canopystate_inst, waterstate_inst, waterflux_inst, energyflux_inst)
+       num_soilc  , filter_soilc, &
+       canopystate_inst, waterstate_inst, waterflux_inst, energyflux_inst, atm2lnd_inst)
     !
     ! !DESCRIPTION:
     ! Initialization of clm driver variables needed from previous timestep
@@ -1214,7 +1216,7 @@ contains
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
     use shr_infnan_mod     , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar         , only : nlevsno
+    use clm_varpar         , only : nlevsno, nlevsoi
     use CanopyStateType    , only : canopystate_type
     use WaterStateType     , only : waterstate_type
     use WaterFluxType      , only : waterflux_type
@@ -1228,13 +1230,16 @@ contains
     integer               , intent(in)    :: filter_nolakep(:) ! patch filter for non-lake points
     integer               , intent(in)    :: num_soilp         ! number of soil points in patch filter
     integer               , intent(in)    :: filter_soilp(:)   ! patch filter for soil points
+    integer               , intent(in)    :: num_soilc         ! number of soil points in column filter
+    integer               , intent(in)    :: filter_soilc(:)   ! column filter for soil points
     type(canopystate_type), intent(inout) :: canopystate_inst
     type(waterstate_type) , intent(inout) :: waterstate_inst
     type(waterflux_type)  , intent(inout) :: waterflux_inst
     type(energyflux_type) , intent(inout) :: energyflux_inst
+    type(atm2lnd_type)    , intent(inout) :: atm2lnd_inst
     !
     ! !LOCAL VARIABLES:
-    integer :: c, p, f, j              ! indices
+    integer :: c, p, f, j, g           ! indices
     integer :: fp, fc                  ! filter indices
     !-----------------------------------------------------------------------
 
@@ -1246,7 +1251,10 @@ contains
          h2osoi_liq         => waterstate_inst%h2osoi_liq_col            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
          h2osno_old         => waterstate_inst%h2osno_old_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O) at previous time step
          frac_iceold        => waterstate_inst%frac_iceold_col           , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
-
+#ifdef COUP_OAS_PFL
+         pfl_psi            => waterstate_inst%pfl_psi_col               , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+         pfl_h2osoi_liq     => waterstate_inst%pfl_h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+#endif
          elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
          esai               => canopystate_inst%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow    
          frac_veg_nosno     => canopystate_inst%frac_veg_nosno_patch     , & ! Output: [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
@@ -1294,6 +1302,16 @@ contains
          end do
       end do
 
+#ifdef COUP_OAS_PFL
+      ! TSMP/bldsva/intf_oas3/clm3_5/mct/receive_fld_2pfl.F90
+      ! COUP_OAS_PFL
+      do f = 1, num_soilc
+        c = filter_soilc(f)
+        g = col%gridcell(c)  
+        pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
+        pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
+      end do
+#endif
     end associate
 
   end subroutine clm_drv_init

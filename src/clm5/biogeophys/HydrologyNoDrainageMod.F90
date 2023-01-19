@@ -72,7 +72,11 @@ contains
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
     use SoilHydrologyMod     , only : CLMVICMap, SurfaceRunoff, Infiltration, WaterTable, PerchedWaterTable
     use SoilHydrologyMod     , only : ThetaBasedWaterTable, RenewCondensation
-    use SoilWaterMovementMod , only : SoilWater 
+#ifdef COUP_OAS_PFL
+    use SoilWaterMovementMod , only : SoilWater, use_parflow_soilwater
+#else
+    use SoilWaterMovementMod , only : SoilWater
+#endif
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use SoilWaterMovementMod , only : use_aquifer_layer
     use SoilWaterPlantSinkMod , only : Compute_EffecRootFrac_And_VertTranSink
@@ -155,14 +159,14 @@ contains
          h2osoi_vol         => waterstate_inst%h2osoi_vol_col         , & ! Output: [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osno_top         => waterstate_inst%h2osno_top_col         , & ! Output: [real(r8) (:)   ]  mass of snow in top layer (col) [kg]    
          wf                 => waterstate_inst%wf_col                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m 
-         wf2                => waterstate_inst%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 
-
+         wf2                => waterstate_inst%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m
          watsat             => soilstate_inst%watsat_col              , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          sucsat             => soilstate_inst%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)             
          bsw                => soilstate_inst%bsw_col                 , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"              
          smp_l              => soilstate_inst%smp_l_col               , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]            
          smpmin             => soilstate_inst%smpmin_col              , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
          soilpsi            => soilstate_inst%soilpsi_col               & ! Output: [real(r8) (:,:) ]  soil water potential in each soil layer (MPa)
+
          )
 
       ! Determine step size
@@ -198,9 +202,12 @@ contains
       
       if ( use_fates ) call clm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, soilstate_inst, waterflux_inst)
       
+      ! -- clm3.5/src/biogeophys/SoilHydrologyMod.F90
+      ! if not COUP_OAS_PFL
       call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-           soilhydrology_inst, soilstate_inst, waterflux_inst, waterstate_inst, temperature_inst, &
-           canopystate_inst, energyflux_inst, soil_water_retention_curve)
+          soilhydrology_inst, soilstate_inst, waterflux_inst, waterstate_inst, temperature_inst, &
+          canopystate_inst, energyflux_inst, soil_water_retention_curve)
+      ! end if
 
       if (use_vichydro) then
          ! mapping soilmoist from CLM to VIC layers for runoff calculations
@@ -471,6 +478,21 @@ contains
       ! ZMS: Note, this form, which seems to be the same as used in SoilWater, DOES NOT distinguish between
       ! ice and water volume, in contrast to the soilpsi calculation above. It won't be used in ch4Mod if
       ! t_soisno <= tfrz, though.
+#ifdef COUP_OAS_PFL
+      if (.not. use_parflow_soilwater()) then
+         do j = 1, nlevgrnd
+            do fc = 1, num_hydrologyc
+               c = filter_hydrologyc(fc)
+
+               s_node = max(h2osoi_vol(c,j)/watsat(c,j), 0.01_r8)
+               s_node = min(1.0_r8, s_node)
+
+               smp_l(c,j) = -sucsat(c,j)*s_node**(-bsw(c,j))
+               smp_l(c,j) = max(smpmin(c), smp_l(c,j))
+            end do
+         end do
+      endif
+#else
       do j = 1, nlevgrnd
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
@@ -482,6 +504,7 @@ contains
             smp_l(c,j) = max(smpmin(c), smp_l(c,j))
          end do
       end do
+#endif
 
  !     if (use_cn) then
          ! Available soil water up to a depth of 0.05 m.

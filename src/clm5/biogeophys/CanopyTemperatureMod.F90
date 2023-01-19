@@ -151,12 +151,14 @@ contains
          qg_soil          =>    waterstate_inst%qg_soil_col           , & ! Output: [real(r8) (:)   ] specific humidity at soil surface [kg/kg]
          qg               =>    waterstate_inst%qg_col                , & ! Output: [real(r8) (:)   ] ground specific humidity [kg/kg]         
          qg_h2osfc        =>    waterstate_inst%qg_h2osfc_col         , & ! Output: [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
-         dqgdT            =>    waterstate_inst%dqgdT_col             , & ! Output: [real(r8) (:)   ] d(qg)/dT                                 
-
+         dqgdT            =>    waterstate_inst%dqgdT_col             , & ! Output: [real(r8) (:)   ] d(qg)/dT
+#ifdef COUP_OAS_PFL
+         pfl_psi          =>    waterstate_inst%pfl_psi_col           , & ! Input:  [real(r8) (:,:) ] COUP_OAS_PFL
+#endif
          qflx_evap_tot    =>    waterflux_inst%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ] qflx_evap_soi + qflx_evap_can + qflx_tran_veg
          qflx_evap_veg    =>    waterflux_inst%qflx_evap_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation evaporation (mm H2O/s) (+ = to atm)
          qflx_tran_veg    =>    waterflux_inst%qflx_tran_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation transpiration (mm H2O/s) (+ = to atm)
-
+         
          htvp             =>    energyflux_inst%htvp_col              , & ! Output: [real(r8) (:)   ] latent heat of vapor of water (or sublimation) [j/kg]
          cgrnd            =>    energyflux_inst%cgrnd_patch           , & ! Output: [real(r8) (:)   ] deriv. of soil energy flux wrt to soil temp [w/m2/k]
          cgrnds           =>    energyflux_inst%cgrnds_patch          , & ! Output: [real(r8) (:)   ] deriv. of soil sensible heat flux wrt soil temp [w/m2/k]
@@ -197,7 +199,7 @@ contains
          rootr_road_perv  =>    soilstate_inst%rootr_road_perv_col    , & ! Input:  [real(r8) (:,:) ] effective fraction of roots in each soil layer for urban pervious road
          soilalpha        =>    soilstate_inst%soilalpha_col          , & ! Output: [real(r8) (:)   ] factor that reduces ground saturated specific humidity (-)
          soilalpha_u      =>    soilstate_inst%soilalpha_u_col        , & ! Output: [real(r8) (:)   ] Urban factor that reduces ground saturated specific humidity (-)
-
+         
          t_h2osfc         =>    temperature_inst%t_h2osfc_col         , & ! Input:  [real(r8) (:)   ] surface water temperature               
          t_soisno         =>    temperature_inst%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
          beta             =>    temperature_inst%beta_col             , & ! Output: [real(r8) (:)   ] coefficient of convective velocity [-]   
@@ -256,8 +258,14 @@ contains
                wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/dz(c,1)
                fac  = min(1._r8, wx/watsat(c,1))
                fac  = max( fac, 0.01_r8 )
+#ifdef COUP_OAS_PFL
+               ! clm3.5/bld/usr.src/Biogeophysics1Mod.F90
+               if (pfl_psi(c,1)>= 0.0_r8)  psit = 0._r8
+               if (pfl_psi(c,1) < 0.0_r8)  psit = pfl_psi(c,1)
+#else
                psit = -sucsat(c,1) * fac ** (-bsw(c,1))
                psit = max(smpmin(c), psit)
+#endif
                ! modify qred to account for h2osfc
                hr   = exp(psit/roverg/t_soisno(c,1))
                qred = (1._r8 - frac_sno(c) - frac_h2osfc(c))*hr &

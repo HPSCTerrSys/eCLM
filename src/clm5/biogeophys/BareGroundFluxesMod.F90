@@ -195,7 +195,10 @@ contains
          t_ref2m                => temperature_inst%t_ref2m_patch               , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)                           
          t_ref2m_r              => temperature_inst%t_ref2m_r_patch             , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)                     
          t_veg                  => temperature_inst%t_veg_patch                 , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
-
+#ifdef COUP_OAS_ICON
+         t_sf_patch             => temperature_inst%t_sf_patch                  , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
+!         q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+#endif
          q_ref2m                => waterstate_inst%q_ref2m_patch                , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)                          
          rh_ref2m_r             => waterstate_inst%rh_ref2m_r_patch             , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)                        
          rh_ref2m               => waterstate_inst%rh_ref2m_patch               , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)                              
@@ -373,6 +376,11 @@ contains
          qflx_ev_snow(p)   = -raiw*(forc_q(c) - qg_snow(c))
          qflx_ev_soil(p)   = -raiw*(forc_q(c) - qg_soil(c))
          qflx_ev_h2osfc(p) = -raiw*(forc_q(c) - qg_h2osfc(c))
+
+#ifdef COUP_OAS_ICON
+         t_sf_patch(p)     = t_grnd(c)
+!         q_sf_patch(p)     = qg(c)
+#endif
 
          ! 2 m height air temperature
          t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
