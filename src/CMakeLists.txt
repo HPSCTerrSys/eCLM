@@ -1,16 +1,28 @@
 cmake_minimum_required (VERSION 3.16.3)
 project (eCLM LANGUAGES C Fortran)
 
+# Set internal build variables (i.e. non-model related options)
 get_filename_component(ECLM_ROOT ${CMAKE_SOURCE_DIR} DIRECTORY)
 list(APPEND CMAKE_MODULE_PATH "${ECLM_ROOT}/cmake")
 set(GENF90 ${CMAKE_MODULE_PATH}/genf90.pl)
+
+# Set machine-specific build options
 include(SetBuildOptions)
 
+# Set default model options
+option(COUP_OAS_ICON "Couple eCLM with ICON" OFF)
+option(COUP_OAS_PFL "Couple eCLM with ParFlow" OFF)
+
+# eCLM subcomponents
 add_subdirectory(externals)
 add_subdirectory(csm_share)
 add_subdirectory(clm5)
 add_subdirectory(stub_comps)
-add_subdirectory(datm)
+if(COUP_OAS_ICON)
+    add_subdirectory(icon_atm)
+else()
+    add_subdirectory(datm)
+endif()
 add_subdirectory(mosart)
 add_subdirectory(eclm)
 

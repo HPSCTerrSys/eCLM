@@ -34,5 +34,10 @@ target_sources(${PROJECT_NAME}
     t_driver_timers_mod.F90
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE clm datm mosart ocn wav ice glc esp csm_share)
+target_link_libraries(${PROJECT_NAME} PRIVATE clm mosart ocn wav ice glc esp csm_share)
+if(COUP_OAS_ICON)
+    target_link_libraries(${PROJECT_NAME} PRIVATE icon_atm)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE datm)
+endif()
 install (TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
