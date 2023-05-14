@@ -3,7 +3,7 @@ module oas_vardefMod
   save
 
 #ifdef COUP_OAS_PFL
-  integer :: oas_psi_id, oas_et_loss_id, oas_sat_id
+  integer :: oas_psi_id, oas_et_loss_id, oas_sat_id, oas_ice_frac_id
 #endif
 
 #ifdef COUP_OAS_ICON

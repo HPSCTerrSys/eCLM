@@ -33,6 +33,7 @@ module lnd2atmMod
   use WaterstateType       , only : waterstate_type
   use IrrigationMod        , only : irrigation_type 
   use glcBehaviorMod       , only : glc_behavior_type
+  use SoilHydrologyType    , only : soilhydrology_type
   use glc2lndMod           , only : glc2lnd_type
   use ColumnType           , only : col
   use LandunitType         , only : lun
@@ -126,7 +127,7 @@ contains
        waterstate_inst, waterflux_inst, irrigation_inst, energyflux_inst, &
        solarabs_inst, drydepvel_inst,  &
        vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
-       lnd2atm_inst, &
+       soilhydrology_inst, lnd2atm_inst, &
        net_carbon_exchange_grc) 
     !
     ! !DESCRIPTION:
@@ -152,6 +153,7 @@ contains
     type(dust_type)             , intent(in)    :: dust_inst
     type(ch4_type)              , intent(in)    :: ch4_inst
     type(glc_behavior_type)     , intent(in)    :: glc_behavior
+    type(soilhydrology_type)    , intent(in)    :: soilhydrology_inst
     type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst 
     real(r8)                    , intent(in)    :: net_carbon_exchange_grc( bounds%begg: )  ! net carbon exchange between land and atmosphere, positive for source (gC/m2/s)
     !
@@ -431,6 +433,11 @@ contains
     call c2g( bounds, nlevsoi, &
          waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
          lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
+         c2l_scale_type= 'unity',  l2g_scale_type='unity' )
+
+    call c2g( bounds, nlevsoi, &
+         soilhydrology_inst%icefrac_col (bounds%begc:bounds%endc, :), &
+         lnd2atm_inst%ice_frac_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
 
     do c = bounds%begc, bounds%endc
