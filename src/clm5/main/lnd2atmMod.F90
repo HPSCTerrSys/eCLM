@@ -36,6 +36,7 @@ module lnd2atmMod
   use WaterstateType       , only : waterstate_type
   use IrrigationMod        , only : irrigation_type 
   use glcBehaviorMod       , only : glc_behavior_type
+  use SoilHydrologyType    , only : soilhydrology_type
   use glc2lndMod           , only : glc2lnd_type
   use ColumnType           , only : col
   use LandunitType         , only : lun
@@ -135,10 +136,7 @@ contains
        waterstate_inst, waterflux_inst, irrigation_inst, energyflux_inst, &
        solarabs_inst, drydepvel_inst,  &
        vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
-       lnd2atm_inst, &
-#ifdef USE_PDAF
-       soilhydrology_inst, soilstate_inst, &
-#endif
+       soilhydrology_inst, lnd2atm_inst, &
        net_carbon_exchange_grc) 
     !
     ! !DESCRIPTION:
@@ -164,6 +162,7 @@ contains
     type(dust_type)             , intent(in)    :: dust_inst
     type(ch4_type)              , intent(in)    :: ch4_inst
     type(glc_behavior_type)     , intent(in)    :: glc_behavior
+    type(soilhydrology_type)    , intent(in)    :: soilhydrology_inst
     type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst 
 #ifdef USE_PDAF
     ! Yorck
@@ -578,6 +577,21 @@ contains
 
           averaging_var = 0
 
+    call c2g( bounds, nlevsoi, &
+         soilhydrology_inst%icefrac_col (bounds%begc:bounds%endc, :), &
+         lnd2atm_inst%ice_frac_grc   (bounds%begg:bounds%endg, :), &
+         c2l_scale_type= 'unity',  l2g_scale_type='unity' )
+
+    do c = bounds%begc, bounds%endc
+     if (col%hydrologically_active(c)) then
+       if (col%itype(c) == istsoil .or. col%itype(c) == istcrop) then
+         g = col%gridcell(c)
+         do j = 1, nlevsoi
+          ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr): 
+          !             1/hr                 =             [mm/s]                 *   [s/hr]   *  [m/mm]  *     [1/m] 
+          lnd2atm_inst%qflx_parflow_grc(g,j) = lnd2atm_inst%qflx_parflow_grc(g,j) * sec_per_hr * m_per_mm * (1/col%dz(c,j))
+         enddo
+       end if
      end if
 
      averaging_var = averaging_var+1
