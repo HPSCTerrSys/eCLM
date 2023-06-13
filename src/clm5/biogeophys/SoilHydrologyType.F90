@@ -225,6 +225,7 @@ contains
     ! averaging for the accum field
     do c = bounds%begc, bounds%endc
        this%num_substeps_col(c) = spval
+       this%icefrac_col(c,:) = spval
     end do
 
   end subroutine InitCold

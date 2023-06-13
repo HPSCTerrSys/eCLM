@@ -81,12 +81,12 @@ contains
     var_nodims(2) = nlevsoi   ! number of fields in a bundle
 
     call oasis_def_var(oas_et_loss_id, "ECLM_ET", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
-    call oasis_def_var(oas_ice_frac_id, "ECLM_ICE_FRAC", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
 
     var_nodims(2) = nlevgrnd         ! number of fields in a bundle
     call oasis_def_var(oas_sat_id, "ECLM_SOILLIQ", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
     call oasis_def_var(oas_psi_id, "ECLM_PSI", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
-#endif 
+    call oasis_def_var(oas_ice_frac_id, "ECLM_ICE_FRAC", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
+#endif
 
 #ifdef COUP_OAS_ICON
 

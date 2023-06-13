@@ -192,7 +192,7 @@ contains
     allocate(this%qflx_liq_from_ice_col(begc:endc))          ; this%qflx_liq_from_ice_col(:)   =ival
 #ifdef COUP_OAS_PFL
     allocate(this%qflx_parflow_grc     (begg:endg,1:nlevsoi)); this%qflx_parflow_grc     (:,:) =ival
-    allocate(this%ice_frac_grc         (begg:endg,1:nlevsoi)); this%ice_frac_grc         (:,:) =ival
+    allocate(this%ice_frac_grc         (begg:endg,1:nlevgrnd)); this%ice_frac_grc         (:,:) =ival
 #endif
     allocate(this%qirrig_grc           (begg:endg))          ; this%qirrig_grc           (:)   =ival
 
@@ -348,7 +348,7 @@ contains
          ptr_lnd=this%qflx_parflow_grc, default='inactive')
 
     this%ice_frac_grc(begg:endg, :) = 0._r8
-    call hist_addfld2d (fname='FRAC_ICE', units='unitless', type2d='levsoi', &
+    call hist_addfld2d (fname='FRAC_ICE', units='unitless', type2d='levgrnd', &
          avgflag='A', long_name='soil ice fraction sent to ParFlow', &
          ptr_lnd=this%ice_frac_grc, default='inactive')
 #endif
