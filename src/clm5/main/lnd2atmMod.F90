@@ -577,7 +577,7 @@ contains
 
           averaging_var = 0
 
-    call c2g( bounds, nlevsoi, &
+    call c2g( bounds, nlevgrnd, &
          soilhydrology_inst%icefrac_col (bounds%begc:bounds%endc, :), &
          lnd2atm_inst%ice_frac_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
