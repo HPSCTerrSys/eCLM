@@ -48,7 +48,7 @@ contains
     integer                           :: info
     
     call oasis_put(oas_et_loss_id, seconds_elapsed, lnd2atm_inst%qflx_parflow_grc, info)
-    call oasis_put(oas_ice_frac_id, seconds_elapsed, lnd2atm_inst%ice_frac_grc, info)
+    call oasis_put(oas_ice_impedance_id, seconds_elapsed, lnd2atm_inst%ice_impedance_grc, info)
     
   end subroutine oas_send
 #endif

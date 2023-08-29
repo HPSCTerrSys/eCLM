@@ -1454,8 +1454,8 @@ contains
       use abortutils           , only : endrun
       use decompMod            , only : bounds_type
       use clm_varctl           , only : iulog, use_hydrstress
-      use clm_varcon           , only : denh2o, denice
-      use clm_varpar           , only : nlevgrnd
+      use clm_varcon           , only : denh2o, denice, e_ice
+      use clm_varpar           , only : nlevsoi, nlevgrnd
       use clm_time_manager     , only : get_step_size, get_nstep
       use SoilStateType        , only : soilstate_type
       use SoilHydrologyType    , only : soilhydrology_type
@@ -1487,10 +1487,12 @@ contains
       integer  :: c,j,fc                    ! indices
 
       associate(&
-         smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]         
-         h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
-         pfl_psi           =>    waterstate_inst%pfl_psi_col          & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
+         smp_l             =>    soilstate_inst%smp_l_col             , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]         
+         h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col       , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col   , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
+         pfl_psi           =>    waterstate_inst%pfl_psi_col          , & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
+         icefrac           =>    soilhydrology_inst%icefrac_col       , & ! Input:  [real(r8) (:,:) ]  fraction of ice
+         ice_impedance     =>    soilhydrology_inst%ice_impedance_col   & ! Input:  [real(r8) (:,:) ]  ice impedance
          )  ! end associate statement
 
 
@@ -1504,6 +1506,14 @@ contains
                if (pfl_psi(c,j) <= 0) then
                   smp_l(c,j) = pfl_psi(c,j)
                end if
+
+               if(j==nlevsoi)then
+                  call IceImpedance(icefrac(c,j), e_ice, ice_impedance(c,j) )
+               else if(j<nlevsoi)then
+                  call IceImpedance(0.5_r8*(icefrac(c,j) + icefrac(c,j+1)), e_ice, ice_impedance(c,j) )
+               else 
+                  ice_impedance(c,j) = 1._r8
+               endif
             end do
          end do
 

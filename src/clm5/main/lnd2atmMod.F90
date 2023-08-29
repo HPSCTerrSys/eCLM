@@ -436,8 +436,8 @@ contains
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
 
     call c2g( bounds, nlevgrnd, &
-         soilhydrology_inst%icefrac_col (bounds%begc:bounds%endc, :), &
-         lnd2atm_inst%ice_frac_grc   (bounds%begg:bounds%endg, :), &
+         soilhydrology_inst%ice_impedance_col (bounds%begc:bounds%endc, :), &
+         lnd2atm_inst%ice_impedance_grc       (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
 
     do c = bounds%begc, bounds%endc
