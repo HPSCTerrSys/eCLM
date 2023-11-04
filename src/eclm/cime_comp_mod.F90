@@ -179,7 +179,7 @@ module cime_comp_mod
 
   implicit none
 
-  private
+  ! private
 
   public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
   public timing_dir, mpicom_GLOID
