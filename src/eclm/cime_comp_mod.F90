@@ -597,6 +597,7 @@ contains
     !----------------------------------------------------------
 
     character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
+
 #ifdef USE_PDAF
     integer, optional, intent(in) :: pdaf_comm
     integer, optional, intent(in) :: pdaf_id
@@ -646,6 +647,7 @@ contains
 #else
     call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id)
 #endif
+
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
     !
     ! If pio_async_interface is true Global_comm is MPI_COMM_NULL on the servernodes
