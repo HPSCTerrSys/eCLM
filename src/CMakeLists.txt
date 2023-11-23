@@ -9,6 +9,8 @@ include(SetBuildOptions)
 
 if (USE_PDAF)
   set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/eCLM)
+  set(CMAKE_Fortran_MODULE_DIRECTORY_MCT ${CMAKE_BINARY_DIR}/externals/mct/include)
+  set(CMAKE_Fortran_MODULE_DIRECTORY_GPTL ${CMAKE_BINARY_DIR}/externals/gptl/include)
 endif()
 
 add_subdirectory(externals)
@@ -34,4 +36,8 @@ endif("${isSystemDir}" STREQUAL "-1")
 if (USE_PDAF)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}
           DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY_MCT}
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/eCLM/externals/mct)
+  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY_GPTL}
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/eCLM/externals/mct)
 endif()
