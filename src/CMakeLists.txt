@@ -39,5 +39,5 @@ if (USE_PDAF)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY_MCT}
           DESTINATION ${CMAKE_INSTALL_PREFIX}/include/eCLM/externals/mct)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY_GPTL}
-          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/eCLM/externals/mct)
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/eCLM/externals/gptl)
 endif()
