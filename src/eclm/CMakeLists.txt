@@ -1,7 +1,11 @@
 project (eclm LANGUAGES Fortran)
 
-add_executable(${PROJECT_NAME})
-set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".exe")
+if(USE_PDAF)
+  add_library(${PROJECT_NAME} STATIC)
+else()
+  add_executable(${PROJECT_NAME})
+  set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".exe")
+endif()
 
 target_sources(${PROJECT_NAME} 
   PRIVATE
