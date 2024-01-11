@@ -610,8 +610,10 @@ contains
     integer :: driver_id, oas_comp_id
     integer :: driver_comm
 
+#ifndef USE_PDAF
     call mpi_init(ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
+#endif
 
 #if defined(USE_OASIS)
     call oasis_init_comp  (oas_comp_id, 'eCLM', ierr)
