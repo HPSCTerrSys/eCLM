@@ -3509,7 +3509,7 @@ contains
        !| RUN ATM MODEL
        !----------------------------------------------------------
 
-       if (atm_present .and. atmrun_alarm) then
+       if (atm_present .and. atmrun_alarm .and. .not. atm_prognostic) then
           call component_run(Eclock_a, atm, atm_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2a_fluxes, &
                seq_flds_c2x_fluxes=seq_flds_a2x_fluxes, &

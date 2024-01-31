@@ -177,7 +177,11 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     atm_present = .false.
+#ifdef COUP_OAS_ICON
+    atm_prognostic = .true.
+#else
     atm_prognostic = .false.
+#endif
     if (force_prognostic_true) then
        atm_present    = .true.
        atm_prognostic = .true.
