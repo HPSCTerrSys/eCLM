@@ -4,9 +4,9 @@ name: CI
 # events but only for the master branch
 on:
   push:
-    branches:  [ main ] 
+    branches:  [ main, master] 
   pull_request:
-    branches: [ main ]
+    branches: [ main, master]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -14,9 +14,6 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, 3.11]
     env:
       CC: mpicc
       FC: mpifort
@@ -37,60 +34,21 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-
-      - name: cime checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ESMCI/cime
-          submodules: True
-#      - name: genf90 checkout
-#        uses: actions/checkout@v2
-#        with:
-#          repository: PARALLELIO/genf90
-#          path: CIME/non_py/externals/genf90
-
-      - name: ccs_config checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ESMCI/ccs_config_cesm
-          path: ccs_config
-
-      - name: share checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ESCOMP/CESM_share
-          path: share
-
-      - name: cpl7 checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ESCOMP/CESM_CPL7andDataComps
-          path: components/cpl7
-
+     
       - id: load-env
         run: |
           sudo apt-get update
           sudo apt-get install libxml2-utils pylint wget gfortran openmpi-bin netcdf-bin libopenmpi-dev cmake libnetcdf-dev
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+      # - name: Set up Python ${{ matrix.python-version }}
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: ${{ matrix.python-version }}
+      #     cache: 'pip'
 
-      - name: pip install
-        run: pip install PyYAML
+      # - name: pip install
+      #   run: pip install PyYAML
         
-      - name: mct install
-        run: |
-          git clone -b ${{ env.MCT_VERSION  }} https://github.com/MCSclimate/MCT libraries/mct
-          ls -l libraries/mct
-
-      - name: parallelio install
-        run: |
-          git clone -b ${{ env.PARALLELIO_VERSION  }} https://github.com/NCAR/ParallelIO libraries/parallelio
-          ls -l libraries/parallelio
-
       - name: cache pnetcdf
         id: cache-pnetcdf
         uses: actions/cache@v3
@@ -120,7 +78,6 @@ jobs:
       - name: netcdf fortran build
         if: steps.cache-netcdf-fortran.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get install libnetcdf-dev
           wget https://github.com/Unidata/netcdf-fortran/archive/${{ env.NETCDF_FORTRAN_VERSION }}.tar.gz
           tar -xzvf ${{ env.NETCDF_FORTRAN_VERSION }}.tar.gz
           ls -l
@@ -138,29 +95,39 @@ jobs:
           clibdir=`nc-config --libdir`
           ln -fs $clibdir/lib* .
 
-      - name: Cache inputdata
-        if: ${{ ! env.ACT }}
-        uses: actions/cache@v3
-        with:
-          path: $HOME/cesm/inputdata
-          key: inputdata
-#
+          sudo ln -s $HOME/pnetcdf/lib/pkgconfig/pnetcdf.pc /usr/lib/pkgconfig
+          sudo ln -s $HOME/netcdf-fortran/lib/pkgconfig/netcdf-fortran.pc /usr/lib/pkgconfig
+
 #      The following can be used to ssh to the testnode for debugging
 #      see https://github.com/mxschmitt/action-tmate for details
 #      - name: Setup tmate session
 #        uses: mxschmitt/action-tmate@v3
-
-      - name: scripts regression tests
+      - uses: actions/checkout@v4
+      - name: build eCLM
         run: |
-          mkdir -p $HOME/cesm/scratch
-          mkdir -p $HOME/cesm/inputdata
-          cd $HOME/work/CESM_share/CESM_share
-          ls -l $HOME/work/CESM_share/CESM_share
-          export NETCDF=$HOME/netcdf-fortran
-          export PATH=$NETCDF/bin:$PATH
-          export LD_LIBRARY_PATH=$NETCDF/lib:$HOME/pnetcdf/lib:$LD_LIBRARY_PATH
-          python -m pip install pytest pytest-cov
-          pytest -vvv --no-fortran-run --compiler gnu --mpilib openmpi --machine ubuntu-latest
+          # User-specific variables
+          ls -al
+          BUILD_DIR="bld"
+          INSTALL_DIR="eclm"
+
+          # Run cmake
+          cmake -S src -B "$BUILD_DIR" \
+                -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
+                -DCMAKE_C_COMPILER=mpicc \
+                -DCMAKE_Fortran_FLAGS="-fallow-argument-mismatch -fallow-invalid-boz" \
+                -DCMAKE_Fortran_COMPILER=mpifort
+
+          cd bld
+          make -j${nproc}
+
+          ls -al
+          ls -al eclm
+      # - name: Cache inputdata
+      #   if: ${{ ! env.ACT }}
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: $HOME/cesm/inputdata
+      #     key: inputdata
 
 #     the following can be used by developers to login to the github server in case of errors
 #     see https://github.com/marketplace/actions/debugging-with-tmate for further details
