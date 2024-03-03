@@ -193,7 +193,7 @@ elemental function shr_infnan_isposinf_{TYPE}(x) result(isposinf)
   use, intrinsic :: ieee_arithmetic, only: &
        ieee_class, &
        ieee_positive_inf, &
-       operator(==)
+       operator(.eq.)
   {VTYPE}, intent(in) :: x
   logical :: isposinf
 
@@ -206,7 +206,7 @@ elemental function shr_infnan_isneginf_{TYPE}(x) result(isneginf)
   use, intrinsic :: ieee_arithmetic, only: &
        ieee_class, &
        ieee_negative_inf, &
-       operator(==)
+       operator(.eq.)
   {VTYPE}, intent(in) :: x
   logical :: isneginf
 
