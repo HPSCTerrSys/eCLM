@@ -1,6 +1,6 @@
 # eCLM
 
-[![CI](https://github.com/CUG-hydro/eCLM/actions/workflows/CI.yml/badge.svg)](https://github.com/CUG-hydro/eCLM/actions/workflows/CI.yml)
+[![CI](https://github.com/HPSCTerrSys/eCLM/actions/workflows/CI.yml/badge.svg)](https://github.com/HPSCTerrSys/eCLM/actions/workflows/CI.yml)
 [![status: alpha](https://img.shields.io/badge/status-alpha-yellow)](https://github.com/HPSCTerrSys/eCLM)
 
 eCLM is based from [Community Land Model 5.0 (CLM5.0)]. It has the same modelling capabilities as CLM5 but with a more simplified infrastructure for build and namelist generation. The build system is handled entirely by CMake and namelists are generated through a small set of Python scripts. Only Fortran source codes necessary for a functional land model simulation were imported from CLM5. 
