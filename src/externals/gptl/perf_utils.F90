@@ -1,5 +1,5 @@
 module perf_utils
-
+   use mpi
 !-----------------------------------------------------------------------
 !
 ! Purpose: This module supplies the csm_share and CAM utilities
@@ -17,7 +17,6 @@ module perf_utils
 !-----------------------------------------------------------------------
    implicit none
    private                   ! Make the default access private
-#include <mpif.h>
    save
 
 !-----------------------------------------------------------------------
