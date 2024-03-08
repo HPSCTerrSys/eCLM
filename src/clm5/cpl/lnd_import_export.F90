@@ -204,6 +204,7 @@ contains
 
        atm2lnd_inst%forc_rh_grc(g) = 100.0_r8*(forc_q / qsat)
 
+#ifndef COUP_OAS_ICON
        ! Check that solar, specific-humidity and LW downward aren't negative
        if ( atm2lnd_inst%forc_lwrad_not_downscaled_grc(g) <= 0.0_r8 )then
           call endrun( sub//' ERROR: Longwave down sent from the atmosphere model is negative or zero' )
@@ -216,6 +217,7 @@ contains
        if ( atm2lnd_inst%forc_q_not_downscaled_grc(g) < 0.0_r8 )then
           call endrun( sub//' ERROR: Bottom layer specific humidty sent from the atmosphere model is less than zero' )
        end if
+#endif
 
        ! Check if any input from the coupler is NaN
        if ( any(isnan(x2l(:,i))) )then
