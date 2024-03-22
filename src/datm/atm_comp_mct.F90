@@ -244,6 +244,7 @@ CONTAINS
          orb_lambm0=orbLambm0, &
          orb_obliqr=orbObliqr)
 
+#ifndef COUP_OAS_ICON
     call datm_comp_run( &
          EClock = EClock, &
          x2a = x2a, &
@@ -263,6 +264,7 @@ CONTAINS
          orbObliqr = orbObliqr, &
          nextsw_cday = nextsw_cday, &
          case_name = case_name)
+#endif
 
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday )
 
