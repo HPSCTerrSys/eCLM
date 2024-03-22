@@ -127,4 +127,9 @@ if (USE_OASIS)
         endif()
     endif()
 endif()
+
+if (USE_PDAF)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC USE_PDAF)
+endif()
+
 install (TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
