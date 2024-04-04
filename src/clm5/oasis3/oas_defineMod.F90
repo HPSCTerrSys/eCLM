@@ -10,6 +10,7 @@ contains
 
   subroutine oas_definitions_init(bounds)
     use spmdMod      , only : masterproc
+    use domainMod    , only : ldomain
     use clm_varpar   , only : nlevsoi, nlevgrnd
     use decompMod    , only : ldecomp, bounds_type
     use oas_vardefMod
@@ -30,15 +31,17 @@ contains
     integer              :: var_nodims(2)     ! var dimension parameters
 
 
-    if (masterproc) then
-      call define_grid()
-    end if
-
+    ! TODO: Fix grids.nc and masks.nc generation for 1D grid representation
+    !if (masterproc) then
+    ! call define_grid()
+    !end if
 
     ! -----------------------------------------------------------------
     ! ... Define partition
     ! -----------------------------------------------------------------
-    allocate(partition(200))
+    ! partition length = (# elements for partition info) + (max segments ORANGE partition) x (# elements per segment info)
+    !                  = 2 + 200*2 = 402
+    allocate(partition(402))
     partition(:) = 0; k = 0
 
     ! Use ORANGE partitioning scheme. This scheme defines an ensemble
@@ -58,9 +61,8 @@ contains
         partition(3+k) = gcell_start - 1                  ! segment global offset (0-based)
         partition(4+k) = gcell_previous - gcell_start + 1 ! segment length
         k = k + 2
-  
         gcell_start  = ldecomp%gdc2glo(g) ! current gridcell marks the start of a new segment 
-        partition(2) = partition(2) + 1   ! increment number of segments
+        partition(2) = partition(2) + 1   ! increment number of segments (limited to 200 based from OASIS3-MCT User's guide)
       end if
       gcell_previous = ldecomp%gdc2glo(g)
     enddo
@@ -68,8 +70,9 @@ contains
     ! Define partition params for last segment
     partition(3+k) = gcell_start - 1
     partition(4+k) = gcell_previous - gcell_start + 1
+    partition(2) = partition(2) + 1
 
-    call oasis_def_partition(grid_id, partition, ierror)
+    call oasis_def_partition(grid_id, partition, ierror, ldomain%ns)
     deallocate(partition)
 
     ! -----------------------------------------------------------------
@@ -143,6 +146,7 @@ contains
   subroutine define_grid()
     use shr_kind_mod , only : r8 => shr_kind_r8
     use domainMod    , only : ldomain
+
     character(len=4), parameter   :: grid_name='gclm'
     integer,          parameter   :: SOUTH = 1
     integer,          parameter   :: NORTH = 2
@@ -244,5 +248,6 @@ contains
       call oasis_terminate_grids_writing()
       deallocate(oas_lon, oas_lat, oas_corner_lon, oas_corner_lat, oas_mask, corner_lon, corner_lat)
     end if
+
   end subroutine define_grid
 end module oas_defineMod
