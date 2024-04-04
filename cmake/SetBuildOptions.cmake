@@ -22,7 +22,6 @@ endif()
 
 # Set compiler specific flags.
 if(COMPILER STREQUAL "GNU")
-    add_compile_options(-fallow-argument-mismatch)
     add_compile_definitions(CPRGNU)
     set(CMAKE_C_FLAGS "-std=gnu99 -fopenmp")
     set(CMAKE_C_FLAGS_DEBUG "-fcheck=bounds")

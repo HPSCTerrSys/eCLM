@@ -54,6 +54,7 @@ if (BUILD_MCT)
                         --exec-prefix=${MCT_BLD_DIR}
                         CC=${CMAKE_C_COMPILER}
                         FC=${CMAKE_Fortran_COMPILER}
+			MPIFC=${CMAKE_Fortran_COMPILER}
                         CFLAGS=${CMAKE_C_FLAGS}
                         FCFLAGS=${CMAKE_Fortran_FLAGS}
         BUILD_ALWAYS      YES
