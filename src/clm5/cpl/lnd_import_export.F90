@@ -180,11 +180,13 @@ contains
             (forc_pbot - 0.378_r8 * atm2lnd_inst%forc_vp_grc(g)) / (rair * forc_t)
        atm2lnd_inst%forc_po2_grc(g)   = o2_molar_const * forc_pbot
        atm2lnd_inst%forc_wind_grc(g)  = sqrt(atm2lnd_inst%forc_u_grc(g)**2 + atm2lnd_inst%forc_v_grc(g)**2)
+#ifndef COUP_OAS_ICON
        atm2lnd_inst%forc_solar_grc(g) = atm2lnd_inst%forc_solad_grc(g,1) + atm2lnd_inst%forc_solai_grc(g,1) + &
                                         atm2lnd_inst%forc_solad_grc(g,2) + atm2lnd_inst%forc_solai_grc(g,2)
 
        atm2lnd_inst%forc_rain_not_downscaled_grc(g)  = forc_rainc + forc_rainl
        atm2lnd_inst%forc_snow_not_downscaled_grc(g)  = forc_snowc + forc_snowl
+#endif
 
        if (forc_t > SHR_CONST_TKFRZ) then
           e = esatw(tdc(forc_t))

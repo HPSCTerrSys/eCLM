@@ -405,22 +405,7 @@ contains
          rof_prognostic=rof_prognostic, &
          glc_present=glc_present)
 
-    ! Map MCT to land data type
-    ! Perform downscaling if appropriate
-
-    
-    ! Map to clm (only when state and/or fluxes need to be updated)
-
-    call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, &
-         x2l = x2l_l%rattr, &
-         glc_present = glc_present, &
-         atm2lnd_inst = atm2lnd_inst, &
-         glc2lnd_inst = glc2lnd_inst)
-    call t_stopf ('lc_lnd_import')
     ! Use infodata to set orbital values if updated mid-run
-
-
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
 
@@ -460,7 +445,7 @@ contains
        if (nlend_sync .and. dosend) nlend = .true.
 
 #ifdef COUP_OAS_ICON
-       call oas_receive_icon(bounds, time_elapsed, atm2lnd_inst)
+       call oas_receive_icon(bounds, time_elapsed, atm2lnd_inst, x2l_l%rattr)
 #endif
 
 #ifdef COUP_OAS_PFL
@@ -496,6 +481,18 @@ contains
        call advance_timestep()
        call t_stopf ('lc_clm2_adv_timestep')
     end do
+
+    ! Map MCT to land data type
+    ! Perform downscaling if appropriate
+    ! Map to clm (only when state and/or fluxes need to be updated)
+
+    call t_startf ('lc_lnd_import')
+    call lnd_import( bounds, &
+         x2l = x2l_l%rattr, &
+         glc_present = glc_present, &
+         atm2lnd_inst = atm2lnd_inst, &
+         glc2lnd_inst = glc2lnd_inst)
+    call t_stopf ('lc_lnd_import')
 
     ! Check that internal clock is in sync with master clock
 

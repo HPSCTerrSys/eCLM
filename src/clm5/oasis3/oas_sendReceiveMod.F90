@@ -6,6 +6,7 @@ module oas_sendReceiveMod
   use clm_varctl       , only: iulog
   use oas_vardefMod
   use mod_oasis
+  use clm_cpl_indices
   implicit none
   save
   private
@@ -53,12 +54,13 @@ contains
 #endif
 
 #ifdef COUP_OAS_ICON
-  subroutine oas_receive_icon(bounds, seconds_elapsed, atm2lnd_inst)
+  subroutine oas_receive_icon(bounds, seconds_elapsed, atm2lnd_inst, x2l)
     use atm2lndType, only: atm2lnd_type
 
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
     type(atm2lnd_type), intent(inout) :: atm2lnd_inst
+    real(r8)          , intent(out)   :: x2l(:,:) ! driver import state to land model
     real(kind=r8),      allocatable   :: buffer(:,:)
     integer                           :: num_grid_points
     integer                           :: info
@@ -69,19 +71,20 @@ contains
     allocate(buffer(num_grid_points, 1))
 
     !    call oasis_get(oas_id_t, seconds_elapsed, oas_rcv_meta(:,:,oas_id_t), info)
-    call oasis_get(oas_id_t,  seconds_elapsed, atm2lnd_inst%forc_t_not_downscaled_grc, info)
-    call oasis_get(oas_id_u,  seconds_elapsed, atm2lnd_inst%forc_u_grc, info)
-    call oasis_get(oas_id_v,  seconds_elapsed, atm2lnd_inst%forc_v_grc, info)
-    call oasis_get(oas_id_qv, seconds_elapsed, atm2lnd_inst%forc_q_not_downscaled_grc, info)
-    call oasis_get(oas_id_ht, seconds_elapsed, atm2lnd_inst%forc_hgt_grc, info)
-    call oasis_get(oas_id_pr, seconds_elapsed, atm2lnd_inst%forc_pbot_not_downscaled_grc, info)
+    call oasis_get(oas_id_t,  seconds_elapsed, x2l(index_x2l_Sa_tbot,:), info)
+    call oasis_get(oas_id_u,  seconds_elapsed, x2l(index_x2l_Sa_u,:), info)
+    call oasis_get(oas_id_v,  seconds_elapsed, x2l(index_x2l_Sa_v,:), info)
+    call oasis_get(oas_id_qv, seconds_elapsed, x2l(index_x2l_Sa_shum,:), info)
+    call oasis_get(oas_id_ht, seconds_elapsed, x2l(index_x2l_Sa_z,:), info)
+    call oasis_get(oas_id_pr, seconds_elapsed, x2l(index_x2l_Sa_pbot,:), info)
     call oasis_get(oas_id_rs, seconds_elapsed, atm2lnd_inst%forc_solad_grc(:,1), info)
     call oasis_get(oas_id_fs, seconds_elapsed, atm2lnd_inst%forc_solai_grc(:,1), info)
-    call oasis_get(oas_id_lw, seconds_elapsed, atm2lnd_inst%forc_lwrad_not_downscaled_grc, info)
+    call oasis_get(oas_id_lw, seconds_elapsed, x2l(index_x2l_Faxa_lwdn,:), info)
     call oasis_get(oas_id_cr, seconds_elapsed, atm2lnd_inst%forc_rain_not_downscaled_grc, info)
     call oasis_get(oas_id_gr, seconds_elapsed, atm2lnd_inst%forc_snow_not_downscaled_grc, info)
 
     !SPo: some postprocessing of atm2lnd is missing; may better use x2l 
+    !MvH: done that 5.4.2024 for all variables used in clm5/cpl/lnd_import_export.F90
 
     do g=bounds%begg,bounds%endg
        atm2lnd_inst%forc_solad_grc(g,1) = 0.5_r8 * atm2lnd_inst%forc_solad_grc(g,1)
