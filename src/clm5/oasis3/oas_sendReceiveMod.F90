@@ -54,12 +54,11 @@ contains
 #endif
 
 #ifdef COUP_OAS_ICON
-  subroutine oas_receive_icon(bounds, seconds_elapsed, atm2lnd_inst, x2l)
+  subroutine oas_receive_icon(bounds, seconds_elapsed, x2l)
     use atm2lndType, only: atm2lnd_type
 
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
-    type(atm2lnd_type), intent(inout) :: atm2lnd_inst
     real(r8)          , intent(out)   :: x2l(:,:) ! driver import state to land model
     real(kind=r8),      allocatable   :: buffer(:,:)
     integer                           :: num_grid_points
@@ -77,22 +76,22 @@ contains
     call oasis_get(oas_id_qv, seconds_elapsed, x2l(index_x2l_Sa_shum,:), info)
     call oasis_get(oas_id_ht, seconds_elapsed, x2l(index_x2l_Sa_z,:), info)
     call oasis_get(oas_id_pr, seconds_elapsed, x2l(index_x2l_Sa_pbot,:), info)
-    call oasis_get(oas_id_rs, seconds_elapsed, atm2lnd_inst%forc_solad_grc(:,1), info)
-    call oasis_get(oas_id_fs, seconds_elapsed, atm2lnd_inst%forc_solai_grc(:,1), info)
+    call oasis_get(oas_id_rs, seconds_elapsed, x2l(index_x2l_Faxa_swvdr,:), info)
+    call oasis_get(oas_id_fs, seconds_elapsed, x2l(index_x2l_Faxa_swvdf,:), info)
     call oasis_get(oas_id_lw, seconds_elapsed, x2l(index_x2l_Faxa_lwdn,:), info)
-    call oasis_get(oas_id_cr, seconds_elapsed, atm2lnd_inst%forc_rain_not_downscaled_grc, info)
-    call oasis_get(oas_id_gr, seconds_elapsed, atm2lnd_inst%forc_snow_not_downscaled_grc, info)
+    call oasis_get(oas_id_cr, seconds_elapsed, x2l(index_x2l_Faxa_rainl,:), info)
+    call oasis_get(oas_id_gr, seconds_elapsed, x2l(index_x2l_Faxa_snowl,:), info)
+    x2l(index_x2l_Faxa_rainc,:) = 0.
+    x2l(index_x2l_Faxa_snowc,:) = 0.
 
     !SPo: some postprocessing of atm2lnd is missing; may better use x2l 
     !MvH: done that 5.4.2024 for all variables used in clm5/cpl/lnd_import_export.F90
 
     do g=bounds%begg,bounds%endg
-       atm2lnd_inst%forc_solad_grc(g,1) = 0.5_r8 * atm2lnd_inst%forc_solad_grc(g,1)
-       atm2lnd_inst%forc_solad_grc(g,2) = atm2lnd_inst%forc_solad_grc(g,1)
-       atm2lnd_inst%forc_solai_grc(g,1) = 0.5_r8 * atm2lnd_inst%forc_solai_grc(g,1)
-       atm2lnd_inst%forc_solai_grc(g,2) = atm2lnd_inst%forc_solai_grc(g,1)
-       atm2lnd_inst%forc_solar_grc(g)   =  atm2lnd_inst%forc_solad_grc(g,2) + atm2lnd_inst%forc_solad_grc(g,1) &
-                                        +  atm2lnd_inst%forc_solai_grc(g,2) + atm2lnd_inst%forc_solai_grc(g,1)
+       x2l(index_x2l_Faxa_swvdr,g) = 0.5_r8 * x2l(index_x2l_Faxa_swvdr,g)
+       x2l(index_x2l_Faxa_swndr,g) = x2l(index_x2l_Faxa_swvdr,g)
+       x2l(index_x2l_Faxa_swvdf,g) = 0.5_r8 * x2l(index_x2l_Faxa_swvdf,g)
+       x2l(index_x2l_Faxa_swndf,g) = x2l(index_x2l_Faxa_swvdf,g)
     enddo
 
   end subroutine oas_receive_icon

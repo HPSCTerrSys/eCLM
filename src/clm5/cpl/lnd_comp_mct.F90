@@ -445,7 +445,7 @@ contains
        if (nlend_sync .and. dosend) nlend = .true.
 
 #ifdef COUP_OAS_ICON
-       call oas_receive_icon(bounds, time_elapsed, atm2lnd_inst, x2l_l%rattr)
+       call oas_receive_icon(bounds, time_elapsed, x2l_l%rattr)
 #endif
 
 #ifdef COUP_OAS_PFL
