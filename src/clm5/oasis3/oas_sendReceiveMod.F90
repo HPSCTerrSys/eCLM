@@ -59,11 +59,11 @@ contains
 
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
-    real(r8)          , intent(out)   :: x2l(:,:) ! driver import state to land model
+    real(r8)         ,  intent(inout) :: x2l(:,:) ! driver import state to land model
     real(kind=r8),      allocatable   :: buffer(:,:)
     integer                           :: num_grid_points
     integer                           :: info
-    integer                           :: g
+    integer                           :: g, i
 
 
     num_grid_points = (bounds%endg - bounds%begg) + 1
@@ -88,10 +88,11 @@ contains
     !MvH: done that 5.4.2024 for all variables used in clm5/cpl/lnd_import_export.F90
 
     do g=bounds%begg,bounds%endg
-       x2l(index_x2l_Faxa_swvdr,g) = 0.5_r8 * x2l(index_x2l_Faxa_swvdr,g)
-       x2l(index_x2l_Faxa_swndr,g) = x2l(index_x2l_Faxa_swvdr,g)
-       x2l(index_x2l_Faxa_swvdf,g) = 0.5_r8 * x2l(index_x2l_Faxa_swvdf,g)
-       x2l(index_x2l_Faxa_swndf,g) = x2l(index_x2l_Faxa_swvdf,g)
+       i = 1 + (g - bounds%begg)
+       x2l(index_x2l_Faxa_swvdr,i) = 0.5_r8 * x2l(index_x2l_Faxa_swvdr,i)
+       x2l(index_x2l_Faxa_swndr,i) = x2l(index_x2l_Faxa_swvdr,i)
+       x2l(index_x2l_Faxa_swvdf,i) = 0.5_r8 * x2l(index_x2l_Faxa_swvdf,i)
+       x2l(index_x2l_Faxa_swndf,i) = x2l(index_x2l_Faxa_swvdf,i)
     enddo
 
   end subroutine oas_receive_icon
