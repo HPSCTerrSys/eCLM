@@ -405,6 +405,20 @@ contains
          rof_prognostic=rof_prognostic, &
          glc_present=glc_present)
 
+#ifndef COUP_OAS_ICON
+    ! Map MCT to land data type
+    ! Perform downscaling if appropriate
+    ! Map to clm (only when state and/or fluxes need to be updated)
+
+    call t_startf ('lc_lnd_import')
+    call lnd_import( bounds, &
+       x2l = x2l_l%rattr, &
+       glc_present = glc_present, &
+       atm2lnd_inst = atm2lnd_inst, &
+       glc2lnd_inst = glc2lnd_inst)
+    call t_stopf ('lc_lnd_import')
+#endif
+
     ! Use infodata to set orbital values if updated mid-run
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
@@ -446,7 +460,6 @@ contains
 
 #ifdef COUP_OAS_ICON
        call oas_receive_icon(bounds, time_elapsed, x2l = x2l_l%rattr)
-#endif
 
        ! Map MCT to land data type
        ! Perform downscaling if appropriate
@@ -459,6 +472,7 @@ contains
           atm2lnd_inst = atm2lnd_inst, &
           glc2lnd_inst = glc2lnd_inst)
        call t_stopf ('lc_lnd_import')
+#endif
 
 #ifdef COUP_OAS_PFL
        call oas_receive(bounds, time_elapsed, atm2lnd_inst)
