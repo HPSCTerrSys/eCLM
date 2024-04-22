@@ -19,6 +19,7 @@ jobs:
         with:
           packages: libxml2-utils pylint wget gfortran openmpi-bin libopenmpi-dev cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
           version: 1.0
+          execute_install_scripts: true
 
       - name: Configure eCLM
         run: |
