@@ -17,9 +17,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libxml2-utils pylint wget gfortran openmpi-bin libopenmpi-dev cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
+          packages: libxml2-utils pylint wget cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
           version: 1.0
           execute_install_scripts: true
+
+      - name: Download MPI Fortran compiler
+        run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
       - name: Configure eCLM
         run: |
