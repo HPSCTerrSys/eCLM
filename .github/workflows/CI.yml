@@ -38,4 +38,4 @@ jobs:
         run: cmake --install $BUILD_DIR
 
       - name: Install eCLM namelist generator
-        run: pip3 install --user namelist_generator
+        run: pip3 install --user ./namelist_generator
