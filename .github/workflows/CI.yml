@@ -67,7 +67,7 @@ jobs:
         if: matrix.config.use_oasis == 'True'
         run: |
           if [[ "$CACHE_HIT" != 'true' ]]; then
-            git -b tsmp-patches-v0.1 clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct
+            git clone -b tsmp-patches-v0.1 clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct
             cd oasis3-mct
             export OASIS_ROOT=$(pwd)
             cd util/make_dir
