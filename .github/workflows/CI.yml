@@ -5,7 +5,34 @@ on: [push, pull_request]
 
 jobs:
   eclm_build_job:
+    name: ${{ matrix.config.name }}
     runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        config:
+        - {
+            name: "eCLM-Standalone",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-ParFlow-ICON",
+            use_oasis: "True",
+            coup_oas_icon: "True",
+            coup_oas_pfl: "True",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-PDAF",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "True"
+          }
+
     env:
       CC: mpicc
       FC: mpifort
@@ -24,12 +51,44 @@ jobs:
       - name: Download MPI Fortran compiler
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        id: cache-eCLM-dependencies
+        env:
+          cache-name: cache-eCLM-dependencies
+          cache-eCLM-hit: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
+        with:
+          path: "~/depend"
+          key: cache-${{ matrix.config.name }}-${{ secrets.CACHE_VERSION }}
+
+      - name: OASIS3-MCT Install
+        env:
+          CACHE_HIT: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
+        if: matrix.config.use_oasis == 'True'
+        run: |
+          if [[ "$CACHE_HIT" != 'true' ]]; then
+            git -b tsmp-patches-v0.1 clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct
+            cd oasis3-mct
+            export OASIS_ROOT=$(pwd)
+            cd util/make_dir
+            echo 'include $(GITHUB_WORKSPACE)/.github/build.oasis3.ubuntu22.04' > make.inc
+            make realclean -f TopMakefileOasis3
+            make -f TopMakefileOasis3
+            mv -v ${OASIS_ROOT}/install/include/* /usr/local/include
+            mv -v ${OASIS_ROOT}/install/lib/* /usr/local/lib
+          fi
+
       - name: Configure eCLM
         run: |
-          cmake -S src -B $BUILD_DIR                  \
-                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR   \
-                -DCMAKE_C_COMPILER=$CC                \
-                -DCMAKE_Fortran_COMPILER=$FC
+          cmake -S src -B $BUILD_DIR                                \
+                -DCMAKE_BUILD_TYPE="RELEASE"                        \
+                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                 \
+                -DCMAKE_C_COMPILER=$CC                              \
+                -DCMAKE_Fortran_COMPILER=$FC                        \
+                -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
+                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}  \
+                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}    \
+                -DUSE_PDAF=${{ matrix.config.use_pdaf }}
 
       - name: Build eCLM
         run: cmake --build $BUILD_DIR
