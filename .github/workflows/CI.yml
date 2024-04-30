@@ -70,7 +70,7 @@ jobs:
             git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
           fi
 
-      - name: Install OASIS3-MCT Install
+      - name: Install OASIS3-MCT
         env:
           CACHE_HIT: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
         if: matrix.config.use_oasis == 'True'
@@ -79,7 +79,7 @@ jobs:
             cd oasis3-mct
             export OASIS_ROOT=$(pwd)
             cd util/make_dir
-            echo 'include $(GITHUB_WORKSPACE)/.github/build.oasis3-mct.ubuntu22.04' > make.inc
+            echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
             cat make.inc
             make realclean -f TopMakefileOasis3
             make -f TopMakefileOasis3
