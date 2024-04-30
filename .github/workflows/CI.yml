@@ -61,17 +61,26 @@ jobs:
           path: "~/depend"
           key: cache-${{ matrix.config.name }}-${{ secrets.CACHE_VERSION }}
 
-      - name: OASIS3-MCT Install
+      - name: Clone OASIS3-MCT
+          env:
+            CACHE_HIT: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
+          if: matrix.config.use_oasis == 'True'
+          run: |
+            if [[ "$CACHE_HIT" != 'true' ]]; then
+              git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
+            fi
+
+      - name: Install OASIS3-MCT Install
         env:
           CACHE_HIT: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
         if: matrix.config.use_oasis == 'True'
         run: |
           if [[ "$CACHE_HIT" != 'true' ]]; then
-            git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct
             cd oasis3-mct
             export OASIS_ROOT=$(pwd)
             cd util/make_dir
             echo 'include $(GITHUB_WORKSPACE)/.github/build.oasis3-mct.ubuntu22.04' > make.inc
+            cat make.inc
             make realclean -f TopMakefileOasis3
             make -f TopMakefileOasis3
             mv -v ${OASIS_ROOT}/install/include/* /usr/local/include
