@@ -1,4 +1,4 @@
-name: eCLM ocumentation Builder
+name: eCLM Documentation Builder
 
 on:
   push:
