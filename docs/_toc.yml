@@ -12,6 +12,7 @@ parts:
       - file: getting_started/4
       - file: getting_started/5
     - file: getting_started/6
+    - file: getting_started/notebooks
 
   - caption: Technical Note
     chapters:
