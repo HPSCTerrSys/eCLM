@@ -37,7 +37,6 @@ jobs:
       CC: mpicc
       FC: mpifort
       BUILD_DIR: bld
-      DEPENDENCIES_DIR: "$HOME/.local"
       INSTALL_DIR: install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
 
@@ -52,13 +51,14 @@ jobs:
       - name: Download MPI Fortran compiler
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
-      - name: Cache dependencies
+      - if: matrix.config.use_oasis == 'True'
+        name: Cache OASIS3-MCT
         uses: actions/cache@v4
         id: cache-deps
         env:
           cache-name: cache-eCLM-dependencies
         with:
-          path: ${{ env.DEPENDENCIES_DIR }}
+          path: "$HOME/.local"
           key: cache-${{ matrix.config.name }}
 
       - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
@@ -79,6 +79,7 @@ jobs:
           cmake -S src -B $BUILD_DIR                                \
                 -DCMAKE_BUILD_TYPE="RELEASE"                        \
                 -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                 \
+                -DCMAKE_PREFIX_PATH="$HOME/.local"                  \
                 -DCMAKE_C_COMPILER=$CC                              \
                 -DCMAKE_Fortran_COMPILER=$FC                        \
                 -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
