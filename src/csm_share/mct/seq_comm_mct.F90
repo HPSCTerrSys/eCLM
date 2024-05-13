@@ -546,7 +546,7 @@ contains
     integer, intent(inout) :: count
     integer, intent(in), optional :: drv_comm_id
 #ifdef USE_PDAF
-    integer, intent(in), optional :: pdaf_id
+    integer, intent(in), optional :: pdaf_ids
     integer, intent(in), optional :: pdaf_max
 #endif
     character(len=*), intent(in) :: name

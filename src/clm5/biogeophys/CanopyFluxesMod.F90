@@ -454,7 +454,7 @@ contains
          t_ref2m_r              => temperature_inst%t_ref2m_r_patch             , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)                     
          t_skin_patch           => temperature_inst%t_skin_patch                , & ! Output: [real(r8) (:)   ]  patch skin temperature (K)  
 #ifdef COUP_OAS_ICON
-         t_sf_patched             => temperature_inst%t_sf_patch                  , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
+         t_sf_patch             => temperature_inst%t_sf_patch                  , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
 !         q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
 #endif
 
