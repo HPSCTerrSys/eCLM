@@ -60,7 +60,7 @@ jobs:
           path: "$HOME/oasis3-mct"
           key: cache-${{ matrix.config.name }}
 
-      - if: matrix.config.use_oasis == 'True' && ${{ steps.cache-deps.outputs.cache-hit != 'true' }}
+      - if: ${{ matrix.config.use_oasis }} == 'True' && ${{ steps.cache-deps.outputs.cache-hit != 'true' }}
         name: Install OASIS3-MCT
         run: |
           cd $HOME
