@@ -58,7 +58,7 @@ jobs:
         env:
           cache-name: cache-eCLM-dependencies
         with:
-          path: "$HOME/.local"
+          path: "~/.local"
           key: cache-${{ matrix.config.name }}
 
       - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
