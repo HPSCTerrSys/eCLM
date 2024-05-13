@@ -52,40 +52,27 @@ jobs:
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
       - name: Cache dependencies
-        uses: actions/cache@v2
-        id: cache-eCLM-dependencies
+        uses: actions/cache@v3
+        id: cache-deps
         env:
           cache-name: cache-eCLM-dependencies
-          cache-eCLM-hit: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
         with:
-          path: "~/depend"
-          key: cache-${{ matrix.config.name }}-${{ secrets.CACHE_VERSION }}
+          path: "~/.depend"
+          key: cache-${{ matrix.config.name }}
 
-      - name: Clone OASIS3-MCT
-        env:
-          CACHE_HIT: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
-        if: matrix.config.use_oasis == 'True'
+      - if: matrix.config.use_oasis == 'True' && ${{ steps.cache-deps.outputs.cache-hit != 'true' }}
+        name: Install OASIS3-MCT
         run: |
-          if [[ "$CACHE_HIT" != 'true' ]]; then
-            git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
-          fi
-
-      - name: Install OASIS3-MCT
-        env:
-          CACHE_HIT: ${{steps.cache-eCLM-dependencies.outputs.cache-hit}}
-        if: matrix.config.use_oasis == 'True'
-        run: |
-          if [[ "$CACHE_HIT" != 'true' ]]; then
-            cd oasis3-mct
-            export OASIS_ROOT=$(pwd)
-            cd util/make_dir
-            echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
-            cat make.inc
-            make realclean -f TopMakefileOasis3
-            make -f TopMakefileOasis3
-            mv -v ${OASIS_ROOT}/install/include/* /usr/local/include
-            mv -v ${OASIS_ROOT}/install/lib/* /usr/local/lib
-          fi
+          git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
+          cd oasis3-mct
+          export OASIS_ROOT=$(pwd)
+          echo "OASIS_ROOT={OASIS_ROOT}"
+          cd util/make_dir
+          echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
+          cat make.inc
+          make realclean static-libs -f TopMakefileOasis3
+          mv -v ${OASIS_ROOT}/install/include/* /usr/local/include
+          mv -v ${OASIS_ROOT}/install/lib/* /usr/local/lib
 
       - name: Configure eCLM
         run: |
