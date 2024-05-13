@@ -52,22 +52,21 @@ jobs:
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-deps
         env:
           cache-name: cache-eCLM-dependencies
         with:
-          path: "~/.depend"
+          path: "$HOME/oasis3-mct"
           key: cache-${{ matrix.config.name }}
 
       - if: matrix.config.use_oasis == 'True' && ${{ steps.cache-deps.outputs.cache-hit != 'true' }}
         name: Install OASIS3-MCT
         run: |
           git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
-          cd oasis3-mct
+          cd oasis3-mct/util/make_dir
           export OASIS_ROOT=$(pwd)
           echo "OASIS_ROOT={OASIS_ROOT}"
-          cd util/make_dir
           echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
           cat make.inc
           make realclean static-libs -f TopMakefileOasis3
