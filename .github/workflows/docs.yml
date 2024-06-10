@@ -39,7 +39,7 @@ jobs:
       - name: Build documentation
         run:  |
           jupyter-book build docs
-          jupyter-book build . --builder linkcheck
+          jupyter-book build docs --builder linkcheck
 
       - name: Upload documentation artifacts
         uses: actions/upload-pages-artifact@v2
