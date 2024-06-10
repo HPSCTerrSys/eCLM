@@ -37,7 +37,9 @@ jobs:
         run:  pip install -r ${GITHUB_WORKSPACE}/docs/requirements.txt
 
       - name: Build documentation
-        run:  jupyter-book build docs
+        run:  |
+          jupyter-book build docs
+          jupyter-book build . --builder linkcheck
 
       - name: Upload documentation artifacts
         uses: actions/upload-pages-artifact@v2
