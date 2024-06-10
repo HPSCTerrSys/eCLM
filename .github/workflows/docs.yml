@@ -39,7 +39,7 @@ jobs:
         run:  jupyter-book build docs
 
       - name: Upload documentation artifacts
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           path: "docs/_build/html"
 
