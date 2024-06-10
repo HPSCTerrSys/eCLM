@@ -1,4 +1,4 @@
-name: eCLM Documentation Builder
+name: Deploy Docs
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
         run:  jupyter-book build docs
 
       - name: Upload documentation artifacts
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v4
         with:
           path: "docs/_build/html"
 

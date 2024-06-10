@@ -4,7 +4,7 @@ If you'd like to develop and/or build the eCLM documentation, you should:
 
 1. Switch to this directory: `cd docs`
 2. Run `pip install -r requirements.txt` (it is recommended you do this within a virtual environment)
-3. (Optional) Edit the books source files located in the `docs/` directory
+3. (Optional) Edit the books source files (`*.md`) in this folder. [MyST syntax cheat sheet](https://jupyterbook.org/en/stable/reference/cheatsheet.html).
 4. Run `make clean docs`.
 5. Launch the doc homepage on your default browser: `open _build/html/index.html`
 

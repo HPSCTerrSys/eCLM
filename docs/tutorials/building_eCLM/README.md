@@ -2,7 +2,7 @@
 
 ## Installation
 
-This section shows you how to install eCLM on your local machine. If you are a user in [IBG-3] and wish to run eCLM on JSC supercomputers, please check out the [eCLM-JSC] repo.
+This section shows you how to build eCLM.
 
 ### Minimum system requirements
 
@@ -55,21 +55,3 @@ python3 -m pip install --upgrade pip
 # Install package
 pip3 install --user ./namelist_generator
 ```
-
-## On JSC systems
-
-```sh
-# Clone this repo
-git clone --recurse-submodules https://icg4geo.icg.kfa-juelich.de/ModelSystems/clm/eCLM_scripts.git
-cd eCLM_scripts
-
-# Prepare eCLM environment
-source eclm.loadmodules.env
-
-# Build model
-./eclm.build
-
-# Install namelist generator
-pip install --user $ECLM_SCRIPTS_ROOT/eCLM/namelist_generator
-```
-

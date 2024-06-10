@@ -4,16 +4,35 @@
 format: jb-book
 root: INDEX
 parts:
-  - caption: Getting Started
+  - caption: Tutorials
     chapters:
-    - file: getting_started/2
-    - file: getting_started/3
-      sections:
-      - file: getting_started/4
-      - file: getting_started/5
-    - file: getting_started/6
-    - file: getting_started/notebooks
 
-  - caption: Technical Note
+    # Building eCLM
+    - file: tutorials/building_eCLM/README
+      sections:
+      - file: tutorials/building_eCLM/Ubuntu
+      - file: tutorials/building_eCLM/JSC
+      - file: tutorials/building_eCLM/Levante
+    
+    # Runnning example cases
+    - file: tutorials/case_examples/README
+      sections:
+      - file: tutorials/case_examples/Wuestebach
+      - file: tutorials/case_examples/NRW
+      - file: tutorials/case_examples/EURO-CORDEX
+
+    # Creating a case
+    - file: tutorials/case_creation/README
+      sections:
+      - file: tutorials/case_creation/1_create_grid_file
+      - file: tutorials/case_creation/2_create_mapping_file
+      - file: tutorials/case_creation/3_create_domain_file
+      - file: tutorials/case_creation/4_create_surface_file
+      - file: tutorials/case_creation/5_create_atm_forcings
+
+  - caption: Reference
     chapters:
-    - file: technical_note/technical_note
+
+    # Technical Note
+    - file: reference/technical_note
+    - file: reference/history_fields
