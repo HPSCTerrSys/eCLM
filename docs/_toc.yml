@@ -6,22 +6,22 @@ parts:
   - caption: Tutorials
     chapters:
 
-    # Building eCLM
     - file: tutorials/building_eCLM/README
+      title: Building eCLM
       sections:
       - file: tutorials/building_eCLM/Ubuntu
       - file: tutorials/building_eCLM/JSC
       - file: tutorials/building_eCLM/Levante
-    
-    # Runnning example cases
+
     - file: tutorials/case_examples/README
+      title: Runnning example cases
       sections:
       - file: tutorials/case_examples/Wuestebach
       - file: tutorials/case_examples/NRW
       - file: tutorials/case_examples/EURO-CORDEX
 
-    # Creating a case
     - file: tutorials/case_creation/README
+      title: Creating a case
       sections:
       - file: tutorials/case_creation/1_create_grid_file
       - file: tutorials/case_creation/2_create_mapping_file
@@ -31,7 +31,7 @@ parts:
 
   - caption: Reference
     chapters:
-
-    # Technical Note
-    - file: reference/technical_note
     - file: reference/history_fields
+    - url: https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/tech_note/index.html
+      title: Technical Note
+    
