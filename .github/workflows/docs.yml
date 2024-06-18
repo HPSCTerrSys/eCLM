@@ -36,10 +36,16 @@ jobs:
       - name: Install dependencies
         run:  pip install -r ${GITHUB_WORKSPACE}/docs/requirements.txt
 
-      - name: Build documentation
+      - name: Build eCLM Source Code browser
+        working-directory: ${GITHUB_WORKSPACE}/docs
         run:  |
-          jupyter-book build docs
-          jupyter-book build docs --builder linkcheck
+          make clean src-browser
+
+      - name: Build eCLM doc homepage
+        working-directory: ${GITHUB_WORKSPACE}/docs
+        run:  |
+          make docs
+          make linkcheck
 
       - name: Upload documentation artifacts
         uses: actions/upload-pages-artifact@v2
