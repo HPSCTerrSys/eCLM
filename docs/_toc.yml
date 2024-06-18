@@ -3,31 +3,31 @@
 format: jb-book
 root: INDEX
 parts:
-  - caption: Tutorials
+  - caption: User's Guide
     chapters:
 
-    - file: tutorials/building_eCLM/README
+    - file: users_guide/building_eCLM/README
       title: Building eCLM
       sections:
-      - file: tutorials/building_eCLM/Ubuntu
-      - file: tutorials/building_eCLM/JSC
-      - file: tutorials/building_eCLM/Levante
+      - file: users_guide/building_eCLM/Ubuntu
+      - file: users_guide/building_eCLM/JSC
+      - file: users_guide/building_eCLM/Levante
 
-    - file: tutorials/case_examples/README
+    - file: users_guide/case_examples/README
       title: Runnning example cases
       sections:
-      - file: tutorials/case_examples/Wuestebach
-      - file: tutorials/case_examples/NRW
-      - file: tutorials/case_examples/EURO-CORDEX
+      - file: users_guide/case_examples/Wuestebach
+      - file: users_guide/case_examples/NRW
+      - file: users_guide/case_examples/EURO-CORDEX
 
-    - file: tutorials/case_creation/README
+    - file: users_guide/case_creation/README
       title: Creating a case
       sections:
-      - file: tutorials/case_creation/1_create_grid_file
-      - file: tutorials/case_creation/2_create_mapping_file
-      - file: tutorials/case_creation/3_create_domain_file
-      - file: tutorials/case_creation/4_create_surface_file
-      - file: tutorials/case_creation/5_create_atm_forcings
+      - file: users_guide/case_creation/1_create_grid_file
+      - file: users_guide/case_creation/2_create_mapping_file
+      - file: users_guide/case_creation/3_create_domain_file
+      - file: users_guide/case_creation/4_create_surface_file
+      - file: users_guide/case_creation/5_create_atm_forcings
 
   - caption: Reference
     chapters:
