@@ -180,9 +180,7 @@ module cime_comp_mod
 
   implicit none
 
-#ifndef USE_PDAF
   private
-#endif
 
   public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
   public timing_dir, mpicom_GLOID
@@ -2188,12 +2186,21 @@ contains
   !*******************************************************************************
   !===============================================================================
 
+#ifdef USE_PDAF
+  subroutine cime_run(ntsteps)
+#else
   subroutine cime_run()
+#endif
     use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
          rof_layout, ocn_layout, wav_layout, esp_layout
     use shr_string_mod, only: shr_string_listGetIndexF
     use seq_comm_mct, only: num_inst_driver
 
+#ifdef USE_PDAF
+    ! TSMP specific
+    integer, intent(in), optional :: ntsteps
+    integer :: counter=0
+#endif
     ! gptl timer lookup variables
     integer, parameter :: hashcnt=7
     integer            :: hashint(hashcnt)
@@ -4088,6 +4095,13 @@ contains
           call t_drvstopf   ('CPL:BARRIERALARM',cplrun=.true.)
        endif
 
+#ifdef USE_PDAF
+      ! TSMP specific stop condition:
+      counter = counter + 1
+      if (present(ntsteps) .and. counter == ntsteps) then
+        stop_alarm = .true.
+      end if
+#endif
     enddo   ! driver run loop
 
     !|----------------------------------------------------------
