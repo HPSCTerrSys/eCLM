@@ -611,15 +611,11 @@ contains
           pelist(2,1) = cmax(n)
           pelist(3,1) = cstr(n)
        endif
-#ifdef USE_PDAF
-       !write(*,*) "before seq_comm_set_comm bcast", pelist, DRIVER_COMM
-#endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+
 #ifdef USE_PDAF
        if (present(pdaf_id) .and. present(pdaf_max)) then
-         !write(*,*) "before seq_comm_setcomm", pdaf_id, pdaf_max, mype, n, &
-         !           COMPID(n), pelist, comp_nthreads, name
-         call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=pdaf_id,tinst=pdaf_max)
+          call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=pdaf_id,tinst=pdaf_max)
        else if (present(drv_comm_id)) then
 #else
        if (present(drv_comm_id)) then
