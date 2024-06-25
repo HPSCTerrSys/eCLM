@@ -6,6 +6,13 @@ parts:
   - caption: User's Guide
     chapters:
 
+    - file: users_guide/introduction_to_eCLM/README
+      title: Introduction to eCLM
+      sections:
+      - file: users_guide/introduction_to_eCLM/introduction
+      - file: users_guide/introduction_to_eCLM/prerequisites
+      - file: users_guide/introduction_to_eCLM/how_to_use_this_document
+
     - file: users_guide/building_eCLM/README
       title: Building eCLM
       sections:
