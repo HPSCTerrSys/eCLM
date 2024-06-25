@@ -2252,6 +2252,16 @@ contains
     call t_stopf ('CPL:RUN_LOOP_BSTART')
     Time_begin = mpi_wtime()
     Time_bstep = mpi_wtime()
+
+#ifdef USE_PDAF
+    ! Check for optional input `ntsteps`
+    if(.not. present(ntsteps)) then
+      write(logunit,*) 'ERROR: ntsteps input not present, but needed for TSMP-PDAF ;'
+      call shr_sys_abort(subname// &
+        ' missing ntsteps input that is needed for TSMP-PDAF')
+    end if
+#endif
+
     do while ( .not. stop_alarm)
 
        call t_startf('CPL:RUN_LOOP', hashint(1))
