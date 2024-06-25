@@ -95,7 +95,7 @@ Once you created a JSC account and have access to a compute time project, follow
 1. Download eCLM
 2. Prepare the environment
 3. Build eCLM
-4. Verify that eCLM works correctly
+4. Install namelist generator
 
 Begin by logging in to the JSC system on your local machine using the ssh key.
 (Windows users: open a terminal with Putty)
@@ -133,32 +133,10 @@ Now you can build eCLM. The command below should take approximately 15-20 minute
 ./eclm.build
 ```
  
-### Step 4: Verify that eCLM works correctly
+### Step 4: Install namelist generator
 
-In order to check if eCLM has been properly installed, run the following command to see if the eCLM executable and library files are present:
-
-```sh
-tree $eCLM_ROOT/install
-```
-
-You should get something similar to:
+As a last step you will install the namelist generator which will allow you to configure your model settings later on.
 
 ```sh
-/p/project/"your_project_name"/"your_username"/eCLM/install
-├── bin
-│   └── eclm.exe
-└── lib
-    ├── libclm.a
-    ├── libcsm_share.a
-    ├── libdatm.a
-    ├── libesp.a
-    ├── libglc.a
-    ├── libgptl.a
-    ├── libice.a
-    ├── libmct.a
-    ├── libmosart.a
-    ├── libmpeu.a
-    ├── libocn.a
-    ├── libpio.a
-    └── libwav.a
+pip install --user $ECLM_SCRIPTS_ROOT/eCLM/namelist_generator
 ```
