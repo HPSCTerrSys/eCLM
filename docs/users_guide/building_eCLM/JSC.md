@@ -65,11 +65,12 @@ Xming allows Windows machines to display a graphical Linux program which is runn
 To enable Xming in the PuTTY configuration, navigate to "Connection > SSH > X11" (left side panel), and check the box  "Enable X11 forwarding". If you save this configuration to your session, you only need to do this once.
 
 ```{image} ../images/Putty_X11.png
-:height: 200px
+:height: 400px
 :name: fig1
 ```
+<p>
 
-If Xming is active, you will see it in your browser bar.
+If Xming is active, you will see its' symbol in your taskbar.
 
 #### WinSCP
 
@@ -77,9 +78,15 @@ WinSCP allows transferring files from your local system (e.g., laptop) to the cl
 
 When you open WinSCP you need to connect to a "New site". You will need to fill in the "Host name", "User name", and "Password". Jureca host name is `jureca.fz-juelich.de`. Juwels host name is `juwels.fz-juelich.de`.
 
-When you press "Login", a window will prompt:
+When you press "Login", you will be prompted to type in your passphrase for the SSH key that you created previously.
 
-You need your passphrase for the SSH key you created previously. You will see two panels. To the left is your local system and to the right the JSC system. Simply drag a file or folder to transfer it from one system to the other.
+```{image} ../images/winSCP.png
+:height: 300px
+:name: fig2
+``` 
+<p>
+
+After that, you will see two panels. To the left is your local system and to the right the JSC system. Simply drag a file or folder to transfer it from one system to the other.
 
 ## Setting up eCLM
 
