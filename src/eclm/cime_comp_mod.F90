@@ -2260,6 +2260,9 @@ contains
       call shr_sys_abort(subname// &
         ' missing ntsteps input that is needed for TSMP-PDAF')
     end if
+
+    ! Explicitly set `counter` to zero before loop
+    counter = 0
 #endif
 
     do while ( .not. stop_alarm)
