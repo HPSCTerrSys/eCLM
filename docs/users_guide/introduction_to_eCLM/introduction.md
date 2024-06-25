@@ -1,10 +1,8 @@
-# Introduction
-
-## eCLM
+# eCLM
 
 eCLM is based on version 5.0 of the Community Land Model (CLM5) with simplified infrastructure for build and namelist generation. The build system is handled entirely by Cmake and namelists are generated through a small set of Python scripts. Similar to CLM5, eCLM is forced with meteorological data and uses numerous input streams on soil properties, land cover and land use, as well as complex parameter sets on crop phenology, and plant hydraulics for simulations.
 
-## The Community Land Model
+# The Community Land Model
 
 The Community Land Model is the land model for the Community Earth System Model (CESM). It focuses on modeling the land as the critical interface through which humanity affects, adapts to, and mitigates global environmental change. It includes a comprehensive representation of land biogeophysics, hydrology, plant physiology, biogeochemistry, anthropogenic land use, and ecosystem dynamics across a variety of spatial and temporal scales. The central theme is that terrestrial ecosystems, through their cycling of energy, water, chemical elements, and trace gases, are important determinants of climate.
 The model represents several aspects of the land surface including surface heterogeneity and consists of components or submodels related to land biogeophysics, the hydrologic cycle, biogeochemistry, human dimensions, and ecosystem dynamics. Specific processes that are represented include:
