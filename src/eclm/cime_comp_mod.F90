@@ -180,9 +180,7 @@ module cime_comp_mod
 
   implicit none
 
-#ifndef USE_PDAF
   private
-#endif
 
   public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
   public timing_dir, mpicom_GLOID
@@ -2188,12 +2186,21 @@ contains
   !*******************************************************************************
   !===============================================================================
 
+#ifdef USE_PDAF
+  subroutine cime_run(ntsteps)
+#else
   subroutine cime_run()
+#endif
     use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
          rof_layout, ocn_layout, wav_layout, esp_layout
     use shr_string_mod, only: shr_string_listGetIndexF
     use seq_comm_mct, only: num_inst_driver
 
+#ifdef USE_PDAF
+    ! TSMP specific
+    integer, intent(in), optional :: ntsteps
+    integer :: counter=0
+#endif
     ! gptl timer lookup variables
     integer, parameter :: hashcnt=7
     integer            :: hashint(hashcnt)
@@ -2245,6 +2252,19 @@ contains
     call t_stopf ('CPL:RUN_LOOP_BSTART')
     Time_begin = mpi_wtime()
     Time_bstep = mpi_wtime()
+
+#ifdef USE_PDAF
+    ! Check for optional input `ntsteps`
+    if(.not. present(ntsteps)) then
+      write(logunit,*) 'ERROR: ntsteps input not present, but needed for TSMP-PDAF ;'
+      call shr_sys_abort(subname// &
+        ' missing ntsteps input that is needed for TSMP-PDAF')
+    end if
+
+    ! Explicitly set `counter` to zero before loop
+    counter = 0
+#endif
+
     do while ( .not. stop_alarm)
 
        call t_startf('CPL:RUN_LOOP', hashint(1))
@@ -4088,6 +4108,18 @@ contains
           call t_drvstopf   ('CPL:BARRIERALARM',cplrun=.true.)
        endif
 
+#ifdef USE_PDAF
+      ! TSMP specific stop condition:
+      counter = counter + 1
+      if (present(ntsteps) .and. counter == ntsteps) then
+        if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,103) subname,' NOTE: Stopping from TSMP-PDAF alarm ntsteps'
+          write(logunit,*) ' '
+        endif
+        stop_alarm = .true.
+      end if
+#endif
     enddo   ! driver run loop
 
     !|----------------------------------------------------------
