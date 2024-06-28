@@ -21,14 +21,14 @@ parts:
       - file: users_guide/building_eCLM/Levante
 
     - file: users_guide/case_examples/README
-      title: Runnning example cases
+      title: Running example cases
       sections:
       - file: users_guide/case_examples/Wuestebach
       - file: users_guide/case_examples/NRW
       - file: users_guide/case_examples/EURO-CORDEX
 
     - file: users_guide/case_creation/README
-      title: Creating a case
+      title: Creating a custom case
       sections:
       - file: users_guide/case_creation/1_create_grid_file
       - file: users_guide/case_creation/2_create_mapping_file

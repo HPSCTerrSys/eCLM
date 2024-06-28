@@ -195,7 +195,7 @@ source $HOME/load-eclm-variables.sh
 You should get an output similar to this one:
 
 ```{figure} ../images/load_env.png
-:height: 400px
+:width: 100%
 ```
 <p>
 
