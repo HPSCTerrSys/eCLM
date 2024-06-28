@@ -1,6 +1,6 @@
 # JSC
 
-The following section will explain the necessary steps to download the model from the official repository and get eCLM to run on JSC machines ([Juwels](https://www.fz-juelich.de/en/ias/jsc/systems/supercomputers/juwels) or [Jureca-DC](https://www.fz-juelich.de/en/ias/jsc/systems/supercomputers/jureca)).
+The following section will explain the necessary steps to download the model from the official repository and get eCLM to run on JSC machines (<a href="https://www.fz-juelich.de/en/ias/jsc/systems/supercomputers/juwels" target="_blank">Juwels</a> or <a href="https://www.fz-juelich.de/en/ias/jsc/systems/supercomputers/jureca" target="_blank">Jureca-DC</a>).
 
 
 ## Prerequisites for JSC users
@@ -15,7 +15,7 @@ Before building and running eCLM on JSC machines, the following prerequisites sh
 
 ### Create a JSC/JuDoor account
 
-You need a JSC account to access the HPC system. For that, you first need a JuDoor account for which you can register [here](https://judoor.fz-juelich.de/register).
+You need a JSC account to access the HPC system. For that, you first need a JuDoor account for which you can register <a href="https://judoor.fz-juelich.de/register" target="_blank">here</a>.
 
 Enter your e-mail address and click on "Send confirmation mail".
 
@@ -23,7 +23,7 @@ Afterwards, you will receive an e-mail from dispatch@jsc.de with a personalized 
 
 Submit the form.
 
-With this, the creation of your JSC account is completed. Now, you can log in to your [JuDoor account](https://judoor.fz-juelich.de/login) with your username and password:
+With this, the creation of your JSC account is completed. Now, you can log in to your <a href="https://judoor.fz-juelich.de/login" target="_blank">JuDoor account</a> with your username and password:
 
 
 ### Join a compute time project
@@ -37,7 +37,7 @@ The PI/PA will be automatically informed about your join request and can add you
 
 ### Login to eCLM-JSC Gitlab account
 
-If you are a user in IBG-3 and want to run eCLM on the JSC machines, you can log in to the [eCLM-JSC](https://icg4geo.icg.kfa-juelich.de/ModelSystems/clm/eCLM_scripts) Gitlab repository with your JSC account. This is where we will download the model from in the next section "Setting up eCLM".
+If you are a user in IBG-3 and want to run eCLM on the JSC machines, you can log in to the <a href="https://icg4geo.icg.kfa-juelich.de/ModelSystems/clm/eCLM_scripts" target="_blank">eCLM-JSC</a> Gitlab repository with your JSC account. This is where we will download the model from in the next section "Setting up eCLM".
 
 
 ### Logging in to JSC machines
@@ -46,27 +46,26 @@ To log in to one of the JSC machines you need a JSC account and access to a comp
 
 The final step is to create and upload an SSH key for your account and local machine.
 
-JSC provides thorough instructions for [Juwels](https://apps.fz-juelich.de/jsc/hps/juwels/access.html#openssh-key-generation) and [Jureca](https://apps.fz-juelich.de/jsc/hps/jureca/access.html#openssh-key-generation) on how to generate and upload SSH keys.
+JSC provides thorough instructions for <a href="https://apps.fz-juelich.de/jsc/hps/juwels/access.html#openssh-key-generation" target="_blank">Juwels</a> and <a href="https://apps.fz-juelich.de/jsc/hps/jureca/access.html#openssh-key-generation" target="_blank">Jureca</a> on how to generate and upload SSH keys.
 
 
 ### Additional information on JSC machines
 
 For the full user documentation regarding the JSC systems check:
 
-* [Juwels documentation](https://apps.fz-juelich.de/jsc/hps/juwels/index.html)
-* [Jureca documentation](https://apps.fz-juelich.de/jsc/hps/jureca/index.html)
+* <a href="https://apps.fz-juelich.de/jsc/hps/juwels/index.html" target="_blank">Juwels documentation</a>
+* <a href="https://apps.fz-juelich.de/jsc/hps/jureca/index.html" target="_blank">Jureca documentation</a>
 
 ### Additional software for windows users
 
 #### Xming
 
-Xming allows Windows machines to display a graphical Linux program which is running on a remote Linux server. You can download Xming [here](http://www.straightrunning.com/XmingNotes/).
+Xming allows Windows machines to display a graphical Linux program which is running on a remote Linux server. You can download Xming <a href="http://www.straightrunning.com/XmingNotes/" target="_blank">here</a>.
 
 To enable Xming in the PuTTY configuration, navigate to "Connection > SSH > X11" (left side panel), and check the box  "Enable X11 forwarding". If you save this configuration to your session, you only need to do this once.
 
 ```{image} ../images/Putty_X11.png
-:height: 400px
-:name: fig1
+:height: 400px 
 ```
 <p>
 
@@ -74,7 +73,7 @@ If Xming is active, you will see its' symbol in your taskbar.
 
 #### WinSCP
 
-WinSCP allows transferring files from your local system (e.g., laptop) to the cluster or vice-versa. You can download it [here](https://winscp.net/eng/download.php).
+WinSCP allows transferring files from your local system (e.g., laptop) to the cluster or vice-versa. You can download it <a href="https://winscp.net/eng/download.php" target="_blank">here</a>.
 
 When you open WinSCP you need to connect to a "New site". You will need to fill in the "Host name", "User name", and "Password". Jureca host name is `jureca.fz-juelich.de`. Juwels host name is `juwels.fz-juelich.de`.
 
@@ -82,7 +81,6 @@ When you press "Login", you will be prompted to type in your passphrase for the 
 
 ```{image} ../images/winSCP.png
 :height: 300px
-:name: fig2
 ``` 
 <p>
 
@@ -128,7 +126,7 @@ mkdir -p $MYPROJECT $MYSCRATCHK
 
 ### Step 2: Prepare the environment
 
-Navigate to your `$MYPROJECT` directory and clone the [eCLM repository](https://github.com/HPSCTerrSys/eCLM) from Github. Next you will navigate into the main model folder and set the `eCLM_ROOT` environment variable.
+Navigate to your `$MYPROJECT` directory and clone the <a href="https://github.com/HPSCTerrSys/eCLM" target="_blank">eCLM repository</a> from Github. Next you will navigate into the main model folder and set the `eCLM_ROOT` environment variable.
 
 ```sh
 # Clone eCLM Github repository
@@ -198,7 +196,6 @@ You should get an output similar to this one:
 
 ```{figure} ../images/load_env.png
 :height: 400px
-:name: fig1
 ```
 <p>
 
@@ -239,7 +236,6 @@ You should get something similar to:
 
 ```{figure} ../images/eclm_build.png
 :height: 300px
-:name: fig1
 ```
 <p>
 
