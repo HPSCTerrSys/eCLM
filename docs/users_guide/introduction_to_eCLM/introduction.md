@@ -27,11 +27,11 @@ The model represents several aspects of the land surface including surface heter
 -	Land management including crops and crop management and wood harvest
 -	Ecosystem Demography (FATES, optional)
 
-```{figure} ../images/CLM5_processes.png
+```{figure} ../images/CLM5_processes_Lawrence2019.png
 :height: 400px
 :name: fig1
 
-Figure 1: Overview of land biogeophysical, biogeochemical and landscape processes simulated by CLM. Adapted from [Lawrence et al. (2011)](https://doi.org/10.1029/2011MS00045).
+Overview of land biogeophysical, biogeochemical and landscape processes simulated by CLM5 <a href="http://dx.doi.org/10.1029/2018MS001583" target="_blank">Lawrence et al. (2019)</a>.
 ```
 <p>
 
@@ -41,8 +41,8 @@ Each time step the model solves the surface energy balance, water balance, and c
 :height: 400px
 :name: fig2
 
-Figure 2: Configuration of the CLM subgrid hierarchy. Adapted from: http://www.cesm.ucar.edu/.
+Configuration of the CLM subgrid hierarchy. Adapted from: <a href="http://www.cesm.ucar.edu/" target="_blank">http://www.cesm.ucar.edu/</a>.
 ```
 <p>
 
-More background information on CLM (and it’s latest release CLM5) including documentation and publications can be found [here](https://www.cesm.ucar.edu/models/clm).
+More background information on CLM (and it’s latest release CLM5) including documentation and publications can be found <a href="https://www.cesm.ucar.edu/models/clm" target="_blank">here</a>.
