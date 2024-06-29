@@ -5,6 +5,12 @@ The first step in creating your input data is to define your model domain and th
 2. Using the `produce_scrip_from_griddata.ncl` script to convert an existing netCDF file that holds the latidude and longitude centers of your grid in 2D (This allows you to create a curvilinear grid). 
 3. Similar to the first option but using the `scrip_mesh.py` script to create the SCRIP grid file.
 
+To start the SCRIP grid file creation navigate into the `mkmapgrids` directory where you will find the above mentioned scripts.
+
+```sh
+cd mkmapgrids
+```
+
 ## 1. Create SCRIP grid file with `mkscripgrid.py`
 
 To use `mkscripgrid.py`, first open the script (for example using vim text editor) and adapt the variables that describe your grid. These include your grid name, the four corner points of your model domain as well as the resolution (lines 42-50 of the script). Then you can execute the script:
