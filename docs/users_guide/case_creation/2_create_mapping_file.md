@@ -27,3 +27,7 @@ To generate the domain file in the next step a mapfile is needed. This can be an
 ```sh
 export MAPFILE="path to your mapfiles"/"name of one of your map files"
 ```
+
+---
+
+**Congratulations!** You successfully created your mapping files and can now move on to the next step.
