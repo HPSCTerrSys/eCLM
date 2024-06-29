@@ -6,7 +6,7 @@ In this step you will create the domain file for your case using `gen_domain`. F
 cd ../gen_domain_files/src/
 
 # Compile the script
-ifort -o ../gen_domain gen_domain.F90 -qmkl -lnetcdff -lnetcdf
+ifort -o ../gen_domain gen_domain.F90 -mkl -lnetcdff -lnetcdf
 ```
 
 Before running the script you need to export the environment variable `GRIDNAME` (same as what you used for the SCRIP grid file and in the `runscript_mkmapdata.sh` script).
@@ -16,6 +16,7 @@ export GRIDNAME="your gridname"
 ```
 Then you can run the script:
 ```sh
+cd ../
 ./gen_domain -m $MAPFILE -o $GRIDNAME -l $GRIDNAME
 ```
 

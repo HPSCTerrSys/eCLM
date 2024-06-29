@@ -1,4 +1,4 @@
-# Create mapping file
+# Create mapping files
 
 To start the mapping file creation navigate into the `mkmapdata` directory where you will find the script needed for this step.
 
