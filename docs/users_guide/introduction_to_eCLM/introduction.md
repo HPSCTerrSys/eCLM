@@ -31,7 +31,7 @@ Overview of land biogeophysical, biogeochemical and landscape processes simulate
 ```
 <p>
 
-Each time step the model solves the surface energy balance, water balance, and carbon exchange. Submodels of CLM include biophysics and biogeochemistry. It represents land surface heterogeneity through a subgrid tiling structure and different plant functional types that have unique parameters in terms of optical properties, morphology, photosynthesis. It can be run with prescribed vegetation states (satellite phenology mode) or prognostic vegetation states and biogeochemistry (BGC mode).
+Each time step the model solves the surface energy balance, water balance, and carbon exchange. Submodels of CLM include biophysics and biogeochemistry. It represents land surface heterogeneity through a subgrid tiling structure and different plant functional types that have unique parameters in terms of optical properties, morphology, photosynthesis. It can be run with prescribed vegetation states using satelllite phenology (SP mode) or prognostic vegetation states and biogeochemistry (BGC mode).
 
 ```{figure} ../images/CLM5_subgrid_structure.png
 :height: 400px
