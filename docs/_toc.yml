@@ -17,7 +17,11 @@ parts:
       title: Building eCLM
       sections:
       - file: users_guide/building_eCLM/Ubuntu
-      - file: users_guide/building_eCLM/JSC
+      - file: users_guide/building_eCLM/JSC/README
+        title: JSC
+        sections:
+        - file: users_guide/building_eCLM/JSC/prerequisites_JSC_users
+        - file: users_guide/building_eCLM/JSC/setting_up_eCLM
       - file: users_guide/building_eCLM/Levante
 
     - file: users_guide/case_examples/README
@@ -35,6 +39,15 @@ parts:
       - file: users_guide/case_creation/3_create_domain_file
       - file: users_guide/case_creation/4_create_surface_file
       - file: users_guide/case_creation/5_create_atm_forcings
+
+    - file: users_guide/running_eCLM/README
+      title: Running eCLM
+      sections:
+      - file: users_guide/running_eCLM/basic_commands
+      - file: users_guide/running_eCLM/case_customization
+
+    - file: users_guide/analyzing_model_output
+      title: Analyzing model output
 
   - caption: Reference
     chapters:
