@@ -6,7 +6,7 @@ Throughout this process, you will use a range of different scripts to create the
 
 ```{figure} ../images/Build_custom_input.png
 :height: 500px
-:name: fig3
+:name: fig5
 
 Overview of the work flow for the creation of custom surface datasets adapted from the <a href="https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/users_guide/using-clm-tools/creating-surface-datasets.html#" target="_blank">CLM5.0 User's Guide</a>.
 ```

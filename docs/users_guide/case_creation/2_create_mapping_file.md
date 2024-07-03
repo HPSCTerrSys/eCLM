@@ -8,7 +8,13 @@ cd ../mkmapdata
 
 Before you run `runscript_mkmapdata.sh` you need to adapt some environment variables in lines 23-25 of the script. For this open the script (for example using vim text editor) and enter the name of your grid under `GRIDNAME` (same as what you used for the SCRIP grid file). For `CDATE`, use the date that your SCRIP grid file was created (per default the script uses the current date, if you created the SCRIPgrid file at some other point, you find the date of creation at the end of your SCRIPgrid file or in the file information). Lastly, provide the full path and name of your SCRIP grid file under `GRIDFILE`. Save and close the script.
 
-To create your mapping files, you need a set of rawdata. For now and until we have a common repository for this data, download them and adapt the path ("rawpath") in line 29 of the script to their new location. To download the data to the directory use:
+To create your mapping files, you need a set of rawdata. If you are a JSC user you can simply refer to the common data repository by adapting the "rawpath" path in line 29 of the script.
+
+```
+rawpath="/p/scratch/cslts/shared_data/rlmod_eCLM/inputdata/surfdata/lnd/clm2/mappingdata/grids"
+```
+
+For non JSC users, download the data and adapt "rawpath" to their new location. To download the data to the directory use:
 
 ```sh
 wget --no-check-certificate -i clm_mappingfiles.txt

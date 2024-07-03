@@ -15,7 +15,7 @@ ncview FILENAME.nc # replace FILENAME with your output history file
 
 ```{figure} images/ncview.png
 :height: 400px
-:name: fig4
+:name: fig6
 
 Example of ncview interface.
 ```
