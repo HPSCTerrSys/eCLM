@@ -38,7 +38,8 @@ parts:
       - file: users_guide/case_creation/2_create_mapping_file
       - file: users_guide/case_creation/3_create_domain_file
       - file: users_guide/case_creation/4_create_surface_file
-      - file: users_guide/case_creation/5_create_atm_forcings
+      - file: users_guide/case_creation/5_modifications_surface_domain_file
+      - file: users_guide/case_creation/6_create_atm_forcings
 
     - file: users_guide/running_eCLM/README
       title: Running eCLM
