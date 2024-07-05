@@ -8,6 +8,9 @@ cd ../gen_domain_files/src/
 # Compile the script
 ifort -o ../gen_domain gen_domain.F90 -mkl -lnetcdff -lnetcdf
 ```
+```{attention}
+If you get a message saying "ifort: command line remark #10412: option '-mkl' is deprecated and will be removed in a future release. Please use the replacement option '-qmkl'" or the compiling fails, replace `-mkl` with `-qmkl`.
+```
 
 Before running the script you need to export the environment variable `GRIDNAME` (same as what you used for the SCRIP grid file and in the `runscript_mkmapdata.sh` script).
 
