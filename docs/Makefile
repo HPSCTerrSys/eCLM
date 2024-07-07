@@ -1,7 +1,7 @@
 BUILD_DIR = ./_build
 SRC_DIR = ../src
 
-all: docs linkcheck src-browser
+all: docs src-browser
 
 docs:
 	jupyter-book build -W -n --keep-going .

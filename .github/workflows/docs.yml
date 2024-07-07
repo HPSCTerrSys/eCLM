@@ -36,15 +36,15 @@ jobs:
       - name: Install dependencies
         run:  pip install -r ${GITHUB_WORKSPACE}/docs/requirements.txt
 
-      - name: Build eCLM Source Code browser
-        working-directory: ./docs
-        run:  |
-          make clean src-browser
-
       - name: Build eCLM doc homepage
         working-directory: ./docs
         run:  |
-          make docs
+          make clean docs
+
+      - name: Build eCLM Source Code browser
+        working-directory: ./docs
+        run:  |
+          make src-browser
 
       - name: Upload documentation artifacts
         uses: actions/upload-pages-artifact@v2
