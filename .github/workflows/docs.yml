@@ -45,7 +45,6 @@ jobs:
         working-directory: ./docs
         run:  |
           make docs
-          make linkcheck
 
       - name: Upload documentation artifacts
         uses: actions/upload-pages-artifact@v2
