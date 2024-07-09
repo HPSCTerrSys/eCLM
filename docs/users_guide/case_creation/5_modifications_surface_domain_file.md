@@ -6,7 +6,7 @@ There is ongoing clarification for this section.
 
 The created surface and domain file have negative longitudes that eCLM/CLM5 does not accept and inherently has no landmask. To modify the longitudes (into a 360 degree system) and to add a landmask, you can use the `mod_domain.sh` script in the main directory `eCLM_static_file_workflow`.
 
-Before executing the script adapt the paths to your [surface file](https://hpscterrsys.github.io/eCLM/users_guide/case_creation/4_create_surface_file.md), [domain file](https://hpscterrsys.github.io/eCLM/users_guide/case_creation/4_create_domain_file.md) and landmask file (this file should contain a 2D variable called `mask` that contains your landmask (value 1 for land and 0 for ocean)).
+Before executing the script adapt the paths to your [surface file](https://hpscterrsys.github.io/eCLM/users_guide/case_creation/4_create_surface_file.html#create-surface-file), [domain file](https://hpscterrsys.github.io/eCLM/users_guide/case_creation/3_create_domain_file.html#create-domain-file) and landmask file (this file should contain a 2D variable called `mask` that contains your landmask (value 1 for land and 0 for ocean)).
 
 ## Modifying surface parameters
 
