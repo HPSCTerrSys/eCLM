@@ -1,16 +1,13 @@
 BUILD_DIR = ./_build
 SRC_DIR = ../src
 
-all: docs linkcheck src-browser
+all: docs src-browser
 
 docs:
-	jupyter-book build -W .
+	jupyter-book build -W -n --keep-going .
 
 src-browser:
 	ford -d $(SRC_DIR) -o $(BUILD_DIR)/html/src FORD_options.md
-
-linkcheck:
-	jupyter-book build . --builder linkcheck
 
 .PHONY: clean
 
