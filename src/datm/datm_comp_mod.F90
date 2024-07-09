@@ -77,6 +77,7 @@ module datm_comp_mod
   integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
+  integer(IN) :: stbot_noise, sprecn_noise, sswdn_noise, slwdn_noise
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
 
   ! water isotopes / tracer input
@@ -161,7 +162,7 @@ module datm_comp_mod
   ! other fields used in calculations. Fields that are simply read and passed directly to
   ! the coupler do not need to be in these lists.
 
-  integer(IN),parameter :: ktranss = 33
+  integer(IN),parameter :: ktranss = 37
 
   character(16),parameter  :: stofld(1:ktranss) = &
        (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
@@ -174,7 +175,9 @@ module datm_comp_mod
        "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
        "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    ", &
        "strm_rh_18O     ","strm_rh_HDO     ", &
-       "strm_precn_16O  ","strm_precn_18O  ","strm_precn_HDO  "  &
+       "strm_precn_16O  ","strm_precn_18O  ","strm_precn_HDO  ",  &
+                                 ! add perturbations (Yorck)
+       "strm_tbot_noise ","strm_precn_noise","strm_swdn_noise ","strm_lwdn_noise " &
        /)
 
   character(16),parameter  :: stifld(1:ktranss) = &
@@ -189,7 +192,9 @@ module datm_comp_mod
        "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
                                 ! isotopic forcing
        "rh_18O          ","rh_HDO          ", &
-       "precn_16O       ","precn_18O       ","precn_HDO       "  &
+       "precn_16O       ","precn_18O       ","precn_HDO       ",  &
+                                       ! add perturbations (Yorck)
+       "tbot_noise      ","precn_noise     ","swdn_noise      ","lwdn_noise      " &
        /)
 
   character(CL), pointer :: ilist_av(:)     ! input list for translation
@@ -443,6 +448,21 @@ CONTAINS
        sswup  = mct_aVect_indexRA(avstrm,'strm_swup'   ,perrWith='quiet')
        sprec  = mct_aVect_indexRA(avstrm,'strm_prec'   ,perrWith='quiet')
        starcf = mct_aVect_indexRA(avstrm,'strm_tarcf'  ,perrWith='quiet')
+
+
+       ! Yorck changes: when having an ensemble run, the memory consumption is too large if the 
+       ! forcing data is perturbed one by one so that I get a file for each month for each member
+       ! idea: perturb the forcings in the CLM sourcecode with a noise file.
+       ! for each perturbed variable (temperature, precipitation, longwave and shortwave radiation),
+       ! a stream is introduced (or one stream for all)
+
+       stbot_noise = mct_aVect_indexRA(avstrm,'strm_tbot_noise'    ,perrWith='quiet')
+       sprecn_noise = mct_aVect_indexRA(avstrm,'strm_precn_noise'  ,perrWith='quiet')
+       sswdn_noise  = mct_aVect_indexRA(avstrm,'strm_swdn_noise'   ,perrWith='quiet')
+       slwdn_noise  = mct_aVect_indexRA(avstrm,'strm_lwdn_noise'   ,perrWith='quiet')
+
+
+
 
        ! anomaly forcing
        sprecsf  = mct_aVect_indexRA(avstrm,'strm_precsf'  ,perrWith='quiet')
@@ -900,8 +920,14 @@ CONTAINS
              rtmp = maxval(avstrm%rAttr(stdew,:))
              call shr_mpi_max(rtmp,tdewmax,mpicom,'datm_tdew',all=.true.)
           endif
-          if (my_task == master_task) &
-               write(logunit,*) trim(subname),' max values = ',tbotmax,tdewmax,anidrmax
+          if (my_task == master_task) then
+            write(logunit,*) trim(subname),' max values = ',tbotmax,tdewmax,anidrmax
+            if (stbot_noise > 1 ) then
+               write(logunit,*) trim(subname),' Using noise from files '
+            end if
+         end if
+
+
        endif
        lsize = mct_avect_lsize(a2x)
        do n = 1,lsize
@@ -910,8 +936,36 @@ CONTAINS
 
           !--- temperature ---
           if (tbotmax < 50.0_R8) a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tkFrz
+
+          ! Temperature perturbations (Yorck)
+          if (stbot_noise > 0) then
+            if (my_task == master_task .and. n==1) then
+               !write(logunit,*) trim(subname),' temperature before: ', a2x%rAttr(ktbot,n)
+               !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(stbot_noise,n)
+            end if
+            a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + avstrm%rAttr(stbot_noise,n)
+            if (my_task == master_task .and. n==1) then
+               !write(logunit,*) trim(subname),' temperature after: ', a2x%rAttr(ktbot,n)
+            end if
+         end if
+
+
           ! Limit very cold forcing to 180K
           a2x%rAttr(ktbot,n) = max(180._r8, a2x%rAttr(ktbot,n))
+
+
+          ! already here perturbation of lwdn as I do not understand where this is used in the code (Yorck)
+          if (slwdn_noise > 0) then
+            if (my_task == master_task .and. n==1) then
+               !write(logunit,*) trim(subname),' lwdn before: ', avstrm%rAttr(slwdn,n)
+               !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(slwdn_noise,n)
+            end if
+            avstrm%rAttr(slwdn,n) = avstrm%rAttr(slwdn,n) + avstrm%rAttr(slwdn_noise,n)
+            if (my_task == master_task .and. n==1) then
+               !write(logunit,*) trim(subname),' lwdn after: ', avstrm%rAttr(slwdn,n)
+            end if
+          end if
+
           a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
 
           !--- pressure ---
@@ -973,18 +1027,44 @@ CONTAINS
              ! relationship between incoming NIR or VIS radiation and ratio of
              ! direct to diffuse radiation calculated based on one year's worth of
              ! hourly CAM output from CAM version cam3_5_55
-             swndr = avstrm%rAttr(sswdn,n) * 0.50_R8
+
+             ! add noise data --> multiplicative: (Yorck)
+             if (sswdn_noise>0) then
+               swndr = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
+             else
+               swndr = avstrm%rAttr(sswdn,n) * 0.50_R8
+             end if
              ratio_rvrf =   min(0.99_R8,max(0.29548_R8 + 0.00504_R8*swndr  &
                   -1.4957e-05_R8*swndr**2 + 1.4881e-08_R8*swndr**3,0.01_R8))
              a2x%rAttr(kswndr,n) = ratio_rvrf*swndr
-             swndf = avstrm%rAttr(sswdn,n) * 0.50_R8
+
+             if (sswdn_noise>0) then
+               swndf = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
+             else
+               swndf = avstrm%rAttr(sswdn,n) * 0.50_R8
+             end if
              a2x%rAttr(kswndf,n) = (1._R8 - ratio_rvrf)*swndf
 
-             swvdr = avstrm%rAttr(sswdn,n) * 0.50_R8
+             if (sswdn_noise>0) then
+               if (my_task == master_task .and. n==1) then
+                  !write(logunit,*) trim(subname),' swdn before: ', avstrm%rAttr(sswdn,n)
+                  !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(sswdn_noise,n)
+               end if
+               swvdr = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
+               if (my_task == master_task .and. n==1) then
+                  !write(logunit,*) trim(subname),' swvdr: ', swvdr
+               end if
+             else
+               swvdr = avstrm%rAttr(sswdn,n) * 0.50_R8
+             end if
              ratio_rvrf =   min(0.99_R8,max(0.17639_R8 + 0.00380_R8*swvdr  &
                   -9.0039e-06_R8*swvdr**2 + 8.1351e-09_R8*swvdr**3,0.01_R8))
              a2x%rAttr(kswvdr,n) = ratio_rvrf*swvdr
-             swvdf = avstrm%rAttr(sswdn,n) * 0.50_R8
+             if (sswdn_noise>0) then
+               swvdf = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
+             else
+               swvdf = avstrm%rAttr(sswdn,n) * 0.50_R8
+             end if
              a2x%rAttr(kswvdf,n) = (1._R8 - ratio_rvrf)*swvdf
           else
              call shr_sys_abort(subName//'ERROR: cannot compute short-wave down')
@@ -1005,8 +1085,21 @@ CONTAINS
              a2x%rAttr(krc,n) = avstrm%rAttr(sprecc,n)
              a2x%rAttr(krl,n) = avstrm%rAttr(sprecl,n)
           elseif (sprecn > 0) then
-             a2x%rAttr(krc,n) = avstrm%rAttr(sprecn,n)*0.1_R8
-             a2x%rAttr(krl,n) = avstrm%rAttr(sprecn,n)*0.9_R8
+             ! precipiation perturbation (Yorck)
+            if (sprecn_noise > 0) then
+               if (my_task == master_task .and. n==1) then
+                  !write(logunit,*) trim(subname),' precn before: ', avstrm%rAttr(sprecn,n)
+                  !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(sprecn_noise,n)
+               end if
+               a2x%rAttr(krc,n) = avstrm%rAttr(sprecn,n)*0.1_R8*avstrm%rAttr(sprecn_noise,n)
+               a2x%rAttr(krl,n) = avstrm%rAttr(sprecn,n)*0.9_R8*avstrm%rAttr(sprecn_noise,n)
+               if (my_task == master_task .and. n==1) then
+                  !write(logunit,*) trim(subname),' precn after: ', avstrm%rAttr(sprecn,n)*avstrm%rAttr(sprecn_noise,n)
+               end if
+             else
+               a2x%rAttr(krc,n) = avstrm%rAttr(sprecn,n)*0.1_R8
+               a2x%rAttr(krl,n) = avstrm%rAttr(sprecn,n)*0.9_R8
+             end if
           else
              call shr_sys_abort(subName//'ERROR: cannot compute rain and snow')
           endif
@@ -1040,7 +1133,6 @@ CONTAINS
           a2x%rAttr(ksl,n) = a2x%rAttr(ksl,n)*min(1.e2_r8,avstrm%rAttr(sprecsf,n))
           a2x%rAttr(krc,n) = a2x%rAttr(krc,n)*min(1.e2_r8,avstrm%rAttr(sprecsf,n))
           a2x%rAttr(krl,n) = a2x%rAttr(krl,n)*min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-
        end do
     endif
 
