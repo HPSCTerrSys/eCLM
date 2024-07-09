@@ -33,11 +33,11 @@ Overview of land biogeophysical, biogeochemical and landscape processes simulate
 
 Each time step the model solves the surface energy balance, water balance, and carbon exchange. Submodels of CLM include biophysics and biogeochemistry. It represents land surface heterogeneity through a subgrid tiling structure and different plant functional types that have unique parameters in terms of optical properties, morphology, photosynthesis. It can be run with prescribed vegetation states using satelllite phenology (SP mode) or prognostic vegetation states and biogeochemistry (BGC mode).
 
-```{figure} ../images/CLM5_subgrid_structure.png
+```{figure} ../images/CLM5_subgrid_structure_v1.png
 :height: 400px
 :name: fig2
 
-Configuration of the CLM subgrid hierarchy. Adapted from: <a href="http://www.cesm.ucar.edu/" target="_blank">http://www.cesm.ucar.edu/</a>.
+Configuration of the CLM subgrid hierarchy. Box in upper right shows hypothetical subgrid distribution for a single grid cell. Note that the Crop land unit is only used when the model is run with the crop model active. Abbreviations: TBD – Tall Building District; HD – High Density; MD – Medium Density, G – Glacier, L – Lake, U – Urban, C – Crop, V – Vegetated, PFT – Plant Functional Type, Irr – Irrigated, UIrr – Unirrigated. Red arrows indicate allowed land unit transitions. Purple arrows indicate allowed patch-level transitions. From <a href="https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/tech_note/Ecosystem/CLM50_Tech_Note_Ecosystem.html#id14" target="_blank">CLM5 Technical Note</a>.
 ```
 <p>
 
