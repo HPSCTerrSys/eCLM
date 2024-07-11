@@ -15,7 +15,7 @@ The script needs a few environment variables such as `GRIDNAME` (exported in the
 
 ```sh
 export CDATE=`date +%y%m%d`
-export CSMDATA="/p/scratch/cslts/shared_data/rlmod_eCLM/inputdata/surfdata/lnd/clm2/rawdata" # this works for JSC users only, for non JSC users see below 
+export CSMDATA="/p/scratch/cslts/shared_data/rlmod_eCLM/inputdata/" # this works for JSC users only, for non JSC users see below 
 
 # generate surfdata
 ./mksurfdata.pl -r usrspec -usr_gname $GRIDNAME -usr_gdate $CDATE -l $CSMDATA -allownofile -y 2000 -crop
