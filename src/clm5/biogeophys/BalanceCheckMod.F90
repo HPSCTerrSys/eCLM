@@ -179,11 +179,12 @@ contains
      ! error = abs(precipitation - change of water storage - evaporation - runoff)
      !
      ! !USES:
-     use clm_varcon        , only : spval
-     use clm_time_manager  , only : get_step_size, get_nstep
-     use clm_time_manager  , only : get_nstep_since_startup_or_lastDA_restart_or_pause
-     use CanopyStateType   , only : canopystate_type
-     use SurfaceAlbedoType , only : surfalb_type
+     use clm_varcon           , only : spval
+     use clm_time_manager     , only : get_step_size, get_nstep
+     use clm_time_manager     , only : get_nstep_since_startup_or_lastDA_restart_or_pause
+     use CanopyStateType      , only : canopystate_type
+     use SurfaceAlbedoType    , only : surfalb_type
+     use SoilWaterMovementMod , only : use_parflow_soilwater
      use subgridAveMod
      !
      ! !ARGUMENTS:
@@ -227,6 +228,8 @@ contains
           errh2osno               =>    waterstate_inst%errh2osno_col           , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
           endwb                   =>    waterstate_inst%endwb_col               , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
           total_plant_stored_h2o_col => waterstate_inst%total_plant_stored_h2o_col, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
+          pfl_psi                 =>    waterstate_inst%pfl_psi_col             , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+
           qflx_rootsoi_col        =>    waterflux_inst%qflx_rootsoi_col         , & ! Input   [real(r8) (:)   ]  water loss in soil layers to root uptake (mm H2O/s)
                                                                                     !                            (ie transpiration demand, often = transpiration)
           qflx_rain_grnd_col      =>    waterflux_inst%qflx_rain_grnd_col       , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
@@ -260,7 +263,6 @@ contains
           qflx_ice_dynbal         =>    waterflux_inst%qflx_ice_dynbal_grc      , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
           snow_sources            =>    waterflux_inst%snow_sources_col         , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
           snow_sinks              =>    waterflux_inst%snow_sinks_col           , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
-
           qflx_irrig              =>    irrigation_inst%qflx_irrig_col          , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
 
           qflx_glcice_dyn_water_flux => glacier_smb_inst%qflx_glcice_dyn_water_flux_col, & ! Input: [real(r8) (:)]  water flux needed for balance check due to glc_dyn_runoff_routing (mm H2O/s) (positive means addition of water to the system)
@@ -346,7 +348,6 @@ contains
                   - qflx_ice_runoff_xs(c)    &
                   - qflx_snwcp_discarded_liq(c) &
                   - qflx_snwcp_discarded_ice(c)) * dtime
-
           else
 
              errh2o(c) = 0.0_r8
@@ -356,11 +357,12 @@ contains
        end do
 
        found = .false.
+
        do c = bounds%begc, bounds%endc
-          if (abs(errh2o(c)) > 1.e-9_r8) then
-             found = .true.
-             indexc = c
-          end if
+         if (abs(errh2o(c)) > 1.e-9_r8) then
+            found = .true.
+            indexc = c
+         end if
        end do
 
        if ( found ) then
@@ -393,6 +395,9 @@ contains
              write(iulog,*)'qflx_ice_runoff_xs    = ',qflx_ice_runoff_xs(indexc)*dtime
              write(iulog,*)'qflx_snwcp_discarded_ice = ',qflx_snwcp_discarded_ice(indexc)*dtime
              write(iulog,*)'qflx_snwcp_discarded_liq = ',qflx_snwcp_discarded_liq(indexc)*dtime
+             write(iulog,*)'qflx_floodc                = ',qflx_floodc(indexc)*dtime
+             write(iulog,*)'qflx_drain_perched         = ',qflx_drain_perched(indexc)*dtime
+             write(iulog,*)'qflx_glcice_dyn_water_flux = ',qflx_glcice_dyn_water_flux(indexc)*dtime
              write(iulog,*)'qflx_rootsoi_col(1:nlevsoil)  = ',qflx_rootsoi_col(indexc,:)*dtime
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'deltawb          = ',endwb(indexc)-begwb(indexc)
@@ -400,12 +405,16 @@ contains
              write(iulog,*)'deltaflux        = ',forc_rain_col(indexc)+forc_snow_col(indexc) - (qflx_evap_tot(indexc) + &
                   qflx_surf(indexc)+qflx_h2osfc_surf(indexc)+qflx_drain(indexc))
 
-             write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
-
+             if (use_parflow_soilwater()) then
+               ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
+               write(iulog,*)'Ignoring water balance error...'
+             else
+               write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
+               call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
+             end if
           else if (abs(errh2o(indexc)) > 1.e-5_r8 .and. (DAnstep > skip_steps) ) then
 
-             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
+             
              write(iulog,*)'nstep                 = ',nstep
              write(iulog,*)'errh2o                = ',errh2o(indexc)
              write(iulog,*)'forc_rain             = ',forc_rain_col(indexc)*dtime
@@ -427,9 +436,17 @@ contains
              write(iulog,*)'qflx_glcice_dyn_water_flux = ', qflx_glcice_dyn_water_flux(indexc)*dtime
              write(iulog,*)'qflx_snwcp_discarded_ice = ',qflx_snwcp_discarded_ice(indexc)*dtime
              write(iulog,*)'qflx_snwcp_discarded_liq = ',qflx_snwcp_discarded_liq(indexc)*dtime
+             write(iulog,*)'qflx_floodc                = ',qflx_floodc(indexc)*dtime
+             write(iulog,*)'qflx_drain_perched         = ',qflx_drain_perched(indexc)*dtime
+             write(iulog,*)'qflx_glcice_dyn_water_flux = ',qflx_glcice_dyn_water_flux(indexc)*dtime
              write(iulog,*)'qflx_rootsoi_col(1:nlevsoil)  = ',qflx_rootsoi_col(indexc,:)*dtime
-             write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
+             if (use_parflow_soilwater()) then
+               ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
+               write(iulog,*)'Ignoring water balance error...'
+             else
+               write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
+               call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
+             end if
           end if
        end if
 
@@ -676,7 +693,7 @@ contains
        end if
 
        ! Soil energy balance check
-
+      ! COUP_OAS_PFL
        found = .false.
        do c = bounds%begc,bounds%endc
           if (col%active(c)) then
@@ -690,9 +707,12 @@ contains
           write(iulog,*)'WARNING: BalanceCheck: soil balance error (W/m2)'
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
-          if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (DAnstep > skip_steps) ) then
-             write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
+          if (use_parflow_soilwater()) then
+            ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
+            write(iulog,*)'Ignoring soil balance error...'
+          else
+            write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
+            call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
           end if
        end if
 

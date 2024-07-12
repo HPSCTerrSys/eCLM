@@ -331,7 +331,11 @@ contains
             ! for evaporation partitioning between liquid evap and ice sublimation, 
             ! use the ratio of liquid to (liquid+ice) in the top layer to determine split
             if ((h2osoi_liq(c,j)+h2osoi_ice(c,j)) > 0.) then
-               qflx_evap_grnd(p) = max(qflx_ev_snow(p)*(h2osoi_liq(c,j)/(h2osoi_liq(c,j)+h2osoi_ice(c,j))), 0._r8)
+               ! clm3.5/bld/usr.src/Biogeophysics2Mod.F90
+               ! if COUP_OAS_PFL
+               qflx_evap_grnd(p) = qflx_ev_snow(p)*(h2osoi_liq(c,j)/(h2osoi_liq(c,j)+h2osoi_ice(c,j)))
+               !else
+               !qflx_evap_grnd(p) = max(qflx_ev_snow(p)*(h2osoi_liq(c,j)/(h2osoi_liq(c,j)+h2osoi_ice(c,j))), 0._r8)
             else
                qflx_evap_grnd(p) = 0.
             end if
