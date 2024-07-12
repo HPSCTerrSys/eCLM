@@ -4,7 +4,14 @@ project (eCLM LANGUAGES C Fortran)
 get_filename_component(ECLM_ROOT ${CMAKE_SOURCE_DIR} DIRECTORY)
 list(APPEND CMAKE_MODULE_PATH "${ECLM_ROOT}/cmake")
 set(GENF90 ${CMAKE_MODULE_PATH}/genf90.pl)
+
 include(SetBuildOptions)
+
+if (USE_PDAF)
+  set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/eCLM)
+  set(CMAKE_Fortran_MODULE_DIRECTORY_MCT ${CMAKE_BINARY_DIR}/externals/mct/include)
+  set(CMAKE_Fortran_MODULE_DIRECTORY_GPTL ${CMAKE_BINARY_DIR}/externals/gptl/include)
+endif()
 
 add_subdirectory(externals)
 add_subdirectory(csm_share)
@@ -25,3 +32,12 @@ list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib"
 if("${isSystemDir}" STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif("${isSystemDir}" STREQUAL "-1")
+
+if (USE_PDAF)
+  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY_MCT}
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/eCLM/externals/mct)
+  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY_GPTL}
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/eCLM/externals/gptl)
+endif()
