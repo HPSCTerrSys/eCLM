@@ -6,7 +6,6 @@ module oas_sendReceiveMod
   use clm_varctl       , only: iulog
   use oas_vardefMod
   use mod_oasis
-  use clm_cpl_indices
   implicit none
   save
   private
@@ -56,6 +55,7 @@ contains
 #ifdef COUP_OAS_ICON
   subroutine oas_receive_icon(bounds, seconds_elapsed, x2l)
     use atm2lndType, only: atm2lnd_type
+    use clm_cpl_indices
 
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
