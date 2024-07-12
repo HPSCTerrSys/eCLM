@@ -82,6 +82,7 @@ jobs:
           tar -xzvf ${{ env.NETCDF_FORTRAN_VERSION }}.tar.gz
           ls -l
           pushd netcdf-fortran-*
+          chmod +x ./configure
           ./configure --prefix=$HOME/netcdf-fortran
           make
           make install
