@@ -6,7 +6,9 @@ module oas_sendReceiveMod
   use clm_varctl       , only: iulog
   use oas_vardefMod
   use mod_oasis
+#ifndef COUP_OAS_ICON
   use clm_cpl_indices
+#endif
   implicit none
   save
   private
