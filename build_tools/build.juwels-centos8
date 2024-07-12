@@ -5,6 +5,11 @@ ARCH="juwels-centos8"
 CLM5_TSMP_ROOT=$(git rev-parse --show-toplevel)
 BUILD_FOLDER="$CLM5_TSMP_ROOT/outputs/$ARCH/build"
 INSTALL_PATH="$CLM5_TSMP_ROOT/outputs/$ARCH/run"
+if [ "$1" = "--debug" ] || [ "$1" = "-d" ]; then
+  BUILD_TYPE="DEBUG"
+else
+  BUILD_TYPE="RELEASE"
+fi
 # ---------------------------------------------
 
 module purge
@@ -29,7 +34,10 @@ GENF90_PATH=$(pwd)
 rm -rf $BUILD_FOLDER
 cmake -S "$CLM5_TSMP_ROOT/src" \
       -B "$BUILD_FOLDER" \
+      -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH" \
       -DCMAKE_MODULE_PATH="$(pwd)/cmake" \
+      -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+      -DCOMPILER="Intel" \
       -DCMAKE_C_COMPILER=mpicc \
       -DCMAKE_Fortran_COMPILER=mpifort \
       -DGENF90_PATH=$GENF90_PATH \
