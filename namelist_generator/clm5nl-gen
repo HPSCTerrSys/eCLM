@@ -54,18 +54,21 @@ def generate_namelists(params_file, out_dir: str = ""):
   print(f"Namelists will be saved to {out_dir}")
   os.makedirs(out_dir, exist_ok=True)   
   for nl, opts in nl_opts.items():
+    if "general_options" not in opts:
+      opts["general_options"] = {}
+
     if nl == "drv_in":
-      if "case_name" not in opts:
-        opts["case_name"] = os.path.splitext(os.path.basename(params_file))[0]
+      if "case_name" not in opts["general_options"]:
+        opts["general_options"]["case_name"] = os.path.splitext(os.path.basename(params_file))[0]
     elif nl == "lnd_in":
-      opts["drv_in.start_type"] = nl_opts["drv_in"]["clm_start_type"]
+      opts["general_options"]["drv_in.start_type"] = nl_opts["drv_in"]["general_options"]["clm_start_type"]
     elif nl == "drv_flds_in":
-      opts["lnd_in.clm_accelerated_spinup"] = nl_opts["lnd_in"]["clm_accelerated_spinup"]
-      opts["lnd_in.use_fates"] = nl_opts["lnd_in"]["use_fates"]
+      opts["general_options"]["lnd_in.clm_accelerated_spinup"] = nl_opts["lnd_in"]["general_options"]["clm_accelerated_spinup"]
+      opts["general_options"]["lnd_in.use_fates"] = nl_opts["lnd_in"]["general_options"]["use_fates"]
     elif nl == "mosart_in":
-      opts["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}")
+      opts["general_options"]["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}")
     elif nl == "modelio_nml":
-      opts["drv_in.ntasks"] = nl_opts["drv_in"]["ntasks"]
+      opts["general_options"]["drv_in.ntasks"] = nl_opts["drv_in"]["general_options"]["ntasks"]
     success, msg = build_namelist(nl, opts, out_dir)
     if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
 

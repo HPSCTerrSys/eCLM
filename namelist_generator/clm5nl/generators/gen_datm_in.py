@@ -20,12 +20,13 @@ _nl = datm_in()
 def build_datm_in(opts: dict = None, nl_file: str = "datm_in"):
     global _opts, _user_nl, _nl
 
-    _opts = opts
-    _user_nl = opts.get("user_nl", {})
+    _opts = opts.get("general_options", {})
+    _user_nl = opts.copy()
+    _user_nl.pop("general_options", {})
     _nl = datm_in()
 
     # Validate inputs
-    if _opts["domainfile"] is None:
+    if _user_nl["domainfile"] is None:
         error("datm domainfile must be specified.")
     if _opts["datm_presaero"] is not None and _opts["datm_presaero"] == "none":
         error("datm_presaero = 'none' is not supported.")
@@ -33,6 +34,9 @@ def build_datm_in(opts: dict = None, nl_file: str = "datm_in"):
     # Build datm_in
     shr_strdata_nml()
     datm_nml()
+
+    # Set user-specified namelist parameters
+    _nl.update(_user_nl)
 
     # Write to file
     if nl_file and Path(nl_file).name.strip() != "": 
@@ -63,7 +67,7 @@ def datm_nml():
 def shr_strdata_nml():
     with _nl.shr_strdata_nml as n:
         n.datamode   = "CLMNCEP" 
-        n.domainfile = _opts["domainfile"] # not optional!
+        n.domainfile = _user_nl["domainfile"] # not optional!
         if "streams" in _user_nl:
             n.streams = _user_nl["streams"]
         else:
@@ -122,15 +126,15 @@ def create_stream_files(out_dir : str):
         s_files.append(s_file)
         if s_type == "presaero":
             s_vars = deepcopy(PRESAERO_STREAM_DEFAULTS)
-            s_vars["DOMAIN_FILE_PATH"]  = Path(_opts["domainfile"]).parent.absolute()
-            s_vars["FIELD_FILE_PATH"]   = Path(_opts["domainfile"]).parent.absolute()
+            s_vars["DOMAIN_FILE_PATH"]  = Path(_user_nl["domainfile"]).parent.absolute()
+            s_vars["FIELD_FILE_PATH"]   = Path(_user_nl["domainfile"]).parent.absolute()
         elif s_type == "topo":
             s_vars = deepcopy(TOPO_STREAM_DEFAULTS)
-            s_vars["DOMAIN_FILE_PATH"]  = Path(_opts["domainfile"]).parent.absolute()
-            s_vars["FIELD_FILE_PATH"]   = Path(_opts["domainfile"]).parent.absolute()
+            s_vars["DOMAIN_FILE_PATH"]  = Path(_user_nl["domainfile"]).parent.absolute()
+            s_vars["FIELD_FILE_PATH"]   = Path(_user_nl["domainfile"]).parent.absolute()
         else:
-            s_vars["DOMAIN_FILE_PATH"]  = Path(_opts["domainfile"]).parent.absolute()
-            s_vars["DOMAIN_FILE_NAMES"] = Path(_opts["domainfile"]).name
+            s_vars["DOMAIN_FILE_PATH"]  = Path(_user_nl["domainfile"]).parent.absolute()
+            s_vars["DOMAIN_FILE_NAMES"] = Path(_user_nl["domainfile"]).name
             s_vars["FIELD_FILE_PATH"]   = _opts.get("stream_root_dir", "")
             s_vars["DOMAIN_VAR_NAMES"]  = DATM_STREAM_DEFAULTS["DOMAIN_VAR_NAMES"]
             s_vars["FIELD_VAR_NAMES"]   = DATM_STREAM_DEFAULTS["FIELD_VAR_NAMES"].get(s_type, "")
