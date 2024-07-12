@@ -24,9 +24,9 @@ class Namelist(object):
     def __str__(self):
         return nml2str(self._nl)
 
-    def write(self, file_path, ordered_grp_names: list = []):
+    def write(self, file_path, grp_names: list = []):
         with open(file_path, "w") as f:
-            f.write(nml2str(self._nl, ordered_grp_names=ordered_grp_names))
+            f.write(nml2str(self._nl, grp_names=grp_names))
 
 class NamelistGroupMixin(object):
     def __init__(self):
@@ -72,7 +72,7 @@ class NamelistGroupMixin(object):
             return 0 
 
     def __str__(self):
-        return nl_to_str(self._parent._nl, self._group_name)
+        return nml2str(self._parent._nl[self._group_name], [self._group_name], False)
 
     def items(self):
         if self._group_name in self._parent._nl:
@@ -84,7 +84,6 @@ class namelist_group():
     def __init__(self, nl_grp):
         self._group_type = type(nl_grp.__name__, (nl_grp, NamelistGroupMixin), {})
         self._group = None
-        #self._nl_grp = ng()
 
     def __get__(self, nl_obj, objtype):
         if self._group is None: self._group = self._group_type()

@@ -12,72 +12,115 @@ Usage:
   clm5nl-gen (-v | --version)
 
 Arguments:
-  PARAMFILE           model parameters file (.yaml)
+  PARAMFILE           model parameters file (.toml)
 
 Options:
   -o DIR --out DIR    Save generated namelists to this directory.
   -h --help           Show this screen.
   -v --version        Show version.
 """
-import sys
-from pathlib import Path
+import os, re, sys
+import toml
 from docopt import docopt
-from ruamel.yaml import YAML
-from clm5nl.generators import *
+from clm5nl.generators import build_namelist
 
-__version__ = "0.2"
-args = docopt(__doc__, version="clm5nl-gen v" + __version__)
-invalid_args = False
-params_file = Path(args["PARAMFILE"]).absolute()
+__version__ = "0.3"
 
-# Validate input args
-if (not params_file.exists()):
-  print("clm5nl-gen error: Model parameter file '{}' not found.".format(params_file), file=sys.stderr)
-  invalid_args = True
+env_var_regex = re.compile(r"\$\{.*\}")
+_missing_envs = set()
 
-if (args["--out"] is None):
-  out_dir = Path.cwd()
-else:
-  out_dir = Path(args["--out"]).absolute()
-  if (not out_dir.is_dir()):
-    print(f"Creating folder {out_dir}")
-    out_dir.mkdir(parents=True, exist_ok=True)
-print(f"Namelists will be saved to {out_dir}")
-if invalid_args: sys.exit(-1)
+def generate_namelists(params_file, out_dir: str = ""):
+  """
+  Generate CLM5 namelists from a .toml parameter file.
+  """
+  print(f"Reading model parameters file from {params_file}")
+  
+  # Parse model parameters file
+  model_config = toml.loads(open(params_file, "r").read())
+  namelists = ["drv_in", "lnd_in", "drv_flds_in", "datm_in", "mosart_in", "modelio_nml", "seq_maps.rc"]
+  nl_opts = {}
+  for section in model_config:
+    if section in namelists:
+      nl_opts[section] = {k:resolve_env_vars(v) for k, v in model_config[section].items()}     
+      namelists.remove(section)
+    else:
+      
+      print(f"***WARNING*** Section '{section}' in config file is not recognized.")
 
-# Parse model parameters file
-yaml = YAML(typ='safe')
-print(f"Reading model parameters file from {params_file}")
-config = yaml.load(open(params_file, "r"))
+  # Print warnings
+  if has_warnings():
+    # TODO: Add CLI option to ignore warnings
+    print(f"Please fix the warnings first.", file=sys.stderr)
+    return 2
 
-opts, nl_lnd, nl_drv_flds = {}, {}, {}
-opts_datm, nl_datm = {}, {}
-opts_mosart, nl_mosart = {}, {}
-opts_drv, nl_drv = {}, {}
-opts_modelio, nl_modelio = {}, {}
-opts_drv_flds = {}
+  # Build namelists
+  print(f"Namelists will be saved to {out_dir}")
+  os.makedirs(out_dir, exist_ok=True)   
+  for nl, opts in nl_opts.items():
+    if nl == "lnd_in":
+      opts["drv_in.start_type"] = nl_opts["drv_in"]["clm_start_type"]
+    elif nl == "drv_flds_in":
+      opts["lnd_in.clm_accelerated_spinup"] = nl_opts["lnd_in"]["clm_accelerated_spinup"]
+      opts["lnd_in.use_fates"] = nl_opts["lnd_in"]["use_fates"]
+    success, msg = build_namelist(nl, opts, out_dir)
+    if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
 
-for category in config:
-  if category == "general_options":
-    opts = {k:(v if str(v).lower() != "none" else None) for k, v in config[category].items()}
-  elif category == "lnd_in":
-    nl_lnd = {k:v for k, v in config[category].items()}
-  elif category == "datm_in":
-    opts_datm = {k:v for k, v in config[category].items()}
-  elif category == "mosart_in":
-    nl_mosart = {k:v for k, v in config[category].items()}
-  elif category == "drv_in":
-    opts_drv = {k:v for k, v in config[category].items()}
-  elif category == "modelio_nml":
-    opts_modelio = {k:v for k, v in config[category].items()}
-  elif category == "drv_flds_in":
-    opts_drv_flds = {k:v for k, v in config[category].items()}
+  # Namelists not mentioned in config file should still be generated
+  opts = {}
+  for nl in namelists:
+    if nl == "mosart_in":
+      #TODO: Throw error if ${CESMDATAROOT} is missing
+      opts["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}/inputdata") 
+    success, msg = build_namelist(nl, opts, out_dir)
+    if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
+  print("Success!")
+  return 0
 
-# Build namelists
-build_lnd_in(opts, nl_lnd, nl_file=Path(out_dir, "lnd_in"))
-build_datm_in(opts_datm, nl_datm, nl_file=Path(out_dir, "datm_in"))
-build_mosart_in(opts_mosart, nl_mosart, nl_file=Path(out_dir, "mosart_in"))
-build_drv_in(opts_drv, nl_drv, nl_file=Path(out_dir, "drv_in"))
-build_seq_maps_rc(out_dir)
-build_modelio_nml(opts_modelio, nl_modelio, out_dir)
-build_drv_flds_in(opts_drv_flds, nl_file="drv_flds_in")
+def resolve_env_vars(node_value):
+  """
+  Replaces ${VARIABLE} with its corresponding
+  environment variable if present.
+  """
+  global _missing_envs
+  if isinstance(node_value, str):
+    match = env_var_regex.match(node_value)
+    if match:
+      env_var = match.group()[2:-1]
+      resolved_var = os.getenv(match.group()[2:-1])
+      if resolved_var and resolved_var.strip() != "":
+        return resolved_var + node_value[match.end():]
+      else:
+        _missing_envs.add(env_var)
+  elif isinstance(node_value, list):
+    node_value = [resolve_env_vars(v) for v in node_value]
+  elif isinstance(node_value, dict):
+    node_value = {k:resolve_env_vars(v) for k, v in node_value.items()}
+
+  return node_value
+
+def has_warnings():
+  for env_var in _missing_envs:
+    print(f"***WARNING*** ${{{env_var}}} is used in config file but is not set in the environment.")
+  if len(_missing_envs) > 0:
+    example_var = list(_missing_envs)[0]
+    print(f"""
+    You can set environment variables by running:
+
+       export {example_var}="MY_VALUE"
+       echo ${example_var} # check if {example_var} was set
+
+    Alternatively, you can replace the variables in the config file with hardcoded values.
+    """)
+    return True
+  else:
+    return False
+
+if __name__ == "__main__":
+  args = docopt(__doc__, version="clm5nl-gen v" + __version__)
+  params_file = os.path.abspath((args["PARAMFILE"]))
+  if (not os.path.exists(params_file)):
+    print(f"clm5nl-gen error: Model parameter file '{params_file}' not found.", file=sys.stderr)
+    sys.exit(1)
+  out_dir = os.path.abspath(args["--out"]) if args["--out"] else os.getcwd()
+  err_code = generate_namelists(params_file, out_dir)
+  sys.exit(err_code)
