@@ -257,18 +257,19 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
 
+         
+#ifdef COUP_OAS_PFL
          ! clm3.5/bld/usr.src/SoilHydrologyMod.F90
-         ! if COUP_OAS_PFL
          qflx_surf(c) = 0._r8
-
-         !else
+#else
          ! assume qinmax large relative to qflx_top_soil in control
-         !if (origflag == 1) then
-         !   qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
-         !else
-         !   ! only send fast runoff directly to streams
-         !   qflx_surf(c) =   fsat(c) * qflx_top_soil(c)
-         !endif
+         if (origflag == 1) then
+           qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
+         else
+           ! only send fast runoff directly to streams
+           qflx_surf(c) =   fsat(c) * qflx_top_soil(c)
+         endif
+#endif
       end do
 
       ! Determine water in excess of ponding limit for urban roof and impervious road.
@@ -2339,6 +2340,7 @@ contains
    end subroutine RenewCondensation
 
 !#8
+#ifdef COUP_OAS_PFL
    !-----------------------------------------------------------------------
    subroutine ParFlowDrainage(bounds, num_hydrologyc, filter_hydrologyc, &
         num_urbanc, filter_urbanc, waterflux_inst)
@@ -2407,5 +2409,6 @@ contains
          end do
      end associate
    end subroutine ParFlowDrainage
+#endif
 !#0
 end module SoilHydrologyMod

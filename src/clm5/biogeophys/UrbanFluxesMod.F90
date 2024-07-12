@@ -219,7 +219,9 @@ contains
          t_ref2m_u           =>   temperature_inst%t_ref2m_u_patch          , & ! Output: [real(r8) (:)   ]  Urban 2 m height surface air temperature (K)     
          t_veg               =>   temperature_inst%t_veg_patch              , & ! Output: [real(r8) (:)   ]  vegetation temperature (K)                        
          taf                 =>   temperature_inst%taf_lun                  , & ! Output: [real(r8) (:)   ]  urban canopy air temperature (K)                  
-
+#ifdef COUP_OAS_ICON
+         t_sf_patch          =>   temperature_inst%t_sf_patch               , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
+#endif
 
          tc_ref2m            => humanindex_inst%tc_ref2m_patch              , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (C)
          vap_ref2m           => humanindex_inst%vap_ref2m_patch             , & ! Output: [real(r8) (:)   ]  2 m height vapor pressure (Pa)
@@ -765,6 +767,9 @@ contains
          eflx_sh_grnd_scale(p)  = -forc_rho(g)*cpair*wtus(c)*dth(l)
          qflx_evap_soi_scale(p) = -forc_rho(g)*wtuq(c)*dqh(l)
 
+#ifdef COUP_OAS_ICON
+         t_sf_patch(p)  = taf(l)
+#endif
       end do
 
       ! Check to see that total sensible and latent heat equal the sum of

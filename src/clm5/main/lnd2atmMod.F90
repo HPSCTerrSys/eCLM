@@ -316,6 +316,25 @@ contains
             c2l_scale_type= 'unity', l2g_scale_type='unity' )
     end if
 
+#ifdef COUP_OAS_ICON
+
+    call p2g(bounds, &
+         temperature_inst%t_sf_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%t_sf_grc       (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+!    call p2g(bounds, &
+!         waterstate_inst%q_sf_patch (bounds%begp:bounds%endp), &
+!         lnd2atm_inst%q_sf_grc      (bounds%begg:bounds%endg), &
+!         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+!    call p2g(bounds, &
+!         frictionvel_inst%rah1_patch (bounds%begp:bounds%endp), &
+!         lnd2atm_inst%rah1_grc       (bounds%begg:bounds%endg), &
+!         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+#endif
+
     !----------------------------------------------------
     ! lnd -> rof
     !----------------------------------------------------
@@ -407,7 +426,7 @@ contains
     do g = bounds%begg, bounds%endg
        waterstate_inst%tws_grc(g) = waterstate_inst%tws_grc(g) + atm2lnd_inst%volr_grc(g) / grc%area(g) * 1.e-3_r8
     enddo
-
+#ifdef COUP_OAS_PFL
     ! Calculate Parflow water fluxes
     call c2g( bounds, nlevsoi, &
          waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
@@ -425,7 +444,8 @@ contains
          enddo
        end if
      end if
-   end do
+    end do
+#endif
 
   end subroutine lnd2atm
 
