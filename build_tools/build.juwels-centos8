@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# ------- User-specified variables ------------
+ARCH="juwels-centos8"
+CLM5_TSMP_ROOT=$(git rev-parse --show-toplevel)
+BUILD_FOLDER="$CLM5_TSMP_ROOT/outputs/$ARCH/build"
+INSTALL_PATH="$CLM5_TSMP_ROOT/outputs/$ARCH/run"
+# ---------------------------------------------
+
+module purge
+module use $OTHERSTAGES
+module load Stages/2020
+module load Intel
+module load ParaStationMPI
+module load ESMF
+module load NCO
+module load Perl
+module load CMake
+module load parallel-netcdf
+module load imkl
+module load NCL
+module load Python
+module li
+
+echo "NetCDF_C_PATH=$EBROOTNETCDF"
+echo "NetCDF_Fortran_PATH=$EBROOTNETCDFMINFORTRAN"
+echo "PnetCDF_C_PATH=$EBROOTPARALLELMINNETCDF"
+GENF90_PATH=$(pwd)
+rm -rf $BUILD_FOLDER
+cmake -S "$CLM5_TSMP_ROOT/src" \
+      -B "$BUILD_FOLDER" \
+      -DCMAKE_MODULE_PATH="$(pwd)/cmake" \
+      -DCMAKE_C_COMPILER=mpicc \
+      -DCMAKE_Fortran_COMPILER=mpifort \
+      -DGENF90_PATH=$GENF90_PATH \
+      -DNetCDF_C_PATH=$EBROOTNETCDF \
+      -DNetCDF_Fortran_PATH=$EBROOTNETCDFMINFORTRAN \
+      -DPnetCDF_PATH=$EBROOTPARALLELMINNETCDF
+cmake --build "$BUILD_FOLDER" --clean-first
+cmake --install "$BUILD_FOLDER"
