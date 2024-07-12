@@ -1,188 +1,156 @@
-IF( NOT GENF90_PATH)
-  SET (GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-ENDIF()
+project(pio C Fortran)
+add_library(${PROJECT_NAME} STATIC)
 
-PROJECT(pio C Fortran)
-ADD_LIBRARY(${PROJECT_NAME} STATIC)
-
-
-IF (USER_CMAKE_MODULE_PATH)
-  SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${USER_CMAKE_MODULE_PATH})
-ELSE()
-  SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-ENDIF()
-find_file( TESTFILE NAMES TryCSizeOf.f90 PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
-get_filename_component( TESTFILEPATH ${TESTFILE} PATH)
-
+find_file(TESTFILE NAMES TryCSizeOf.f90 PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+get_filename_component(TESTFILEPATH ${TESTFILE} PATH)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
-#SET(bld_PIO_DEFINITIONS)
-
-TRY_COMPILE(WITH_CSIZEOF ${CMAKE_CURRENT_BINARY_DIR}/tryCompileCSIZEOF
+try_compile(WITH_CSIZEOF ${CMAKE_CURRENT_BINARY_DIR}/tryCompileCSIZEOF
                         ${TESTFILEPATH}/TryCSizeOf.f90)
-#MESSAGE(STATUS "c_sizeof test ${WITH_CSIZEOF}")
-IF(${WITH_CSIZEOF} STREQUAL FALSE)
-    MESSAGE(STATUS "Fortran compiler does not support c_sizeof function")
+
+if(${WITH_CSIZEOF} STREQUAL FALSE)
+    message(STATUS "PIO: Fortran compiler does not support c_sizeof function")
     target_compile_definitions(${PROJECT_NAME} PRIVATE NO_C_SIZEOF)
 endif()
 
-# Netcdf is required
-#SET (NETCDF_FIND_COMPONENTS F90)
-FIND_PACKAGE(NetCDF "4.3.3" COMPONENTS C Fortran)
-IF (${NetCDF_Fortran_FOUND})
-  MESSAGE("Building PIO with netcdf support ")
-  target_include_directories(${PROJECT_NAME} PUBLIC ${NetCDF_Fortran_INCLUDE_DIR})
-  target_compile_definitions(${PROJECT_NAME} PRIVATE ${NetCDF_Fortran_DEFINITIONS})
-ELSE()
-  MESSAGE("Building PIO without netcdf support ${NetCDF_C_FOUND} ${NetCDF_Fortran_FOUND}")
-ENDIF ()
+option(PIO_BIG_ENDIAN "Specify that the machine is big endian" test)
+if ("${PIO_BIG_ENDIAN}" STREQUAL "test")
+  include(TestBigEndian)
+  TestBigEndian(PIO_BIG_ENDIAN_TEST)
+  if(PIO_BIG_ENDIAN_TEST)
+    set(PIO_BIG_ENDIAN ON  CACHE BOOL "")
+  else()
+    set(PIO_BIG_ENDIAN OFF CACHE BOOL "")
+  endif()
+else()
+  set(PIO_BIG_ENDIAN ${PIO_BIG_ENDIAN} CACHE BOOL "")
+endif()
 
+if (PIO_FILESYSTEM_HINTS STREQUAL "lustre")
+  message(STATUS "PIO: Using lustre filesystem hints")
+  target_compile_definitions(${PROJECT_NAME} PRIVATE PIO_LUSTRE_HINTS)
+elseif(PIO_FILESYSTEM_HINTS STREQUAL "gpfs")
+  message(STATUS "PIO: Using gpfs filesystem hints")
+  target_compile_definitions(${PROJECT_NAME} PRIVATE PIO_GPFS_HINTS)
+elseif(NOT "${PIO_FILESYSTEM_HINTS}" STREQUAL "")
+  message(WARNING "PIO: ${PIO_FILESYSTEM_HINTS} not valid option for PIO_FILESYSTEM_HINTS; use gpfs or lustre.")
+endif()
+
+find_package(NetCDF)
+if(NetCDF_FOUND)
+  message(STATUS "PIO: Building with netcdf support ")
+  target_compile_definitions(${PROJECT_NAME} PUBLIC _NETCDF)
+  if (${NetCDF_HAS_PARALLEL})
+    target_compile_definitions(${PROJECT_NAME} PUBLIC _NETCDF4)
+  endif()
+  target_link_libraries(${PROJECT_NAME} PUBLIC NetCDF::NetCDFF)
+else()
+  message(STATUS "PIO: Building without netcdf support")
+  target_compile_definitions(${PROJECT_NAME} PUBLIC _NONETCDF)
+endif()
 
 # PNetcdf is optional but used by default
-OPTION(WITH_PNETCDF "Whether to build with PnetCDF" TRUE)
-IF (${WITH_PNETCDF})
-  FIND_PACKAGE(PnetCDF REQUIRED COMPONENTS Fortran)
-ELSE ()
-  MESSAGE(WARNING "Warning: Not building with PNetcdf - cannot run all regression tests.")
-ENDIF ()
-
-
-OPTION(PIO_BIG_ENDIAN "Specify that the machine is big endian" test)
-IF ("${PIO_BIG_ENDIAN}" STREQUAL "test")
-  INCLUDE(TestBigEndian)
-  TestBigEndian(PIO_BIG_ENDIAN_TEST)
-  IF(PIO_BIG_ENDIAN_TEST)
-    SET(PIO_BIG_ENDIAN ON  CACHE BOOL "")
-  ELSE()
-    SET(PIO_BIG_ENDIAN OFF CACHE BOOL "")
-  ENDIF()
-ELSE()
-  SET(PIO_BIG_ENDIAN ${PIO_BIG_ENDIAN} CACHE BOOL "")
-ENDIF()
-
-
-IF (PIO_FILESYSTEM_HINTS STREQUAL "lustre")
-  MESSAGE(STATUS "PIO using lustre filesystem hints")
-  target_compile_definitions(${PROJECT_NAME} PRIVATE PIO_LUSTRE_HINTS)
-ELSEIF(PIO_FILESYSTEM_HINTS STREQUAL "gpfs")
-  MESSAGE(STATUS "PIO using gpfs filesystem hints")
-  target_compile_definitions(${PROJECT_NAME} PRIVATE PIO_GPFS_HINTS)
-ELSEIF(NOT "${PIO_FILESYSTEM_HINTS}" STREQUAL "")
-  MESSAGE(WARNING "${PIO_FILESYSTEM_HINTS} not valid option for PIO_FILESYSTEM_HINTS; use gpfs or lustre.")
-ENDIF()
-IF(NetCDF_Fortran_FOUND)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC _NETCDF)
-  if (${NetCDF_C_HAS_PARALLEL})
-    target_compile_definitions(${PROJECT_NAME} PUBLIC _NETCDF4)
-  ENDIF()
-ELSE()
-  target_compile_definitions(${PROJECT_NAME} PUBLIC _NONETCDF)
-ENDIF()
-IF(PnetCDF_Fortran_FOUND)
-  target_include_directories(${PROJECT_NAME} PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
+option(WITH_PNETCDF "Whether to build with PnetCDF" TRUE)
+if (${WITH_PNETCDF})
+  find_package(PnetCDF REQUIRED)
+else()
+  message(WARNING "Warning: Not building with PNetcdf - cannot run all regression tests.")
+endif()
+if(PnetCDF_FOUND)
+  message(STATUS "PIO: Building with pnetcdf support ")
   target_compile_definitions(${PROJECT_NAME} PUBLIC _PNETCDF)
-ELSE()
+  target_link_libraries(${PROJECT_NAME} PUBLIC PnetCDF::PnetCDF)
+else()
+  message(STATUS "PIO: Building without pnetcdf support ")
   target_compile_definitions(${PROJECT_NAME} PUBLIC _NOPNETCDF)
-ENDIF()
+endif()
 
-OPTION(PIO_USE_MPIIO "Enable support for MPI-IO (default auto detect)" ON)
-IF (PIO_USE_MPIIO)
-  TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
+option(PIO_USE_MPIIO "Enable support for MPI-IO (default auto detect)" ON)
+if (PIO_USE_MPIIO)
+  try_compile(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
                             ${TESTFILEPATH}/TryMPIIO.f90)
-  IF (${MPIIO_SUCCESS})
-    MESSAGE(STATUS "MPIIO detected and enabled.")
-  ELSE()
-    MESSAGE(STATUS "MPIIO not detected and therefore disabled.")
-    SET(PIO_USE_MPIIO FALSE)
-  ENDIF()
-ENDIF()
-IF (${PIO_USE_MPIIO})
-  target_compile_definitions(${PROJECT_NAME} PUBLIC USEMPIIO)
-ENDIF()
+  if (${MPIIO_SUCCESS})
+    message(STATUS "PIO: MPIIO detected and enabled.")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC USEMPIIO)
+  else()
+    message(STATUS "PIO: MPIIO not detected and therefore disabled.")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC USEMPIIO)
+    set(PIO_USE_MPIIO FALSE)
+  endif()
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE _NOUSEMCT)
 
-OPTION(PIO_USE_BOX  "" ON)
+option(PIO_USE_BOX  "" ON)
 if(PIO_USE_BOX)
   target_compile_definitions(${PROJECT_NAME} PRIVATE _USEBOX)
 else()
   target_compile_definitions(${PROJECT_NAME} PRIVATE _NOUSEBOX)
 endif()
 
-OPTION(PIO_USE_MPIMOD "Use Fortran MPI module (default auto detect)" ON)
-IF (PIO_USE_MPIMOD)
-  TRY_COMPILE(MPIMOD_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIMod
+option(PIO_USE_MPIMOD "Use Fortran MPI module (default auto detect)" ON)
+if (PIO_USE_MPIMOD)
+  try_compile(MPIMOD_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIMod
                              ${TESTFILEPATH}/TryMPIMod.f90)
-  IF (${MPIMOD_SUCCESS})
-    MESSAGE(STATUS "MPI Fortran module detected and enabled.")
-  ELSE()
-    MESSAGE(STATUS "MPI Fortran module not detected and therefore disabled.")
-    SET(PIO_USE_MPIMOD FALSE)
-  ENDIF()
-ENDIF()
-
-IF (NOT ${PIO_USE_MPIMOD})
-  target_compile_definitions(${PROJECT_NAME} PRIVATE NO_MPIMOD)
-ENDIF()
-OPTION(PIO_BUILD_TIMING  "" OFF)
-
-if(${PIO_BUILD_TIMING})
-  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../timing)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE TIMING -I ${CMAKE_CURRENT_BINARY_DIR}/timing)
-    ADD_SUBDIRECTORY(../timing timing)
+  if (${MPIMOD_SUCCESS})
+    message(STATUS "PIO: MPI Fortran module detected and enabled.")
+  else()
+    message(STATUS "PIO: MPI Fortran module not detected and therefore disabled.")
+    set(PIO_USE_MPIMOD FALSE)
   endif()
 endif()
 
-SET(SRCS_C topology.c)
-
-SET(SRCS_F90 pio.F90 pio_kinds.F90 nf_mod.F90  ionf_mod.F90 pio_types.F90
-             piolib_mod.F90 pio_mpi_utils.F90 pio_nf_utils.F90 pio_utils.F90
-             pio_support.F90                                calcdisplace_mod.F90
-	     calcdecomp.F90 pio_msg_mod.F90 pio_msg_callbacks.F90)
-
-SET(TEMPSRCF90    pionfatt_mod.F90
-         	                pionfread_mod.F90
-                                pionfwrite_mod.F90
-                                pionfput_mod.F90
-                                pionfget_mod.F90
-	                        alloc_mod.F90
-                                box_rearrange.F90
-                                rearrange.F90
-         	                iompi_mod.F90
-           	                piodarray.F90
-	                        pio_spmd_utils.F90
-	                        pio_msg_getput_callbacks.F90
-        )
-
-FOREACH(tempfile IN LISTS TEMPSRCF90)
-ADD_CUSTOM_COMMAND(
-	OUTPUT ${tempfile}
-	COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/${tempfile}.in > ${tempfile}
-	DEPENDS  ${tempfile}.in
-)
-ENDFOREACH()
-if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
-   SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
+if (NOT ${PIO_USE_MPIMOD})
+  target_compile_definitions(${PROJECT_NAME} PRIVATE NO_MPIMOD)
 endif()
+
+option(PIO_BUILD_TIMING  "Enable timing library (GPTL) usage in PIO." OFF)
+if(${PIO_BUILD_TIMING})
+  message(STATUS "PIO: Timing library enabled")
+  target_compile_definitions(${PROJECT_NAME} PRIVATE TIMING)
+  target_link_libraries(${PROJECT_NAME} PRIVATE gptl)
+endif()
+
+set(SRCS_C      topology.c)
+
+set(SRCS_F90    calcdecomp.F90
+                calcdisplace_mod.F90
+                ionf_mod.F90
+                nf_mod.F90
+                pio.F90
+                pio_kinds.F90
+                pio_mpi_utils.F90
+                pio_msg_callbacks.F90
+                pio_msg_mod.F90
+                pio_nf_utils.F90
+                pio_support.F90
+                pio_types.F90
+                pio_utils.F90
+                piolib_mod.F90)
+
+set(TEMPSRCF90  pionfatt_mod.F90
+                pionfread_mod.F90
+                pionfwrite_mod.F90
+                pionfput_mod.F90
+                pionfget_mod.F90
+                alloc_mod.F90
+                box_rearrange.F90
+                rearrange.F90
+                iompi_mod.F90
+                piodarray.F90
+                pio_spmd_utils.F90
+                pio_msg_getput_callbacks.F90)
+
+foreach(tempfile IN LISTS TEMPSRCF90)
+  add_custom_command(
+    OUTPUT ${tempfile}
+    COMMAND ${GENF90} ${CMAKE_CURRENT_SOURCE_DIR}/${tempfile}.in > ${tempfile}
+    DEPENDS  ${tempfile}.in
+  )
+endforeach()
 
 target_sources(${PROJECT_NAME} PRIVATE ${SRCS_F90} ${SRCS_C} ${TEMPSRCF90})
-if(NetCDF_Fortran_FOUND)
-    add_library(NetCDF::NetCDF UNKNOWN IMPORTED)
-    set_target_properties(NetCDF::NetCDF PROPERTIES IMPORTED_LOCATION "${NetCDF_Fortran_LIBRARY}")
-    target_link_libraries(${PROJECT_NAME} PUBLIC NetCDF::NetCDF)
-endif()
-if(PnetCDF_Fortran_FOUND)
-    add_library(PnetCDF::PnetCDF UNKNOWN IMPORTED)
-    set_target_properties(PnetCDF::PnetCDF PROPERTIES IMPORTED_LOCATION "${PnetCDF_Fortran_LIBRARY}")
-    target_link_libraries(${PROJECT_NAME} PUBLIC PnetCDF::PnetCDF)
-endif()
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../unittests)
-  ADD_SUBDIRECTORY(../unittests unittests)
-endif()
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../testpio)
-  ADD_SUBDIRECTORY(../testpio testpio)
-endif()
 
 install (TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
