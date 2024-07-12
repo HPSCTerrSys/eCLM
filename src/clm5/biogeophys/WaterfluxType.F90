@@ -72,6 +72,7 @@ module WaterfluxType
 
      real(r8), pointer :: qflx_adv_col             (:,:) ! col advective flux across different soil layer interfaces [mm H2O/s] [+ downward]
      real(r8), pointer :: qflx_rootsoi_col         (:,:) ! col root and soil water exchange [mm H2O/s] [+ into root]
+     real(r8), pointer :: qflx_parflow_col         (:,:) ! col source/sink flux per soil layer sent to ParFlow [mm H2O/s] [- out from root]
      real(r8), pointer :: qflx_infl_col            (:)   ! col infiltration (mm H2O /s)
      real(r8), pointer :: qflx_surf_col            (:)   ! col surface runoff (mm H2O /s)
      real(r8), pointer :: qflx_drain_col           (:)   ! col sub-surface runoff (mm H2O /s)
@@ -214,6 +215,7 @@ contains
     allocate(this%qflx_drain_vr_col      (begc:endc,1:nlevsoi))      ; this%qflx_drain_vr_col        (:,:) = nan
     allocate(this%qflx_adv_col             (begc:endc,0:nlevsoi))    ; this%qflx_adv_col             (:,:) = nan
     allocate(this%qflx_rootsoi_col         (begc:endc,1:nlevsoi))    ; this%qflx_rootsoi_col         (:,:) = nan
+    allocate(this%qflx_parflow_col         (begc:endc,1:nlevsoi))    ; this%qflx_parflow_col         (:,:) = nan
     allocate(this%qflx_infl_col            (begc:endc))              ; this%qflx_infl_col            (:)   = nan
     allocate(this%qflx_surf_col            (begc:endc))              ; this%qflx_surf_col            (:)   = nan
     allocate(this%qflx_drain_col           (begc:endc))              ; this%qflx_drain_col           (:)   = nan
@@ -418,6 +420,11 @@ contains
     call hist_addfld2d (fname='QROOTSINK',  units='mm/s', type2d='levsoi', &
          avgflag='A', long_name='water flux from soil to root in each soil-layer', &
          ptr_col=this%qflx_rootsoi_col, set_spec=spval, l2g_scale_type='veg', default='inactive')
+
+     this%qflx_parflow_col(begc:endc,:) = spval
+    call hist_addfld2d (fname='QPARFLOW',  units='mm/s', type2d='levsoi', &
+         avgflag='A', long_name='Water fluxes per soil layer sent to Parflow', &
+         ptr_col=this%qflx_parflow_col, set_spec=spval, l2g_scale_type='veg', default='inactive')
 
     this%qflx_evap_can_patch(begp:endp) = spval
     call hist_addfld1d (fname='QVEGE', units='mm/s',  &
