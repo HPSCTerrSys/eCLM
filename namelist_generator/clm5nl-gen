@@ -24,7 +24,7 @@ import toml
 from docopt import docopt
 from clm5nl.generators import build_namelist
 
-__version__ = "0.3"
+__version__ = "0.4"
 
 env_var_regex = re.compile(r"\$\{.*\}")
 _missing_envs = set()
@@ -57,11 +57,16 @@ def generate_namelists(params_file, out_dir: str = ""):
   print(f"Namelists will be saved to {out_dir}")
   os.makedirs(out_dir, exist_ok=True)   
   for nl, opts in nl_opts.items():
-    if nl == "lnd_in":
+    if nl == "drv_in":
+      if "case_name" not in opts:
+        opts["case_name"] = os.path.splitext(os.path.basename(params_file))[0]
+    elif nl == "lnd_in":
       opts["drv_in.start_type"] = nl_opts["drv_in"]["clm_start_type"]
     elif nl == "drv_flds_in":
       opts["lnd_in.clm_accelerated_spinup"] = nl_opts["lnd_in"]["clm_accelerated_spinup"]
       opts["lnd_in.use_fates"] = nl_opts["lnd_in"]["use_fates"]
+    elif nl == "modelio_nml":
+      opts["MAX_MPITASKS_PER_NODE"] = nl_opts["drv_in"]["ntasks"]
     success, msg = build_namelist(nl, opts, out_dir)
     if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
 
@@ -70,7 +75,7 @@ def generate_namelists(params_file, out_dir: str = ""):
   for nl in namelists:
     if nl == "mosart_in":
       #TODO: Throw error if ${CESMDATAROOT} is missing
-      opts["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}/inputdata") 
+      opts["frivinp_rtm"] = resolve_env_vars("${CESMDATAROOT}") 
     success, msg = build_namelist(nl, opts, out_dir)
     if not success: print(f'ERROR in build_namelist("{nl}"): {msg}', file=sys.stderr) ; return 3
   print("Success!")

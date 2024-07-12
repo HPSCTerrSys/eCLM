@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.16.3)
 
-project (CLM5-TSMP LANGUAGES C Fortran)
+project (eCLM LANGUAGES C Fortran)
 
 include(SetBuildOptions)
 
@@ -10,7 +10,7 @@ add_subdirectory(clm5)
 add_subdirectory(stub_comps)
 add_subdirectory(datm)
 add_subdirectory(mosart)
-add_subdirectory(cesm)
+add_subdirectory(eclm)
 
 # Make sure that the required libraries are always found 
 # independent from  LD_LIBRARY_PATH and the install location. 

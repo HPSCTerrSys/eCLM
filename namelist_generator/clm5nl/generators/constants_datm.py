@@ -94,7 +94,7 @@ TOPO_STREAM_DEFAULTS = {
   "DOMAIN_FILE_NAMES":  "topodata_0.9x1.25_USGS_070110_stream_c151201.nc",
   "FIELD_VAR_NAMES"  :  "TOPO    topo",
   "FIELD_FILE_PATH"  :  "$DIN_LOC_ROOT/atm/datm7/topo_forcing",
-  "FIELD_FILE_NAMES" :  "topodata_0.9x1.25_USGS_070110_stream_c151201.n"
+  "FIELD_FILE_NAMES" :  "topodata_0.9x1.25_USGS_070110_stream_c151201.nc"
 }
 
 # Store indent spaces for multiline
