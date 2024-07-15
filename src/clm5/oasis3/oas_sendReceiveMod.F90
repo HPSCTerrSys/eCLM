@@ -53,43 +53,43 @@ contains
 #endif
 
 #ifdef COUP_OAS_ICON
-  subroutine oas_receive_icon(bounds, seconds_elapsed, atm2lnd_inst)
+  subroutine oas_receive_icon(bounds, seconds_elapsed, x2l)
     use atm2lndType, only: atm2lnd_type
+    use clm_cpl_indices
 
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
-    type(atm2lnd_type), intent(inout) :: atm2lnd_inst
+    real(r8)         ,  intent(inout) :: x2l(:,:) ! driver import state to land model
     real(kind=r8),      allocatable   :: buffer(:,:)
     integer                           :: num_grid_points
     integer                           :: info
-    integer                           :: g
+    integer                           :: g, i
 
 
     num_grid_points = (bounds%endg - bounds%begg) + 1
     allocate(buffer(num_grid_points, 1))
 
     !    call oasis_get(oas_id_t, seconds_elapsed, oas_rcv_meta(:,:,oas_id_t), info)
-    call oasis_get(oas_id_t,  seconds_elapsed, atm2lnd_inst%forc_t_not_downscaled_grc, info)
-    call oasis_get(oas_id_u,  seconds_elapsed, atm2lnd_inst%forc_u_grc, info)
-    call oasis_get(oas_id_v,  seconds_elapsed, atm2lnd_inst%forc_v_grc, info)
-    call oasis_get(oas_id_qv, seconds_elapsed, atm2lnd_inst%forc_q_not_downscaled_grc, info)
-    call oasis_get(oas_id_ht, seconds_elapsed, atm2lnd_inst%forc_hgt_grc, info)
-    call oasis_get(oas_id_pr, seconds_elapsed, atm2lnd_inst%forc_pbot_not_downscaled_grc, info)
-    call oasis_get(oas_id_rs, seconds_elapsed, atm2lnd_inst%forc_solad_grc(:,1), info)
-    call oasis_get(oas_id_fs, seconds_elapsed, atm2lnd_inst%forc_solai_grc(:,1), info)
-    call oasis_get(oas_id_lw, seconds_elapsed, atm2lnd_inst%forc_lwrad_not_downscaled_grc, info)
-    call oasis_get(oas_id_cr, seconds_elapsed, atm2lnd_inst%forc_rain_not_downscaled_grc, info)
-    call oasis_get(oas_id_gr, seconds_elapsed, atm2lnd_inst%forc_snow_not_downscaled_grc, info)
-
-    !SPo: some postprocessing of atm2lnd is missing; may better use x2l 
+    call oasis_get(oas_id_t,  seconds_elapsed, x2l(index_x2l_Sa_tbot,:), info)
+    call oasis_get(oas_id_u,  seconds_elapsed, x2l(index_x2l_Sa_u,:), info)
+    call oasis_get(oas_id_v,  seconds_elapsed, x2l(index_x2l_Sa_v,:), info)
+    call oasis_get(oas_id_qv, seconds_elapsed, x2l(index_x2l_Sa_shum,:), info)
+    call oasis_get(oas_id_ht, seconds_elapsed, x2l(index_x2l_Sa_z,:), info)
+    call oasis_get(oas_id_pr, seconds_elapsed, x2l(index_x2l_Sa_pbot,:), info)
+    call oasis_get(oas_id_rs, seconds_elapsed, x2l(index_x2l_Faxa_swvdr,:), info)
+    call oasis_get(oas_id_fs, seconds_elapsed, x2l(index_x2l_Faxa_swvdf,:), info)
+    call oasis_get(oas_id_lw, seconds_elapsed, x2l(index_x2l_Faxa_lwdn,:), info)
+    call oasis_get(oas_id_cr, seconds_elapsed, x2l(index_x2l_Faxa_rainl,:), info)
+    call oasis_get(oas_id_gr, seconds_elapsed, x2l(index_x2l_Faxa_snowl,:), info)
+    x2l(index_x2l_Faxa_rainc,:) = 0.
+    x2l(index_x2l_Faxa_snowc,:) = 0.
 
     do g=bounds%begg,bounds%endg
-       atm2lnd_inst%forc_solad_grc(g,1) = 0.5_r8 * atm2lnd_inst%forc_solad_grc(g,1)
-       atm2lnd_inst%forc_solad_grc(g,2) = atm2lnd_inst%forc_solad_grc(g,1)
-       atm2lnd_inst%forc_solai_grc(g,1) = 0.5_r8 * atm2lnd_inst%forc_solai_grc(g,1)
-       atm2lnd_inst%forc_solai_grc(g,2) = atm2lnd_inst%forc_solai_grc(g,1)
-       atm2lnd_inst%forc_solar_grc(g)   =  atm2lnd_inst%forc_solad_grc(g,2) + atm2lnd_inst%forc_solad_grc(g,1) &
-                                        +  atm2lnd_inst%forc_solai_grc(g,2) + atm2lnd_inst%forc_solai_grc(g,1)
+       i = 1 + (g - bounds%begg)
+       x2l(index_x2l_Faxa_swvdr,i) = 0.5_r8 * x2l(index_x2l_Faxa_swvdr,i)
+       x2l(index_x2l_Faxa_swndr,i) = x2l(index_x2l_Faxa_swvdr,i)
+       x2l(index_x2l_Faxa_swvdf,i) = 0.5_r8 * x2l(index_x2l_Faxa_swvdf,i)
+       x2l(index_x2l_Faxa_swndf,i) = x2l(index_x2l_Faxa_swvdf,i)
     enddo
 
   end subroutine oas_receive_icon
