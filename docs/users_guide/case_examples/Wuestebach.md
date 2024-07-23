@@ -14,7 +14,7 @@ For JSC users, all required namelist and input files to run this case are in the
 
 ```sh
 mkdir test_cases
-cp /p/scratch/cslts/shared_data/rlmod_eCLM/example_cases/wtb_1x1  test_cases/
+cp -r /p/scratch/cslts/shared_data/rlmod_eCLM/example_cases/wtb_1x1  test_cases/
 cd test_cases/wtb_1x1
 ```
 
@@ -107,4 +107,4 @@ sbatch run-eclm-job.sh
 
 To check the job status, run `sacct`.
 
-The model run is successful if the history files (wtb_1x1.clm2.h0.*.nc) have been generated.
+The model run is successful if the history files (`wtb_1x1.clm2.h0.*.nc`) have been generated.
