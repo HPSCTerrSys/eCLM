@@ -33,7 +33,7 @@ jutil env activate -p projectID
 # Create folders
 MYPROJECT="$PROJECT/$USER"
 MYSCRATCH="$SCRATCH/$USER"
-mkdir -p $MYPROJECT $MYSCRATCHK
+mkdir -p $MYPROJECT $MYSCRATCH
 ```
 
 ## Step 2: Download eCLM
