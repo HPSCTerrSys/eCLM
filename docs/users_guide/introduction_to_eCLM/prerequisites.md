@@ -7,8 +7,12 @@ If you are new to using Linux systems, it’s helpful to get familiar with a cou
 ### 1. Get familiar with linux command line 
 There are many good resources on the internet to get familiar with the basic command line arguments to navigate through different directories, create folders and files, move or manipulate files etc..
 
+Resources:
+- https://www.linuxcommand.org/
+- Jülich Supercomputing Centre: https://go.fzj.de/JSC-usertips
+
 ### 2. Get familiar with a text editor
-A text editor is very useful for quick and effective editing of files on Linux systems. There are different options for text editors like <a href="https://www.vim.org/" target="_blank">vim</a> or <a href="https://www.nano-editor.org/" target="_blank">nano</a>. Vim is already installed on the JSC systems. Look for a cheat sheet or a tutorial online or check the documentation on their official websites.
+A text editor is very useful for quick and effective editing of files on Linux systems. There are different options for text editors like <a href="https://www.vim.org/" target="_blank">vim</a>, [Emacs](https://www.gnu.org/software/emacs/) or <a href="https://www.nano-editor.org/" target="_blank">nano</a>. Vim and Emacs are already installed on the JSC systems. Look for a cheat sheet or a tutorial online or check the documentation on their official websites.
 
 ## netCDF files
 
