@@ -21,6 +21,7 @@ contains
     integer, allocatable :: partition(:)      ! partition descriptor; input to oasis_def_partition
     integer              :: gcell_start       ! starting gridcell index
     integer              :: gcell_previous    ! gridcell index from previous loop iteration
+    integer              :: num_local_gcells  ! total number of gridcells for this process
     integer              :: k, g              ! array/loop indices
     integer              :: grid_id           ! id returned after call to oasis_def_partition
 #ifdef COUP_OAS_ICON
@@ -39,38 +40,56 @@ contains
     ! -----------------------------------------------------------------
     ! ... Define partition
     ! -----------------------------------------------------------------
-    ! partition length = (# elements for partition info) + (max segments ORANGE partition) x (# elements per segment info)
-    !                  = 2 + 200*2 = 402
-    allocate(partition(402))
-    partition(:) = 0; k = 0
+    if (ldomain%nj == 1) then
+      ! POINTS partitioning scheme
+      ! partition length = 2 + total number of gridpoints allocated to this MPI process
+      num_local_gcells = bounds%endg - bounds%begg + 1
+      allocate(partition(num_local_gcells + 2))
+      partition(:) = 0; k = 0
 
-    ! Use ORANGE partitioning scheme. This scheme defines an ensemble
-    ! of gridcell segments. See OASIS3-MCT User's guide for more info.
-    partition(1) = 3
+      ! Use POINTS partitioning scheme. This partition is a list of global indices associated with each process.
+      partition(1) = 4
+      partition(2) = num_local_gcells
 
-    ! Mark 1st segment
-    gcell_start = ldecomp%gdc2glo(bounds%begg)
-    partition(2) = 1
-    gcell_previous = gcell_start
+      do g = bounds%begg, bounds%endg
+        partition(3+k) = ldecomp%gdc2glo(g)
+        k = k + 1
+      enddo
+    else
+      ! ORANGE partitioning scheme
+      ! partition length = (# elements for partition info) + (max segments ORANGE partition) x (# elements per segment info)
+      !                  = 2 + 200*2 = 402
+      allocate(partition(402))
+      partition(:) = 0; k = 0
 
-    ! Capture segments by detecting segment boundaries. A boundary is 
-    ! detected when the current and previous gridcells are not consecutive.
-    do g = bounds%begg+1, bounds%endg
-      if (ldecomp%gdc2glo(g) - gcell_previous /= 1) then
-        ! Previous segment complete; its partition params could now be defined
-        partition(3+k) = gcell_start - 1                  ! segment global offset (0-based)
-        partition(4+k) = gcell_previous - gcell_start + 1 ! segment length
-        k = k + 2
-        gcell_start  = ldecomp%gdc2glo(g) ! current gridcell marks the start of a new segment 
-        partition(2) = partition(2) + 1   ! increment number of segments (limited to 200 based from OASIS3-MCT User's guide)
-      end if
-      gcell_previous = ldecomp%gdc2glo(g)
-    enddo
+      ! Use ORANGE partitioning scheme. This scheme defines an ensemble
+      ! of gridcell segments. See OASIS3-MCT User's guide for more info.
+      partition(1) = 3
 
-    ! Define partition params for last segment
-    partition(3+k) = gcell_start - 1
-    partition(4+k) = gcell_previous - gcell_start + 1
-    partition(2) = partition(2) + 1
+      ! Mark 1st segment
+      gcell_start = ldecomp%gdc2glo(bounds%begg)
+      partition(2) = 1
+      gcell_previous = gcell_start
+
+      ! Capture segments by detecting segment boundaries. A boundary is 
+      ! detected when the current and previous gridcells are not consecutive.
+      do g = bounds%begg+1, bounds%endg
+        if (ldecomp%gdc2glo(g) - gcell_previous /= 1) then
+          ! Previous segment complete; its partition params could now be defined
+          partition(3+k) = gcell_start - 1                  ! segment global offset (0-based)
+          partition(4+k) = gcell_previous - gcell_start + 1 ! segment length
+          k = k + 2
+          gcell_start  = ldecomp%gdc2glo(g) ! current gridcell marks the start of a new segment 
+          partition(2) = partition(2) + 1   ! increment number of segments (limited to 200 based from OASIS3-MCT User's guide)
+        end if
+        gcell_previous = ldecomp%gdc2glo(g)
+      enddo
+
+      ! Define partition params for last segment
+      partition(3+k) = gcell_start - 1
+      partition(4+k) = gcell_previous - gcell_start + 1
+      partition(2) = partition(2) + 1
+    end if
 
     call oasis_def_partition(grid_id, partition, ierror, ldomain%ns)
     deallocate(partition)

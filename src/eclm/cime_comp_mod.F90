@@ -43,6 +43,7 @@ module cime_comp_mod
 #if defined(USE_OASIS)
   use mod_oasis
 #endif
+
   !----------------------------------------------------------------------------
   ! component model interfaces (init, run, final methods)
   !----------------------------------------------------------------------------
@@ -179,9 +180,7 @@ module cime_comp_mod
 
   implicit none
 
-#ifndef USE_PDAF
   private
-#endif
 
   public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
   public timing_dir, mpicom_GLOID
@@ -591,24 +590,26 @@ contains
 #endif
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
-
     !----------------------------------------------------------
     !| Initialize MCT and MPI communicators and IO
     !----------------------------------------------------------
 
     character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
-
 #ifdef USE_PDAF
     integer, optional, intent(in) :: pdaf_comm
     integer, optional, intent(in) :: pdaf_id
     integer, optional, intent(in) :: pdaf_max
 #endif
+
     integer, dimension(num_inst_total) :: comp_id, comp_comm, comp_comm_iam
     logical :: comp_iamin(num_inst_total)
     character(len=seq_comm_namelen) :: comp_name(num_inst_total)
     integer :: it
-    integer :: driver_id, oas_comp_id
+    integer :: driver_id
     integer :: driver_comm
+#if defined(USE_OASIS)
+    integer :: oas_comp_id
+#endif
 
 #ifndef USE_PDAF
     call mpi_init(ierr)
@@ -628,7 +629,6 @@ contains
 #ifdef USE_PDAF
     if (present(pdaf_comm)) then
       global_comm = pdaf_comm
-      !write(*,*) "PDAF_COMM present"
     else
       call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
       call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
@@ -2186,12 +2186,21 @@ contains
   !*******************************************************************************
   !===============================================================================
 
+#ifdef USE_PDAF
+  subroutine cime_run(ntsteps)
+#else
   subroutine cime_run()
+#endif
     use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
          rof_layout, ocn_layout, wav_layout, esp_layout
     use shr_string_mod, only: shr_string_listGetIndexF
     use seq_comm_mct, only: num_inst_driver
 
+#ifdef USE_PDAF
+    ! TSMP specific
+    integer, intent(in), optional :: ntsteps
+    integer :: counter=0
+#endif
     ! gptl timer lookup variables
     integer, parameter :: hashcnt=7
     integer            :: hashint(hashcnt)
@@ -2243,6 +2252,19 @@ contains
     call t_stopf ('CPL:RUN_LOOP_BSTART')
     Time_begin = mpi_wtime()
     Time_bstep = mpi_wtime()
+
+#ifdef USE_PDAF
+    ! Check for optional input `ntsteps`
+    if(.not. present(ntsteps)) then
+      write(logunit,*) 'ERROR: ntsteps input not present, but needed for TSMP-PDAF ;'
+      call shr_sys_abort(subname// &
+        ' missing ntsteps input that is needed for TSMP-PDAF')
+    end if
+
+    ! Explicitly set `counter` to zero before loop
+    counter = 0
+#endif
+
     do while ( .not. stop_alarm)
 
        call t_startf('CPL:RUN_LOOP', hashint(1))
@@ -4086,6 +4108,18 @@ contains
           call t_drvstopf   ('CPL:BARRIERALARM',cplrun=.true.)
        endif
 
+#ifdef USE_PDAF
+      ! TSMP specific stop condition:
+      counter = counter + 1
+      if (present(ntsteps) .and. counter == ntsteps) then
+        if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,103) subname,' NOTE: Stopping from TSMP-PDAF alarm ntsteps'
+          write(logunit,*) ' '
+        endif
+        stop_alarm = .true.
+      end if
+#endif
     enddo   ! driver run loop
 
     !|----------------------------------------------------------
@@ -4320,10 +4354,9 @@ contains
     end if
 
 #ifdef USE_PDAF
-    !write(*,*) "just before split", comm_in, pdaf_id, mype, numpes, comm_out
     if (pdaf_max > 1) then
-      call mpi_comm_split(comm_in, pdaf_id, 0, comm_out, ierr)
-      call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
+       call mpi_comm_split(comm_in, pdaf_id, 0, comm_out, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
     else if (num_inst_driver == 1) then
 #else
     if (num_inst_driver == 1) then
