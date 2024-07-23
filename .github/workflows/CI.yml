@@ -2,9 +2,9 @@
 # events but only for the master branch
 on:
   push:
-    branches:  [ eclm, ubuntu2204] 
+    branches:  [eclm] 
   pull_request:
-    branches: [ eclm, ubuntu2204]
+    branches: [eclm]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
