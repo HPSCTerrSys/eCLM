@@ -6,6 +6,7 @@ Before building and running eCLM on JSC machines, the following prerequisites sh
 * Join a compute time project
 * Logging in to JSC machines
 
+Reference link for creating a JSC/JuDoor account, joining a compute time project and logging in to JSC machines: https://go.fzj.de/ibg-3-supercomputer-guide
 
 ## Create a JSC/JuDoor account
 
