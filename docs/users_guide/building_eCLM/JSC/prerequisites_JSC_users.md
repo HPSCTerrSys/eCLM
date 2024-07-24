@@ -6,44 +6,7 @@ Before building and running eCLM on JSC machines, the following prerequisites sh
 * Join a compute time project
 * Logging in to JSC machines
 
-Reference link for creating a JSC/JuDoor account, joining a compute time project and logging in to JSC machines: https://go.fzj.de/ibg-3-supercomputer-guide
-
-## Create a JSC/JuDoor account
-
-You need a JSC account to access the HPC system. For that, you first need a JuDoor account for which you can register <a href="https://judoor.fz-juelich.de/register" target="_blank">here</a>.
-
-Enter your e-mail address and click on "Send confirmation mail".
-
-Afterwards, you will receive an e-mail from dispatch@jsc.de with a personalized link. Click on the link and fill in the form with your data.
-
-Submit the form.
-
-With this, the creation of your JSC account is completed. Now, you can log in to your <a href="https://judoor.fz-juelich.de/login" target="_blank">JuDoor account</a> with your username and password:
-
-
-## Join a compute time project
-
-Log in to your JuDoor account. Join the compute time project you were assigned to. Under "Projects", choose "+ Join a project":
-
-Enter the project id. You can also add some additional information. Then you can join the project.
-
-The PI/PA will be automatically informed about your join request and can add you to the different systems available in the project. Once you are approved to join the project compute time, you should be able to see the project id under "Projects".
-
-## Logging in to JSC machines
-
-To log in to one of the JSC machines you need a JSC account and access to a compute time project (see above).
-
-The final step is to create and upload an SSH key for your account and local machine.
-
-JSC provides thorough instructions for <a href="https://apps.fz-juelich.de/jsc/hps/juwels/access.html#openssh-key-generation" target="_blank">Juwels</a> and <a href="https://apps.fz-juelich.de/jsc/hps/jureca/access.html#openssh-key-generation" target="_blank">Jureca</a> on how to generate and upload SSH keys.
-
-
-## Additional information on JSC machines
-
-For the full user documentation regarding the JSC systems check:
-
-* <a href="https://apps.fz-juelich.de/jsc/hps/juwels/index.html" target="_blank">Juwels documentation</a>
-* <a href="https://apps.fz-juelich.de/jsc/hps/jureca/index.html" target="_blank">Jureca documentation</a>
+Follow the startup-guide <https://go.fzj.de/ibg-3-supercomputer-guide> for creating a JSC/JuDoor account, joining a compute time project and logging in to JSC machines. 
 
 ## Additional software for windows users
 
