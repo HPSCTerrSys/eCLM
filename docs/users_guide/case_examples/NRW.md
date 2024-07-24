@@ -39,4 +39,4 @@ sbatch run-eclm-job.sh
 ```
 To check the job status, run `sacct`.
 
-The model run is successful if the history files (nrw_300x300.clm2.h0.*.nc) have been generated.
+The model run is successful if the history files (`nrw_300x300.clm2.h0.*.nc`) have been generated.
