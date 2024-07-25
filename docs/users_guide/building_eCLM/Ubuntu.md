@@ -10,6 +10,10 @@ On Ubuntu the following command should load the necessary system
 requirements
 
 ```sh
+# Update `apt`
+sudo apt update
+
+# Install packages
 sudo apt install libxml2-utils pylint wget cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev gfortran openmpi-bin libopenmpi-dev
 ```
 
