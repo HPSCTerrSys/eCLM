@@ -14,8 +14,22 @@ requirements
 sudo apt update
 
 # Install packages
+# ----------------
+
+# Utilities
+sudo apt install libxml2-utils wget
+
+# Python
+sudo apt install python3 python3-pip pylint
+
+# Compiler
+sudo apt install gfortran openmpi-bin libopenmpi-dev cmake
+
+# Linear algebra
 sudo apt install libblas-dev liblapack-dev
-sudo apt install libxml2-utils pylint wget cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev gfortran openmpi-bin libopenmpi-dev
+
+# NetCDF
+sudo apt install netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
 ```
 
 Have a look in `.github/workflows/CI.yml` to find the Ubuntu packages
