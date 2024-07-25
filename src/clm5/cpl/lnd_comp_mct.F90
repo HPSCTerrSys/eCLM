@@ -710,6 +710,7 @@ contains
     use seq_comm_mct     , only : num_inst_lnd
     use clm_varctl       , only : iulog
     use clm_varctl       , only : inst_index
+    use spmdMod     , only: iam
     implicit none
     ! !ARGUMENTS:
     type(seq_infodata_type), intent(IN) :: infodata     ! CESM driver level info data
@@ -720,6 +721,9 @@ contains
 
     call seq_infodata_GetData(infodata, lnd_resume=lnd_resume )
     ! If lnd_resume is blank, restart file wasn't modified
+
+    write(iulog,"(a,i10,i10,i10)") 'eCLM(lnd_comp_mct): iam, inst_index, num_inst_lnd ', iam, inst_index, num_inst_lnd
+
     if ( len_trim(lnd_resume(min(num_inst_lnd,inst_index))) == 0 )then
        resume_from_data_assim = .false.
     ! Otherwise restart was modified and we are resuming from data assimulation
