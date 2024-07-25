@@ -43,6 +43,7 @@ module cime_comp_mod
 #if defined(USE_OASIS)
   use mod_oasis
 #endif
+
   !----------------------------------------------------------------------------
   ! component model interfaces (init, run, final methods)
   !----------------------------------------------------------------------------
@@ -591,24 +592,26 @@ contains
 #endif
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
-
     !----------------------------------------------------------
     !| Initialize MCT and MPI communicators and IO
     !----------------------------------------------------------
 
     character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
-
 #ifdef USE_PDAF
     integer, optional, intent(in) :: pdaf_comm
     integer, optional, intent(in) :: pdaf_id
     integer, optional, intent(in) :: pdaf_max
 #endif
+
     integer, dimension(num_inst_total) :: comp_id, comp_comm, comp_comm_iam
     logical :: comp_iamin(num_inst_total)
     character(len=seq_comm_namelen) :: comp_name(num_inst_total)
     integer :: it
-    integer :: driver_id, oas_comp_id
+    integer :: driver_id
     integer :: driver_comm
+#if defined(USE_OASIS)
+    integer :: oas_comp_id
+#endif
 
 #ifndef USE_PDAF
     call mpi_init(ierr)
@@ -628,7 +631,6 @@ contains
 #ifdef USE_PDAF
     if (present(pdaf_comm)) then
       global_comm = pdaf_comm
-      !write(*,*) "PDAF_COMM present"
     else
       call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
       call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
@@ -4320,10 +4322,9 @@ contains
     end if
 
 #ifdef USE_PDAF
-    !write(*,*) "just before split", comm_in, pdaf_id, mype, numpes, comm_out
     if (pdaf_max > 1) then
-      call mpi_comm_split(comm_in, pdaf_id, 0, comm_out, ierr)
-      call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
+       call mpi_comm_split(comm_in, pdaf_id, 0, comm_out, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
     else if (num_inst_driver == 1) then
 #else
     if (num_inst_driver == 1) then
