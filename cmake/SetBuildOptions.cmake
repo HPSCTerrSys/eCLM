@@ -22,12 +22,11 @@ endif()
 
 # Set compiler specific flags.
 if(COMPILER STREQUAL "GNU")
-    add_compile_options(-fallow-argument-mismatch)
     add_compile_definitions(CPRGNU)
     set(CMAKE_C_FLAGS "-std=gnu99 -fopenmp")
     set(CMAKE_C_FLAGS_DEBUG "-fcheck=bounds")
     set(CMAKE_C_FLAGS_RELEASE "-O")
-    set(CMAKE_Fortran_FLAGS "-fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -ffree-form -fopenmp")
+    set(CMAKE_Fortran_FLAGS "-fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -ffree-form -fopenmp -fallow-argument-mismatch")
     set(CMAKE_Fortran_FLAGS_DEBUG "-g -Wall -Og -fbacktrace -ffpe-trap=zero,overflow -fcheck=bounds")
     set(CMAKE_Fortran_FLAGS_RELEASE "-O") 
 elseif(COMPILER STREQUAL "Intel")
