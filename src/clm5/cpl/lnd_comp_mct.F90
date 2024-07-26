@@ -734,9 +734,9 @@ contains
     write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(min(num_inst_lnd,inst_index)) ', iam, lnd_resume(min(num_inst_lnd,inst_index))
     write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(min(num_inst_lnd,inst_index))) ', iam, len(lnd_resume(min(num_inst_lnd,inst_index)))
     write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(min(num_inst_lnd,inst_index))) ', iam, len_trim(lnd_resume(min(num_inst_lnd,inst_index)))
-    write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(0) ', iam, lnd_resume(0)
-    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(0)) ', iam, len(lnd_resume(0))
-    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(0)) ', iam, len_trim(lnd_resume(0))
+    ! write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(0) ', iam, lnd_resume(0)
+    ! write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(0)) ', iam, len(lnd_resume(0))
+    ! write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(0)) ', iam, len_trim(lnd_resume(0))
 
     if ( len_trim(lnd_resume(min(num_inst_lnd,inst_index))) == 0 )then
        resume_from_data_assim = .false.
