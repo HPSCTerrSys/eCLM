@@ -272,9 +272,7 @@ contains
 
     call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
     call set_nextsw_cday(nextsw_cday)
-    write(iulog,*)'clm before lnd_handle_resume'
     call lnd_handle_resume( infodata )
-    write(iulog,*)'clm after lnd_handle_resume'
 
     ! Reset shr logging to original values
 
@@ -724,15 +722,27 @@ contains
     call seq_infodata_GetData(infodata, lnd_resume=lnd_resume )
     ! If lnd_resume is blank, restart file wasn't modified
 
-    write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume ', iam, lnd_resume
     write(iulog,"(a,i10,i10,i10)") 'eCLM(lnd_comp_mct): iam, inst_index, num_inst_lnd ', iam, inst_index, num_inst_lnd
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, min(inst_index, num_inst_lnd) ', iam, min(num_inst_lnd,inst_index)
+    write(iulog,"(a,i10)") 'eCLM(lnd_comp_mct): iam, SHR_KIND_CL ', iam, SHR_KIND_CL
+    write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(1) ', iam, lnd_resume(1)
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(1)) ', iam, len(lnd_resume(1))
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(1)) ', iam, len_trim(lnd_resume(1))
+    write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(num_inst_lnd) ', iam, lnd_resume(num_inst_lnd)
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(num_inst_lnd)) ', iam, len(lnd_resume(num_inst_lnd))
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(num_inst_lnd)) ', iam, len_trim(lnd_resume(num_inst_lnd))
+    write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(min(num_inst_lnd,inst_index)) ', iam, lnd_resume(min(num_inst_lnd,inst_index))
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(min(num_inst_lnd,inst_index))) ', iam, len(lnd_resume(min(num_inst_lnd,inst_index)))
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(min(num_inst_lnd,inst_index))) ', iam, len_trim(lnd_resume(min(num_inst_lnd,inst_index)))
+    write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(0) ', iam, lnd_resume(0)
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(0)) ', iam, len(lnd_resume(0))
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(0)) ', iam, len_trim(lnd_resume(0))
 
     if ( len_trim(lnd_resume(min(num_inst_lnd,inst_index))) == 0 )then
        resume_from_data_assim = .false.
     ! Otherwise restart was modified and we are resuming from data assimulation
     else
        resume_from_data_assim = .true.
-       write(iulog,"(a,i10,i10,i10)") 'eCLM(lnd_comp_mct): iam, inst_index, num_inst_lnd ', iam, inst_index, num_inst_lnd
        write(iulog,*) 'resume_from_DA ', resume_from_data_assim
     end if
     if ( resume_from_data_assim ) call update_DA_nstep()
