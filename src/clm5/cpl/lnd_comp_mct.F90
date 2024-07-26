@@ -272,7 +272,9 @@ contains
 
     call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
     call set_nextsw_cday(nextsw_cday)
+    write(iulog,*)'clm before lnd_handle_resume'
     call lnd_handle_resume( infodata )
+    write(iulog,*)'clm after lnd_handle_resume'
 
     ! Reset shr logging to original values
 
@@ -730,6 +732,7 @@ contains
     ! Otherwise restart was modified and we are resuming from data assimulation
     else
        resume_from_data_assim = .true.
+       write(iulog,"(a,i10,i10,i10)") 'eCLM(lnd_comp_mct): iam, inst_index, num_inst_lnd ', iam, inst_index, num_inst_lnd
        write(iulog,*) 'resume_from_DA ', resume_from_data_assim
     end if
     if ( resume_from_data_assim ) call update_DA_nstep()
