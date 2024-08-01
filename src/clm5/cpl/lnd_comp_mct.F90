@@ -724,7 +724,7 @@ contains
 
     write(iulog,"(a,i10,i10,i10)") 'eCLM(lnd_comp_mct): iam, inst_index, num_inst_lnd ', iam, inst_index, num_inst_lnd
     write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, min(inst_index, num_inst_lnd) ', iam, min(num_inst_lnd,inst_index)
-    write(iulog,"(a,i10)") 'eCLM(lnd_comp_mct): iam, SHR_KIND_CL ', iam, SHR_KIND_CL
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, SHR_KIND_CL ', iam, SHR_KIND_CL
     write(iulog,*) 'eCLM(lnd_comp_mct): iam, lnd_resume(1) ', iam, lnd_resume(1)
     write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len(lnd_resume(1)) ', iam, len(lnd_resume(1))
     write(iulog,"(a,i10,i10)") 'eCLM(lnd_comp_mct): iam, len_trim(lnd_resume(1)) ', iam, len_trim(lnd_resume(1))
