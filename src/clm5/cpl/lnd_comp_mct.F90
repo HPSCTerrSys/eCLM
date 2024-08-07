@@ -69,7 +69,7 @@ contains
                                   seq_infodata_start_type_brnch
     use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
-    use spmdMod          , only : masterproc, spmd_init
+    use spmdMod          , only : masterproc, spmd_init, iam
     use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
     use clm_cpl_indices  , only : clm_cpl_indices_set
     use mct_mod          , only : mct_aVect_init, mct_aVect_zero, mct_gsMap_lsize
@@ -139,7 +139,11 @@ contains
 #endif                      
 
     inst_name   = seq_comm_name(LNDID)
+
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_init_mct): iam,  LNDID', iam, LNDID
     inst_index  = seq_comm_inst(LNDID)
+    write(iulog,"(a,i10,i10)") 'eCLM(lnd_init_mct): iam,  inst_index', iam, inst_index
+
     inst_suffix = seq_comm_suffix(LNDID)
 
     ! Initialize io log unit
