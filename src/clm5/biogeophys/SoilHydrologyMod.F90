@@ -17,7 +17,8 @@ module SoilHydrologyMod
   use TemperatureType   , only : temperature_type
   use LandunitType      , only : lun                
   use ColumnType        , only : col                
-  use PatchType         , only : patch                
+  use PatchType         , only : patch
+  use pftconMod         , only : pftcon  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -152,6 +153,7 @@ contains
          snl              =>    col%snl                             , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
          dz               =>    col%dz                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
 
+         fff_pftcon       =>    pftcon%fff                          , & ! Input:  [real(r8) (:)   ]  decay factor (m-1)
          sucsat           =>    soilstate_inst%sucsat_col           , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
          watsat           =>    soilstate_inst%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
          wtfact           =>    soilstate_inst%wtfact_col           , & ! Input:  [real(r8) (:)   ]  maximum saturated fraction for a gridcell         
@@ -210,7 +212,7 @@ contains
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
-         fff(c) = 0.5_r8
+         fff(c) = fff_pftcon
          if (use_vichydro) then 
             top_moist(c) = 0._r8
             top_ice(c) = 0._r8
@@ -385,7 +387,7 @@ contains
           t_soisno         =>    temperature_inst%t_soisno_col       , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
 
           frac_h2osfc      =>    waterstate_inst%frac_h2osfc_col     , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-          frac_h2osfc_nosnow  => waterstate_inst%frac_h2osfc_nosnow_col,    & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero (if no snow present)
+          frac_h2osfc_nosnow  => waterstate_inst%frac_h2osfc_nosnow_col, & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero (if no snow present)
           frac_sno         =>    waterstate_inst%frac_sno_eff_col    , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
           h2osoi_ice       =>    waterstate_inst%h2osoi_ice_col      , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
           h2osfc           =>    waterstate_inst%h2osfc_col          , & ! Output: [real(r8) (:)   ]  surface water (mm)                                
@@ -1008,20 +1010,18 @@ contains
           h2osoi_liq         =>    waterstate_inst%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                            
           h2osoi_ice         =>    waterstate_inst%h2osoi_ice_col          & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                                
           )
-
+          
        ! Get time step
-
        dtime = get_step_size()
-
+       
        ! Convert layer thicknesses from m to mm
-
        do j = 1,nlevsoi
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
              dzmm(c,j) = dz(c,j)*1.e3_r8
 
              vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
-             icefrac(c,j) = min(1._r8,vol_ice/watsat(c,j))          
+             icefrac(c,j) = min(1._r8,vol_ice/watsat(c,j))
           end do
        end do
 

@@ -151,6 +151,10 @@ contains
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: psis_sat (:,:)                ! read in - soil parameter: sucsat (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: shape_param (:,:)             ! read in - soil parameter: bsw (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: thetas (:,:)                  ! read in - soil parameter: watsat (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: ks (:,:)                      ! read in - soil parameter: xksat (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: ipedof  
     integer            :: begp, endp
@@ -225,6 +229,10 @@ contains
 
     allocate(sand3d(begg:endg,nlevsoifl))
     allocate(clay3d(begg:endg,nlevsoifl))
+    allocate(thetas(begg:endg,nlevsoifl))
+    allocate(shape_param(begg:endg,nlevsoifl))
+    allocate(psis_sat(begg:endg,nlevsoifl))
+    allocate(ks(begg:endg,nlevsoifl))
 
     ! Determine organic_max from parameter file
 
@@ -260,6 +268,26 @@ contains
     call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(sourcefile, __LINE__)) 
+    end if
+
+    call ncd_io(ncid=ncid, varname='THETAS', flag='read', data=thetas, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+        call endrun(msg=' ERROR: THETAS NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+    end if
+
+    call ncd_io(ncid=ncid, varname='SHAPE_PARAM', flag='read', data=shape_param, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+        call endrun(msg=' ERROR: SHAPE_PARAM NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+    end if
+
+    call ncd_io(ncid=ncid, varname='PSIS_SAT', flag='read', data=psis_sat, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+        call endrun(msg=' ERROR: PSIS_SAT NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+    end if
+
+    call ncd_io(ncid=ncid, varname='KSAT', flag='read', data=ks, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+        call endrun(msg=' ERROR: KSAT NOT on surfdata file'//errMsg(sourcefile, __LINE__))
     end if
 
     do p = begp,endp
@@ -453,6 +481,24 @@ contains
                 ipedof=get_ipedof(0)
                 call pedotransf(ipedof, sand, clay, &
                      soilstate_inst%watsat_col(c,lev), soilstate_inst%bsw_col(c,lev), soilstate_inst%sucsat_col(c,lev), xksat)
+                
+                ! Read perturbed hydraulic properties from surface file.
+                ! Added by F. Eloundou
+
+                if (lev <= nlevsoifl) then
+                    ! Use values from the file for the soil layers
+                    soilstate_inst%watsat_col(c,lev)   =  thetas(col%gridcell(c), lev)
+                    soilstate_inst%bsw_col(c,lev)      =  shape_param(col%gridcell(c), lev)
+                    soilstate_inst%sucsat_col(c,lev)   =  psis_sat(col%gridcell(c), lev)
+                    xksat                              =  ks(col%gridcell(c), lev) ! mm/s
+                else
+                    ! Use the value from the 10th soil level as a default value
+                    soilstate_inst%watsat_col(c,lev)   =  thetas(col%gridcell(c), 10)
+                    soilstate_inst%bsw_col(c,lev)      =  shape_param(col%gridcell(c), 10)
+                    soilstate_inst%sucsat_col(c,lev)   =  psis_sat(col%gridcell(c), 10)
+                    xksat                              =  ks(col%gridcell(c), 10)
+                end if
+
 
                 om_watsat         = max(0.93_r8 - 0.1_r8   *(zsoi(lev)/zsapric), 0.83_r8)
                 om_b              = min(2.7_r8  + 9.3_r8   *(zsoi(lev)/zsapric), 12.0_r8)
@@ -624,6 +670,7 @@ contains
 
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl, dzsoifl)
+    deallocate(thetas, shape_param, psis_sat, ks)
 
   end subroutine SoilStateInitTimeConst
 
