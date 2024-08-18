@@ -30,6 +30,12 @@ cat lnd_in
 cat drv_in
 ```
 
+For a complete list of `lnd_in`-namelist options, see
+https://docs.cesm.ucar.edu/models/cesm2/settings/current/clm5_0_nml.html
+
+For a complete list of `drv_in`-namelist options, see
+https://docs.cesm.ucar.edu/models/cesm2/settings/current/drv_nml.html
+
 ## 3. Run the test case.
 
 Customize the copied job script `run-eclm-job.sh` as desired. In this example, it is already customized to this test case, you should just adapt the SBATCH parameters `--account` to your compute project and `--partition` to your system. As the NRW case is a regional domain, the number of processors is increased to 128 compared to the single-column case (SBATCH parameter `--ntasks-per-node=128`). 

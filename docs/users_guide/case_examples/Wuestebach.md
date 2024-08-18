@@ -42,8 +42,10 @@ clm5nl-check .
 ## 2. Check the case setup
 You can check out the important namelist files.
 
-- The `lnd_in` file is the primary configuration file for the land model component in CLM. It includes settings related to various processes and configurations specific to land surface modeling.
-- The `drv_in` file configures the coupler and driver settings that control how different components of the Earth system model interact. It manages the synchronization and communication between components such as the atmosphere, land, ocean, and sea ice models.
+- The `lnd_in` file is the primary configuration file for the land model component in CLM. It includes settings related to various processes and configurations specific to land surface modeling. For a complete list of `lnd_in`-namelist options, see https://docs.cesm.ucar.edu/models/cesm2/settings/current/clm5_0_nml.html
+
+- The `drv_in` file configures the coupler and driver settings that control how different components of the Earth system model interact. It manages the synchronization and communication between components such as the atmosphere, land, ocean, and sea ice models. For a complete list of `drv_in`-namelist options, see https://docs.cesm.ucar.edu/models/cesm2/settings/current/drv_nml.html
+
 
 Print out the namelist files and look at the customized configurations.
 ```sh
