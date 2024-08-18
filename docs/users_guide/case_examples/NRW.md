@@ -17,7 +17,7 @@ The DE-NRW domain extension and dominant land use type. Adapted from <a href="ht
 For JSC users, all required namelist and input files to run this case are in the shared directory `/p/scratch/cslts/shared_data/rlmod_eCLM`
 
 ```sh
-cp /p/scratch/cslts/shared_data/rlmod_eCLM/example_cases/nrw_300x300  test_cases/
+cp -r /p/scratch/cslts/shared_data/rlmod_eCLM/example_cases/nrw_300x300  test_cases/
 cd test_cases/nrw_300x300
 ```
 
