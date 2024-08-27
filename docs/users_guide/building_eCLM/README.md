@@ -44,6 +44,10 @@ cmake --build "$BUILD_DIR"
 cmake --install "$BUILD_DIR"
 ```
 
+* adding the flag `--parallel 8` can potentially speed up the build
+  process (full command: `cmake --build "$BUILD_DIR" --parallel 8`),
+  https://cmake.org/cmake/help/latest/manual/cmake.1.html#cmdoption-cmake-build-j
+
 ### Install namelist generator Python package
 
 The namelist generator scripts require Python 3.X.
