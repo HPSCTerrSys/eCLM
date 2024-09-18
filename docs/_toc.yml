@@ -1,0 +1,59 @@
+# https://hpscterrsys.github.io/eCLM
+
+format: jb-book
+root: INDEX
+parts:
+  - caption: User's Guide
+    chapters:
+
+    - file: users_guide/introduction_to_eCLM/README
+      title: Introduction to eCLM
+      sections:
+      - file: users_guide/introduction_to_eCLM/introduction
+      - file: users_guide/introduction_to_eCLM/prerequisites
+      - file: users_guide/introduction_to_eCLM/how_to_use_this_document
+
+    - file: users_guide/building_eCLM/README
+      title: Building eCLM
+      sections:
+      - file: users_guide/building_eCLM/Ubuntu
+      - file: users_guide/building_eCLM/JSC/README
+        title: JSC
+        sections:
+        - file: users_guide/building_eCLM/JSC/prerequisites_JSC_users
+        - file: users_guide/building_eCLM/JSC/setting_up_eCLM
+      - file: users_guide/building_eCLM/Levante
+
+    - file: users_guide/case_examples/README
+      title: Running example cases
+      sections:
+      - file: users_guide/case_examples/Wuestebach
+      - file: users_guide/case_examples/NRW
+      - file: users_guide/case_examples/EURO-CORDEX
+
+    - file: users_guide/case_creation/README
+      title: Creating a custom case
+      sections:
+      - file: users_guide/case_creation/1_create_grid_file
+      - file: users_guide/case_creation/2_create_mapping_file
+      - file: users_guide/case_creation/3_create_domain_file
+      - file: users_guide/case_creation/4_create_surface_file
+      - file: users_guide/case_creation/5_modifications_surface_domain_file
+      - file: users_guide/case_creation/6_create_atm_forcings
+
+    - file: users_guide/running_eCLM/README
+      title: Running eCLM
+      sections:
+      - file: users_guide/running_eCLM/basic_commands
+      - file: users_guide/running_eCLM/case_customization
+
+    - file: users_guide/analyzing_model_output
+      title: Analyzing model output
+
+  - caption: Reference
+    chapters:
+    - file: reference/history_fields
+    - url: https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/tech_note/index.html
+      title: Technical Note
+    - url: https://hpscterrsys.github.io/eCLM/src
+      title: eCLM Source Code Browser
