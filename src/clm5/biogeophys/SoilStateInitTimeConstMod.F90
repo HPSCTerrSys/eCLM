@@ -508,7 +508,7 @@ contains
                 soilstate_inst%bd_col(c,lev)        = (1._r8 - soilstate_inst%watsat_col(c,lev))*2.7e3_r8 
                 soilstate_inst%watsat_col(c,lev)    = (1._r8 - om_frac) * soilstate_inst%watsat_col(c,lev) + om_watsat*om_frac
                 tkm                                 = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
-                soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b   
+                soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * soilstate_inst%bsw_col(c,lev) + om_frac*om_b
                 soilstate_inst%sucsat_col(c,lev)    = (1._r8-om_frac) * soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac  
                 soilstate_inst%hksat_min_col(c,lev) = xksat
 
