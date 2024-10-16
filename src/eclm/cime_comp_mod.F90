@@ -658,6 +658,10 @@ contains
     !   if (Global_comm /= MPI_COMM_NULL) then
 
     if (num_inst_driver > 1) then
+#ifdef USE_PDAF
+      call shr_sys_abort( subname//':: num_inst_driver > 1'// &
+        ' not supported for PDAF' )
+#endif
        call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
        write(cpl_inst_tag,'("_",i4.4)') driver_id
 #ifdef USE_PDAF
