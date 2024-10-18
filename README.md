@@ -1,7 +1,8 @@
 `dev-add-params`-Branch: Generated for usage of eCLM-PDAF with
 additional parameter input.
 
-Original implementation: https://github.com/FedoAIworld/clm5_0/tree/release-clm5.0-add-params-dev
+Original CLM5-implementation of additional parameter input:
+https://github.com/FedoAIworld/clm5_0/tree/release-clm5.0-add-params
 
 # eCLM
 
