@@ -111,6 +111,15 @@ jobs:
           path: ${{ env.PFUNIT_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
 
+      - name: Check OASIS_INSTALL_PREFIX
+        run: |
+          echo "OASIS_INSTALL_PREFIX=${OASIS_INSTALL_PREFIX}"
+          tree ${OASIS_INSTALL_PREFIX}
+
+      - name: Check PFUNIT_INSTALL_PREFIX
+        run: |
+          echo "PFUNIT_INSTALL_PREFIX=${PFUNIT_INSTALL_PREFIX}"
+          tree ${PFUNIT_INSTALL_PREFIX}
       #
       # eCLM
       #
