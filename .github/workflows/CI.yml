@@ -39,7 +39,9 @@ jobs:
       BUILD_DIR: bld
       INSTALL_DIR: install
       OASIS_TAG: tsmp-patches-v0.1
+      OASIS_INSTALL_PREFIX: ${{ github.workspace }}/oasis3-mct/install
       PFUNIT_TAG: v4.10.0
+      PFUNIT_INSTALL_PREFIX:  ${{ github.workspace }}/pFUnit/install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
 
     steps:
@@ -61,7 +63,7 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-oasis-restore
         with:
-          path: ${{ github.workspace }}/oasis3-mct/install
+          path: ${{ env.OASIS_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
       - if: matrix.config.use_oasis == 'True' && steps.cache-oasis-restore.outputs.cache-hit != 'true'
@@ -74,13 +76,12 @@ jobs:
           cd util/make_dir
           echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
           make realclean static-libs -f TopMakefileOasis3
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_ROOT}/install" >> $GITHUB_ENV
 
       - if: matrix.config.use_oasis == 'True' && steps.cache-oasis-restore.outputs.cache-hit != 'true'
         name: Cache OASIS3-MCT ${{ env.OASIS_TAG }}
         uses: actions/cache/save@v4
         with:
-          path: ${{ github.workspace }}/oasis3-mct/install
+          path: ${{ env.OASIS_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
       #
@@ -90,7 +91,7 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-pFUnit-restore
         with:
-          path: ${{ github.workspace }}/pFUnit/install
+          path: ${{ env.PFUNIT_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
 
       - if: steps.cache-pFUnit-restore.outputs.cache-hit != 'true'
@@ -102,13 +103,12 @@ jobs:
           cmake -S . -B bld -DCMAKE_INSTALL_PREFIX=install
           cmake --build bld
           cmake --install bld
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:$(realpath install)" >> $GITHUB_ENV
 
       - if: steps.cache-pFUnit-restore.outputs.cache-hit != 'true'
         name: Cache pFUnit ${{ env.PFUNIT_TAG }}
         uses: actions/cache/save@v4
         with:
-          path: ${{ github.workspace }}/pFUnit/install
+          path: ${{ env.PFUNIT_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
 
       #
@@ -116,16 +116,16 @@ jobs:
       #
       - name: Configure eCLM
         run: |
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
-          cmake -S src -B $BUILD_DIR                                \
-                -DCMAKE_BUILD_TYPE="RELEASE"                        \
-                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                 \
-                -DCMAKE_C_COMPILER=$CC                              \
-                -DCMAKE_Fortran_COMPILER=$FC                        \
-                -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
-                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}  \
-                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}    \
-                -DUSE_PDAF=${{ matrix.config.use_pdaf }}            \
+          cmake -S src -B $BUILD_DIR                                                    \
+                -DCMAKE_BUILD_TYPE="RELEASE"                                            \
+                -DCMAKE_PREFIX_PATH="${OASIS_INSTALL_PREFIX}:${PFUNIT_INSTALL_PREFIX}"  \
+                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                                     \
+                -DCMAKE_C_COMPILER=$CC                                                  \
+                -DCMAKE_Fortran_COMPILER=$FC                                            \
+                -DUSE_OASIS=${{ matrix.config.use_oasis }}                              \
+                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}                      \
+                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}                        \
+                -DUSE_PDAF=${{ matrix.config.use_pdaf }}                                \
                 -DENABLE_TESTS="True"
 
       - name: Build eCLM
