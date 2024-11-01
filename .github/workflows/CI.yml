@@ -38,6 +38,8 @@ jobs:
       FC: mpifort
       BUILD_DIR: bld
       INSTALL_DIR: install
+      OASIS_TAG: tsmp-patches-v0.1
+      PFUNIT_TAG: v4.10.0
       CMAKE_BUILD_PARALLEL_LEVEL: 4
 
     steps:
@@ -52,34 +54,40 @@ jobs:
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
       - if: matrix.config.use_oasis == 'True'
-        name: Cache OASIS3-MCT
-        uses: actions/cache@v4
-        id: cache-deps
-        env:
-          cache-name: cache-eCLM-dependencies
+        name: Restore cached OASIS3-MCT ${{ env.OASIS_TAG }}
+        uses: actions/cache/restore@v4
+        id: cache-oasis-restore
         with:
-          path: "~/.local"
-          key: cache-${{ matrix.config.name }}
+          path: ${{ github.workspace }}/oasis3-mct/install
+          key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
-      - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
-        name: Install OASIS3-MCT
+      - if: matrix.config.use_oasis == 'True' && steps.cache-oasis-restore.outputs.cache-hit != 'true'
+        name: Install OASIS3-MCT ${{ env.OASIS_TAG }}
+        working-directory: ${{ github.workspace }}
         run: |
-          git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
+          git clone -b $OASIS_TAG https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
           cd oasis3-mct
           export OASIS_ROOT=$(pwd)
           echo "OASIS_ROOT=${OASIS_ROOT}"
-          echo "DEPENDENCIES_DIR=${DEPENDENCIES_DIR}"
           cd util/make_dir
           echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
           cat make.inc
           make realclean static-libs -f TopMakefileOasis3
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_ROOT}/install" >> $GITHUB_ENV
+
+      - if: matrix.config.use_oasis == 'True' && steps.cache-oasis-restore.outputs.cache-hit != 'true'
+        name: Cache OASIS3-MCT ${{ env.OASIS_TAG }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/oasis3-mct/install
+          key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
       - name: Configure eCLM
         run: |
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
           cmake -S src -B $BUILD_DIR                                \
                 -DCMAKE_BUILD_TYPE="RELEASE"                        \
                 -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                 \
-                -DCMAKE_PREFIX_PATH="$HOME/.local"                  \
                 -DCMAKE_C_COMPILER=$CC                              \
                 -DCMAKE_Fortran_COMPILER=$FC                        \
                 -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
