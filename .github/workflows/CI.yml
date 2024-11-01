@@ -84,6 +84,12 @@ jobs:
           path: ${{ env.OASIS_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
+      - if: matrix.config.use_oasis == 'True'
+        name: Add OASIS to CMAKE_PREFIX_PATH
+        run: |
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_INSTALL_PREFIX}" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+          tree -FUCh --du --filelimit 20 -L 2 ${OASIS_INSTALL_PREFIX}
       #
       # pFUnit
       #
@@ -111,31 +117,26 @@ jobs:
           path: ${{ env.PFUNIT_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
 
-      - if: matrix.config.use_oasis == 'True'
-        name: Check OASIS_INSTALL_PREFIX
+      - name: Add pFUnit to CMAKE_PREFIX_PATH
         run: |
-          echo "OASIS_INSTALL_PREFIX=${OASIS_INSTALL_PREFIX}"
-          tree ${OASIS_INSTALL_PREFIX}
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${PFUNIT_INSTALL_PREFIX}" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+          tree -FUCh --du --filelimit 20 -L 2 ${PFUNIT_INSTALL_PREFIX}
 
-      - name: Check PFUNIT_INSTALL_PREFIX
-        run: |
-          echo "PFUNIT_INSTALL_PREFIX=${PFUNIT_INSTALL_PREFIX}"
-          tree ${PFUNIT_INSTALL_PREFIX}
       #
       # eCLM
       #
       - name: Configure eCLM
         run: |
-          cmake -S src -B $BUILD_DIR                                                    \
-                -DCMAKE_BUILD_TYPE="RELEASE"                                            \
-                -DCMAKE_PREFIX_PATH="${OASIS_INSTALL_PREFIX}:${PFUNIT_INSTALL_PREFIX}"  \
-                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                                     \
-                -DCMAKE_C_COMPILER=$CC                                                  \
-                -DCMAKE_Fortran_COMPILER=$FC                                            \
-                -DUSE_OASIS=${{ matrix.config.use_oasis }}                              \
-                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}                      \
-                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}                        \
-                -DUSE_PDAF=${{ matrix.config.use_pdaf }}                                \
+          cmake -S src -B $BUILD_DIR                               \
+                -DCMAKE_BUILD_TYPE="RELEASE"                       \
+                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                \
+                -DCMAKE_C_COMPILER=$CC                             \
+                -DCMAKE_Fortran_COMPILER=$FC                       \
+                -DUSE_OASIS=${{ matrix.config.use_oasis }}         \
+                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }} \
+                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}   \
+                -DUSE_PDAF=${{ matrix.config.use_pdaf }}           \
                 -DENABLE_TESTS="True"
 
       - name: Build eCLM
