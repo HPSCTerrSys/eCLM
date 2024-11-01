@@ -125,7 +125,8 @@ jobs:
                 -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
                 -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}  \
                 -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}    \
-                -DUSE_PDAF=${{ matrix.config.use_pdaf }}
+                -DUSE_PDAF=${{ matrix.config.use_pdaf }}            \
+                -DENABLE_TESTS="True"
 
       - name: Build eCLM
         run: cmake --build $BUILD_DIR

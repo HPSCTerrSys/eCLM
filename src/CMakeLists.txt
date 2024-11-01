@@ -22,6 +22,14 @@ add_subdirectory(datm)
 add_subdirectory(mosart)
 add_subdirectory(eclm)
 
+option(ENABLE_TESTS "Enable unit tests." OFF)
+if (ENABLE_TESTS)
+  find_package(PFUNIT REQUIRED)
+  enable_testing()
+  message(STATUS "Found pFUnit v${PFUNIT_VERSION}")
+  message(STATUS "Unit tests enabled.")
+endif()
+
 # Make sure that the required libraries are always found 
 # independent from  LD_LIBRARY_PATH and the install location. 
 # https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling#always-full-rpath
