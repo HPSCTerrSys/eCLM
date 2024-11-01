@@ -53,6 +53,9 @@ jobs:
       - name: Download MPI Fortran compiler
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
+      #
+      # OASIS3-MCT
+      #
       - if: matrix.config.use_oasis == 'True'
         name: Restore cached OASIS3-MCT ${{ env.OASIS_TAG }}
         uses: actions/cache/restore@v4
@@ -68,10 +71,8 @@ jobs:
           git clone -b $OASIS_TAG https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
           cd oasis3-mct
           export OASIS_ROOT=$(pwd)
-          echo "OASIS_ROOT=${OASIS_ROOT}"
           cd util/make_dir
           echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
-          cat make.inc
           make realclean static-libs -f TopMakefileOasis3
           echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_ROOT}/install" >> $GITHUB_ENV
 
@@ -82,6 +83,37 @@ jobs:
           path: ${{ github.workspace }}/oasis3-mct/install
           key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
+      #
+      # pFUnit
+      #
+      - name: Restore cached pFUnit ${{ env.PFUNIT_TAG }}
+        uses: actions/cache/restore@v4
+        id: cache-pFUnit-restore
+        with:
+          path: ${{ github.workspace }}/pFUnit/install
+          key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
+
+      - if: steps.cache-pFUnit-restore.outputs.cache-hit != 'true'
+        name: Install pFUnit ${{ env.PFUNIT_TAG }}
+        working-directory: ${{ github.workspace }}
+        run: |
+          git clone -b ${PFUNIT_TAG} --recursive https://github.com/Goddard-Fortran-Ecosystem/pFUnit.git
+          cd pFUnit
+          cmake -S . -B bld -DCMAKE_INSTALL_PREFIX=install
+          cmake --build bld
+          cmake --install bld
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:$(realpath install)" >> $GITHUB_ENV
+
+      - if: steps.cache-pFUnit-restore.outputs.cache-hit != 'true'
+        name: Cache pFUnit ${{ env.PFUNIT_TAG }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/pFUnit/install
+          key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
+
+      #
+      # eCLM
+      #
       - name: Configure eCLM
         run: |
           echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
