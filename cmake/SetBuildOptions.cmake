@@ -38,7 +38,7 @@ elseif(COMPILER STREQUAL "Intel" OR COMPILER STREQUAL "IntelLLVM")
     if(USE_PDAF)
       # PDAF: additional flags produced problems in the compilation
       # https://github.com/HPSCTerrSys/TSMP2/issues/36
-      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g")
+      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0 -check all")
     else()
       set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created")
     endif()
