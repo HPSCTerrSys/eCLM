@@ -1847,7 +1847,7 @@ contains
        ! Density offset for wind-driven compaction, initial ideas based on Liston et. al (2007) J. Glaciology,
        ! 53(181), 241-255. Modified for a continuous wind impact and slightly more sensitive
        ! to wind - Andrew Slater, 2016
-          bifall(c) = bifall(c) + (266.861_r8 * ((1._r8 + TANH(forc_wind(g)/5.0_r8))/2._r8)**8.8_r8)
+          bifall(c) = bifall(c) + (266.861_r8 * ((1._r8 + TANH(forc_wind(g)/min_wind_snowcompact))/2._r8)**8.8_r8)
        end if
 
     end do
