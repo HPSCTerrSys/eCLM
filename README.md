@@ -1,3 +1,6 @@
+`dev-add-snow-params`-Branch: Generated for usage of eCLM-PDAF by
+Buliao Guan. Adds namelist input of snow parameters.
+
 # eCLM
 
 [![CI](https://github.com/HPSCTerrSys/eCLM/actions/workflows/CI.yml/badge.svg)](https://github.com/HPSCTerrSys/eCLM/actions/workflows/CI.yml)
