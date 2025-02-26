@@ -38,6 +38,10 @@ jobs:
       FC: mpifort
       BUILD_DIR: bld
       INSTALL_DIR: install
+      OASIS_TAG: tsmp-patches-v0.1
+      OASIS_INSTALL_PREFIX: ${{ github.workspace }}/oasis3-mct/install
+      PFUNIT_TAG: v4.10.0
+      PFUNIT_INSTALL_PREFIX:  ${{ github.workspace }}/pFUnit/install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
 
     steps:
@@ -51,41 +55,89 @@ jobs:
       - name: Download MPI Fortran compiler
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
+      #
+      # OASIS3-MCT
+      #
       - if: matrix.config.use_oasis == 'True'
-        name: Cache OASIS3-MCT
-        uses: actions/cache@v4
-        id: cache-deps
-        env:
-          cache-name: cache-eCLM-dependencies
+        name: Restore cached OASIS3-MCT ${{ env.OASIS_TAG }}
+        uses: actions/cache/restore@v4
+        id: cache-oasis-restore
         with:
-          path: "~/.local"
-          key: cache-${{ matrix.config.name }}
+          path: ${{ env.OASIS_INSTALL_PREFIX }}
+          key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
-      - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
-        name: Install OASIS3-MCT
+      - if: matrix.config.use_oasis == 'True' && steps.cache-oasis-restore.outputs.cache-hit != 'true'
+        name: Install OASIS3-MCT ${{ env.OASIS_TAG }}
+        working-directory: ${{ github.workspace }}
         run: |
-          git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
+          git clone -b $OASIS_TAG https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
           cd oasis3-mct
           export OASIS_ROOT=$(pwd)
-          echo "OASIS_ROOT=${OASIS_ROOT}"
-          echo "DEPENDENCIES_DIR=${DEPENDENCIES_DIR}"
           cd util/make_dir
           echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
-          cat make.inc
           make realclean static-libs -f TopMakefileOasis3
 
+      - if: matrix.config.use_oasis == 'True' && steps.cache-oasis-restore.outputs.cache-hit != 'true'
+        name: Cache OASIS3-MCT ${{ env.OASIS_TAG }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.OASIS_INSTALL_PREFIX }}
+          key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
+
+      - if: matrix.config.use_oasis == 'True'
+        name: Add OASIS to CMAKE_PREFIX_PATH
+        run: |
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_INSTALL_PREFIX}" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+          tree -FUCh --du --filelimit 20 -L 2 ${OASIS_INSTALL_PREFIX}
+      #
+      # pFUnit
+      #
+      - name: Restore cached pFUnit ${{ env.PFUNIT_TAG }}
+        uses: actions/cache/restore@v4
+        id: cache-pFUnit-restore
+        with:
+          path: ${{ env.PFUNIT_INSTALL_PREFIX }}
+          key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
+
+      - if: steps.cache-pFUnit-restore.outputs.cache-hit != 'true'
+        name: Install pFUnit ${{ env.PFUNIT_TAG }}
+        working-directory: ${{ github.workspace }}
+        run: |
+          git clone -b ${PFUNIT_TAG} --recursive https://github.com/Goddard-Fortran-Ecosystem/pFUnit.git
+          cd pFUnit
+          cmake -S . -B bld -DCMAKE_INSTALL_PREFIX=install
+          cmake --build bld
+          cmake --install bld
+
+      - if: steps.cache-pFUnit-restore.outputs.cache-hit != 'true'
+        name: Cache pFUnit ${{ env.PFUNIT_TAG }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.PFUNIT_INSTALL_PREFIX }}
+          key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
+
+      - name: Add pFUnit to CMAKE_PREFIX_PATH
+        run: |
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${PFUNIT_INSTALL_PREFIX}" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+          tree -FUCh --du --filelimit 20 -L 2 ${PFUNIT_INSTALL_PREFIX}
+
+      #
+      # eCLM
+      #
       - name: Configure eCLM
         run: |
-          cmake -S src -B $BUILD_DIR                                \
-                -DCMAKE_BUILD_TYPE="RELEASE"                        \
-                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                 \
-                -DCMAKE_PREFIX_PATH="$HOME/.local"                  \
-                -DCMAKE_C_COMPILER=$CC                              \
-                -DCMAKE_Fortran_COMPILER=$FC                        \
-                -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
-                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}  \
-                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}    \
-                -DUSE_PDAF=${{ matrix.config.use_pdaf }}
+          cmake -S src -B $BUILD_DIR                               \
+                -DCMAKE_BUILD_TYPE="RELEASE"                       \
+                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                \
+                -DCMAKE_C_COMPILER=$CC                             \
+                -DCMAKE_Fortran_COMPILER=$FC                       \
+                -DUSE_OASIS=${{ matrix.config.use_oasis }}         \
+                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }} \
+                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}   \
+                -DUSE_PDAF=${{ matrix.config.use_pdaf }}           \
+                -DENABLE_TESTS="True"
 
       - name: Build eCLM
         run: cmake --build $BUILD_DIR
