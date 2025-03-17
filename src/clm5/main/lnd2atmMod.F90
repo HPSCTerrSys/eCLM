@@ -162,8 +162,6 @@ contains
     real(r8), parameter :: amC   = 12.0_r8                      ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8                      ! Atomic mass number for Oxygen
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO             ! Atomic mass number for CO2
-!    real(r8), parameter :: m_per_mm = 1.e-3_r8                  ! 0.001 meters per mm
-!    real(r8), parameter :: sec_per_hr = 3600                    ! 3600 s in 1 hour
     ! The following converts g of C to kg of CO2
     real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
     !------------------------------------------------------------------------
