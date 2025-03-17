@@ -433,18 +433,15 @@ contains
          lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
 
-!    do c = bounds%begc, bounds%endc
-!     if (col%hydrologically_active(c)) then
-!       if (col%itype(c) == istsoil .or. col%itype(c) == istcrop) then
-!         g = col%gridcell(c)
-!         do j = 1, nlevsoi
-!          ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr): 
-!          !             1/hr                 =             [mm/s]                 *   [s/hr]   *  [m/mm]  *     [1/m] 
-!          lnd2atm_inst%qflx_parflow_grc(g,j) = lnd2atm_inst%qflx_parflow_grc(g,j) * sec_per_hr * m_per_mm * (1/col%dz(c,j))
-!         enddo
-!       end if
-!     end if
-!    end do
+    ! adjust nan values after c2g, need to be rechecked
+    do g = bounds%begg, bounds%endg
+     do j = 1, nlevsoi
+      if (lnd2atm_inst%qflx_parflow_grc(g,j) == spval) then
+       lnd2atm_inst%qflx_parflow_grc(g,j) = 0._r8
+       write(iulog,*)'WARNING: qflx_parflow_grc is nan at grid point ',g,' level',j,' replaced with 0.'
+      end if
+     end do
+    enddo
 #endif
 
   end subroutine lnd2atm
