@@ -2389,16 +2389,16 @@ contains
                   ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
                   ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr):
                   !    1/hr         =             [mm/s]                  *   [s/hr]   *  [m/mm]  *   [1/m]
-                  qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j))  * sec_per_hr * m_per_mm * (1/dz(c,j))
+                  qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j))  * sec_per_hr * m_per_mm * (1._r8/dz(c,j))
                else 
-                  qflx_parflow(c,j) = -qflx_rootsoi(c,j) * sec_per_hr * m_per_mm * (1/dz(c,j))
+                  qflx_parflow(c,j) = -qflx_rootsoi(c,j) * sec_per_hr * m_per_mm * (1._r8/dz(c,j))
                end if
             end do
          end do
 
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
-            qflx_drain(c)         = -sum(qflx_parflow(c,:) / sec_per_hr / m_per_mm / (1/dz(c,j)) ) !0._r8
+            qflx_drain(c)         = -sum(qflx_parflow(c,:) * (1._r8/sec_per_hr) * (1._r8/m_per_mm) * dz(c,j) ) ! mm/s
             qflx_drain_perched(c) = 0._r8  
             qflx_rsub_sat(c)      = 0._r8
             qflx_qrgwl(c)         = qflx_snwcp_liq(c)   ! Set imbalance for snow capping
