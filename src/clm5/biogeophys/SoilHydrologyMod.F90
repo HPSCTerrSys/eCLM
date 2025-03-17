@@ -2364,6 +2364,7 @@ contains
      integer  :: c,j,fc                                   ! indices
      real(r8), parameter :: m_per_mm = 1.e-3_r8          ! 0.001 meters per mm
      real(r8), parameter :: sec_per_hr = 3600            ! 3600 s in 1 hour
+     real(r8) :: qflx_drain_tmp(bounds%begc:bounds%endc) ! temporary qflx_drain
 
      !-----------------------------------------------------------------------
 
@@ -2381,9 +2382,10 @@ contains
 
          ! COUP_OAS_PFL
          ! Calculate here the source/sink term for ParFlow
-         do j = 1, nlevsoi
-            do fc = 1, num_hydrologyc
-               c = filter_hydrologyc(fc)
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            qflx_drain_tmp(c) = 0._r8
+            do j = 1, nlevsoi
                if (j == 1) then
                   ! From SoilWaterPlantSinkMod:
                   ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
@@ -2393,12 +2395,9 @@ contains
                else 
                   qflx_parflow(c,j) = -qflx_rootsoi(c,j) * sec_per_hr * m_per_mm * (1._r8/dz(c,j))
                end if
+               qflx_drain_tmp(c) = qflx_drain_tmp(c) + qflx_parflow(c,j) * (1._r8/sec_per_hr) * (1._r8/m_per_mm) * dz(c,j) !mm/s
             end do
-         end do
-
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            qflx_drain(c)         = -sum(qflx_parflow(c,:) * (1._r8/sec_per_hr) * (1._r8/m_per_mm) * dz(c,j) ) ! mm/s
+            qflx_drain(c)         = -qflx_drain_tmp(c) ! mm/s
             qflx_drain_perched(c) = 0._r8  
             qflx_rsub_sat(c)      = 0._r8
             qflx_qrgwl(c)         = qflx_snwcp_liq(c)   ! Set imbalance for snow capping
