@@ -46,6 +46,7 @@ module CanopyHydrologyMod
   integer :: oldfflag=0  ! use old fsno parameterization (N&Y07) 
   real(r8) :: interception_fraction ! Fraction of intercepted precipitation
   real(r8) :: maximum_leaf_wetted_fraction ! Maximum fraction of leaf that may be wet
+  real(r8) :: accum_factor_nl         = 0.1     !
   logical, private :: use_clm5_fpi    = .false. ! use clm5 fpi equation
   ! Snow in vegetation canopy namelist options.
   logical, private :: snowveg_off    = .false.  ! snowveg_flag = 'OFF'
@@ -86,7 +87,8 @@ contains
          interception_fraction, &
          maximum_leaf_wetted_fraction, &
          use_clm5_fpi, &
-         snowveg_flag
+         snowveg_flag, &
+         accum_factor_nl
 
     ! ----------------------------------------------------------------------
     ! Read namelist from standard input. 
@@ -516,7 +518,7 @@ contains
           snowmelt(c) = qflx_snow_drain(c) * dtime
 
           ! set shape factor for accumulation of snow
-          accum_factor=0.1
+          accum_factor= accum_factor_nl
 
           if (h2osno(c) > 0.0) then
 

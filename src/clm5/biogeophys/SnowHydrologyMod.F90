@@ -23,6 +23,8 @@ module SnowHydrologyMod
   use clm_varpar      , only : nlevsno
   use clm_varctl      , only : iulog
   use clm_varcon      , only : namec, h2osno_max
+  use clm_varcon      , only : zsno
+  use clm_varcon      , only : e_ice
   use atm2lndType     , only : atm2lnd_type
   use AerosolMod      , only : aerosol_type
   use TemperatureType , only : temperature_type
@@ -111,6 +113,10 @@ module SnowHydrologyMod
   real(r8) :: overburden_compress_Tfactor = 0.08_r8            ! snow compaction overburden exponential factor (1/K)
   real(r8) :: min_wind_snowcompact        = 5._r8              ! minimum wind speed tht results in compaction (m/s)
 
+  ! Additional snow parameters read from namelist input
+  real(r8) :: zsno_nl                     = 0.0024_r8          ! roughness length for snow [m]
+  real(r8) :: e_ice_nl                    = 6.0                ! soil ice impedance factor
+
   ! ------------------------------------------------------------------------
   ! Parameters controlling the resetting of the snow pack
   ! ------------------------------------------------------------------------
@@ -169,7 +175,9 @@ contains
          wind_dependent_snow_density, snow_overburden_compaction_method, &
          lotmp_snowdensity_method, upplim_destruct_metamorph, &
          overburden_compress_Tfactor, min_wind_snowcompact, &
-         reset_snow, reset_snow_glc, reset_snow_glc_ela
+         reset_snow, reset_snow_glc, reset_snow_glc_ela, &
+         zsno_nl, &
+         e_ice_nl
 
     ! Initialize options to default values, in case they are not specified in the namelist
     wind_dependent_snow_density = .false.
@@ -224,6 +232,9 @@ contains
        call endrun(msg="ERROR bad snow_overburden_compaction_method name"// &
             errMsg(sourcefile, __LINE__))
     end if
+
+  zsno=zsno_nl
+  e_ice=e_ice_nl
 
   end subroutine SnowHydrology_readnl
 
@@ -1836,7 +1847,7 @@ contains
        ! Density offset for wind-driven compaction, initial ideas based on Liston et. al (2007) J. Glaciology,
        ! 53(181), 241-255. Modified for a continuous wind impact and slightly more sensitive
        ! to wind - Andrew Slater, 2016
-          bifall(c) = bifall(c) + (266.861_r8 * ((1._r8 + TANH(forc_wind(g)/5.0_r8))/2._r8)**8.8_r8)
+          bifall(c) = bifall(c) + (266.861_r8 * ((1._r8 + TANH(forc_wind(g)/min_wind_snowcompact))/2._r8)**8.8_r8)
        end if
 
     end do

@@ -67,7 +67,7 @@ module CanopyFluxesMod
   logical, private :: snowveg_on     = .false.                ! snowveg_flag = 'ON'
   logical, private :: snowveg_onrad  = .true.                 ! snowveg_flag = 'ON_RAD'
   logical, private :: use_undercanopy_stability = .true.      ! use undercanopy stability term or not
-
+  real(r8) :: csoilc_nl                     = 0.004_r8        ! Drag coefficient for soil under dense canopy
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
   !------------------------------------------------------------------------------
@@ -98,7 +98,8 @@ contains
     character(len=*), parameter :: nmlname = 'canopyfluxes_inparm'
     !-----------------------------------------------------------------------
 
-    namelist /canopyfluxes_inparm/ use_undercanopy_stability
+    namelist /canopyfluxes_inparm/ use_undercanopy_stability, &
+      csoilc_nl
 
     ! Initialize options to default values, in case they are not specified in
     ! the namelist
@@ -816,7 +817,7 @@ contains
             ri = ( grav*htop(p) * (taf(p) - t_grnd(c)) ) / (taf(p) * uaf(p) **2.00_r8)
 
             !! modify csoilc value (0.004) if the under-canopy is in stable condition
-
+            csoilc=csoilc_nl
             if (use_undercanopy_stability .and. (taf(p) - t_grnd(c) ) > 0._r8) then
                ! decrease the value of csoilc by dividing it with (1+gamma*min(S, 10.0))
                ! ria ("gmanna" in Sakaguchi&Zeng, 2008) is a constant (=0.5)

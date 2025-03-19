@@ -77,6 +77,8 @@ module  PhotosynthesisMod
   integer, parameter, private :: soil=1    ! index for soil
   integer, parameter, private :: stomatalcond_mtd_bb1987     = 1   ! Ball-Berry 1987 method for photosynthesis
   integer, parameter, private :: stomatalcond_mtd_medlyn2011 = 2   ! Medlyn 2011 method for photosynthesis
+  real(r8) :: lmrha_nl                     = 46390_r8              ! activation energy for lmr
+
   ! !PUBLIC VARIABLES:
 
   type :: photo_params_type
@@ -706,7 +708,8 @@ contains
     !-----------------------------------------------------------------------
 
     namelist /photosyns_inparm/ leafresp_method, light_inhibit, &
-              rootstem_acc, stomatalcond_method, modifyphoto_and_lmr_forcrop
+              rootstem_acc, stomatalcond_method, modifyphoto_and_lmr_forcrop, &
+              lmrha_nl
 
     ! Initialize options to default values, in case they are not specified in
     ! the namelist
@@ -1236,7 +1239,7 @@ contains
       vcmaxha = 72000._r8
       jmaxha  = 50000._r8
       tpuha   = 72000._r8
-      lmrha   = 46390._r8
+      lmrha   = lmrha_nl
 
       ! High temperature deactivation, from:
       ! Leuning (2002) Plant, Cell and Environment 25:1205-1210

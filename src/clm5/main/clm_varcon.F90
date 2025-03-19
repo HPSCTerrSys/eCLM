@@ -43,7 +43,7 @@ module clm_varcon
   !------------------------------------------------------------------
 
   real(r8), parameter :: n_melt=0.7                         ! fsca shape parameter
-  real(r8), parameter :: e_ice=6.0                          ! soil ice impedance factor
+  real(r8)            :: e_ice=6.0                          ! soil ice impedance factor
   real(r8), parameter :: pc = 0.4                           ! threshold probability
   real(r8), parameter :: mu = 0.13889                       ! connectivity exponent 
   real(r8), parameter :: secsphr = 3600._r8                 ! Seconds in an hour

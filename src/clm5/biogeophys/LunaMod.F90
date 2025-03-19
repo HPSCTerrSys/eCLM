@@ -64,7 +64,8 @@ module LunaMod
   real(r8), parameter :: CO2ref = 380.0_r8                   ! reference CO2 concentration for calculation of reference NUE. 
   real(r8), parameter :: forc_pbot_ref = 101325.0_r8       ! reference air pressure for calculation of reference NUE
   real(r8), parameter :: Q10Enz = 2.0_r8                   ! Q10 value for enzyme decay rate
-  real(r8), parameter :: Jmaxb0 = 0.0311_r8                ! the baseline proportion of nitrogen allocated for electron transport (J)     
+  real(r8)            :: Jmaxb0 = 0.0311_r8                ! the baseline proportion of nitrogen allocated for electron transport (J)    
+  real(r8)            :: Jmaxb0_nl = 0.0311_r8             ! the baseline proportion of nitrogen allocated for electron transport (J) (namelist input)
   real(r8)            :: Jmaxb1 = 0.1_r8                   ! the baseline proportion of nitrogen allocated for electron transport (J)    
   real(r8), parameter :: Wc2Wjb0 = 0.8054_r8               ! the baseline ratio of rubisco limited rate vs light limited photosynthetic rate (Wc:Wj) 
   real(r8), parameter :: relhExp = 6.0999_r8               ! electron transport parameters related to relative humidity
@@ -109,7 +110,7 @@ module LunaMod
     character(len=*), parameter :: subname = 'lunaReadNML'
     character(len=*), parameter :: nmlname = 'luna'
     !-----------------------------------------------------------------------
-    namelist /luna/ Jmaxb1
+    namelist /luna/ Jmaxb1 , Jmaxb0_nl
 
     ! Initialize options to default values, in case they are not specified in
     ! the namelist
@@ -139,6 +140,8 @@ module LunaMod
        write(iulog,nml=luna)
        write(iulog,*) ' '
     end if
+
+    Jmaxb0=Jmaxb0_nl
 
   end subroutine lunaReadNML
 
