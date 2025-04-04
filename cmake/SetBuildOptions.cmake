@@ -35,7 +35,7 @@ elseif(COMPILER STREQUAL "Intel" OR COMPILER STREQUAL "IntelLLVM")
     set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
     set(CMAKE_C_FLAGS_RELEASE "-O2 -debug minimal")
     set(CMAKE_Fortran_FLAGS "-free -qno-opt-dynamic-align -ftz -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model source -qopenmp")
-    set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0 -check all")
+    set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0") #-check all
     set(CMAKE_Fortran_FLAGS_RELEASE "-O2 -debug minimal")
 else()
     message(FATAL_ERROR "COMPILER='${COMPILER}' is not supported.")
