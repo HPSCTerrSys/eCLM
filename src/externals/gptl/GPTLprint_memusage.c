@@ -98,12 +98,12 @@ int GPTLprint_memusage (const char *str)
   ** get the process size under AIX please tell me.
   */
 
-  bytesperblock = 1024;
-  blockstomb = bytesperblock / (1024.*1024.);
-  if (convert_to_mb)
-    printf ("%s max rss=%.1f MB\n", str, rss*blockstomb);
-  else
-    printf ("%s max rss=%d\n", str, rss);
+  /* bytesperblock = 1024; */
+  /* blockstomb = bytesperblock / (1024.*1024.); */
+  /* if (convert_to_mb) */
+  /*   printf ("%s max rss=%.1f MB\n", str, rss*blockstomb); */
+  /* else */
+  /*   printf ("%s max rss=%d\n", str, rss); */
 #endif
 
   return 0;
