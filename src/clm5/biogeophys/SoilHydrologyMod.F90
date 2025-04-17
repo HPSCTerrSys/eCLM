@@ -2363,8 +2363,7 @@ contains
      character(len=32) :: subname = 'ParFlowDrainage'   ! subroutine name
      integer  :: c,j,fc                                   ! indices
      real(r8), parameter :: m_per_mm = 1.e-3_r8          ! 0.001 meters per mm
-     real(r8), parameter :: sec_per_hr = 3600            ! 3600 s in 1 hour
-     real(r8) :: qflx_drain_tmp(bounds%begc:bounds%endc) ! temporary qflx_drain
+     real(r8), parameter :: sec_per_hr = 3600._r8        ! 3600 s in 1 hour
 
      !-----------------------------------------------------------------------
 
@@ -2384,23 +2383,23 @@ contains
          ! Calculate here the source/sink term for ParFlow
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
-            qflx_drain_tmp(c) = 0._r8
             do j = 1, nlevsoi
                if (j == 1) then
                   ! From SoilWaterPlantSinkMod:
                   ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
-                  ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr):
-                  !    1/hr         =             [mm/s]                  *   [s/hr]   *  [m/mm]  *   [1/m]
-                  qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j))  * sec_per_hr * m_per_mm * (1._r8/dz(c,j))
+                   qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) !mm/s
                else 
-                  qflx_parflow(c,j) = -qflx_rootsoi(c,j) * sec_per_hr * m_per_mm * (1._r8/dz(c,j))
+                   qflx_parflow(c,j) = -qflx_rootsoi(c,j) !mm/s
                end if
-               qflx_drain_tmp(c) = qflx_drain_tmp(c) + qflx_parflow(c,j) * (1._r8/sec_per_hr) * (1._r8/m_per_mm) * dz(c,j) !mm/s
             end do
-            qflx_drain(c)         = -qflx_drain_tmp(c) ! mm/s
+            ! Compute subsurface run-off (mm/s)
+            qflx_drain(c) = -sum(qflx_parflow(c,:))
             qflx_drain_perched(c) = 0._r8  
             qflx_rsub_sat(c)      = 0._r8
             qflx_qrgwl(c)         = qflx_snwcp_liq(c)   ! Set imbalance for snow capping
+            ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr):
+            !         1/hr            =           [mm/s]          *   [s/hr]   *  [m/mm]  *         [1/m]
+            qflx_parflow(c,1:nlevsoi) = qflx_parflow(c,1:nlevsoi) * sec_per_hr * m_per_mm * (1._r8/dz(c,1:nlevsoi))
          end do
 
          ! No drainage for urban columns (necessary to account for water balance errors)
