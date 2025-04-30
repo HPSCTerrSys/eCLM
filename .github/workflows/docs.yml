@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-docs:
+  build-docs:
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
@@ -52,9 +52,9 @@ jobs:
           path: "docs/_build/html"
           name: eCLM_docs
 
-  deploy:
+  deploy-docs:
     if: github.event_name != 'pull_request'
-    needs: build
+    needs: build-docs
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
