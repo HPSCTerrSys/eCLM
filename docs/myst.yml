@@ -1,0 +1,68 @@
+version: 1
+project:
+  title: eCLM Documentation
+  authors:
+    - name: HPSC TerrSys
+  copyright: '2024'
+  exclude:
+    - FORD_options.md
+    - README.md
+  github: HPSCTerrSys/eCLM
+  exports:
+    - format: pdf
+      template: plain_latex_book
+      output: exports/book.pdf
+  toc:
+    - file: INDEX.md
+    - title: User's Guide
+      children:
+        - file: users_guide/introduction_to_eCLM/README.md
+          title: Introduction to eCLM
+          children:
+            - file: users_guide/introduction_to_eCLM/introduction.md
+            - file: users_guide/introduction_to_eCLM/prerequisites.md
+            - file: users_guide/introduction_to_eCLM/how_to_use_this_document.md
+        - file: users_guide/building_eCLM/README.md
+          title: Building eCLM
+          children:
+            - file: users_guide/building_eCLM/Ubuntu.md
+            - file: users_guide/building_eCLM/JSC/README.md
+              title: JSC
+              children:
+                - file: users_guide/building_eCLM/JSC/prerequisites_JSC_users.md
+                - file: users_guide/building_eCLM/JSC/setting_up_eCLM.md
+            - file: users_guide/building_eCLM/Levante.md
+        - file: users_guide/case_examples/README.md
+          title: Running example cases
+          children:
+            - file: users_guide/case_examples/Wuestebach.md
+            - file: users_guide/case_examples/NRW.md
+            - file: users_guide/case_examples/EURO-CORDEX.md
+        - file: users_guide/case_creation/README.md
+          title: Creating a custom case
+          children:
+            - file: users_guide/case_creation/1_create_grid_file.md
+            - file: users_guide/case_creation/2_create_mapping_file.md
+            - file: users_guide/case_creation/3_create_domain_file.md
+            - file: users_guide/case_creation/4_create_surface_file.md
+            - file: users_guide/case_creation/5_modifications_surface_domain_file.md
+            - file: users_guide/case_creation/6_create_atm_forcings.md
+        - file: users_guide/running_eCLM/README.md
+          title: Running eCLM
+          children:
+            - file: users_guide/running_eCLM/basic_commands.md
+            - file: users_guide/running_eCLM/case_customization.md
+        - file: users_guide/analyzing_model_output.md
+          title: Analyzing model output
+    - title: Reference
+      children:
+        - file: reference/history_fields
+        - url: https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/tech_note/index.html
+          title: Technical Note
+        - url: https://hpscterrsys.github.io/eCLM/src
+          title: eCLM Source Code Browser
+site:
+  options:
+    logo: ''
+    folders: true
+  template: book-theme
