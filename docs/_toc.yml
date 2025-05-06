@@ -6,18 +6,18 @@ parts:
   - caption: User's Guide
     chapters:
 
-    - file: users_guide/introduction_to_eCLM/README
-      title: Introduction to eCLM
+    - file: users_guide/introduction/README
+      title: Introduction
       sections:
-      - file: users_guide/introduction_to_eCLM/introduction
-      - file: users_guide/introduction_to_eCLM/prerequisites
-      - file: users_guide/introduction_to_eCLM/how_to_use_this_document
+      - file: users_guide/introduction/introduction
+      - file: users_guide/introduction/prerequisites
+      - file: users_guide/introduction/how_to_use_this_document
 
-    - file: users_guide/building_eCLM/README
-      title: Building eCLM
+    - file: users_guide/installation/README
+      title: Installing eCLM
       sections:
-      - file: users_guide/building_eCLM/Ubuntu
-      - file: users_guide/building_eCLM/JSC
+      - file: users_guide/installation/Ubuntu
+      - file: users_guide/installation/JSC
 
     - file: users_guide/case_examples/README
       title: Running example cases
@@ -36,11 +36,11 @@ parts:
       - file: users_guide/case_creation/5_modifications_surface_domain_file
       - file: users_guide/case_creation/6_create_atm_forcings
 
-    - file: users_guide/running_eCLM/README
+    - file: users_guide/running_cases/README
       title: Running eCLM
       sections:
-      - file: users_guide/running_eCLM/basic_commands
-      - file: users_guide/running_eCLM/case_customization
+      - file: users_guide/running_cases/basic_commands
+      - file: users_guide/running_cases/case_customization
 
     - file: users_guide/analyzing_model_output
       title: Analyzing model output
