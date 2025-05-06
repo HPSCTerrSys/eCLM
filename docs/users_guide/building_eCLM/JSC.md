@@ -106,7 +106,7 @@ source $HOME/load-eclm-variables.sh
 
 You should get an output similar to this one:
 
-```{figure} ../../images/load_env.png
+```{figure} ../images/load_env.png
 :width: 100%
 ```
 <p>
@@ -146,7 +146,7 @@ tree $eCLM_ROOT/install
 ```
 You should get something similar to:
 
-```{figure} ../../images/eclm_build.png
+```{figure} ../images/eclm_build.png
 :height: 300px
 ```
 <p>

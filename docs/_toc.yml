@@ -17,12 +17,7 @@ parts:
       title: Building eCLM
       sections:
       - file: users_guide/building_eCLM/Ubuntu
-      - file: users_guide/building_eCLM/JSC/README
-        title: JSC
-        sections:
-        - file: users_guide/building_eCLM/JSC/prerequisites_JSC_users
-        - file: users_guide/building_eCLM/JSC/setting_up_eCLM
-      - file: users_guide/building_eCLM/Levante
+      - file: users_guide/building_eCLM/JSC
 
     - file: users_guide/case_examples/README
       title: Running example cases
