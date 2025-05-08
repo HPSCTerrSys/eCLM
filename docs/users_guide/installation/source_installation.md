@@ -1,4 +1,4 @@
-# Building from source
+# Installing eCLM from source
 
 This section shows you how to build eCLM.
 

@@ -1,4 +1,4 @@
-# JSC
+# Installing eCLM on supercomputers
 
 Once you created a JSC account and have access to a compute time project, follow these steps which will guide you on how to download and build eCLM on a JSC system. This guide involves four major steps:
 
