@@ -11,7 +11,6 @@ parts:
       sections:
       - file: users_guide/introduction/introduction
       - file: users_guide/introduction/prerequisites
-      - file: users_guide/introduction/how_to_use_this_document
 
     - file: users_guide/installation/README
       title: Installing eCLM
