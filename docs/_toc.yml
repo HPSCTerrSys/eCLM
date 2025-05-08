@@ -18,6 +18,7 @@ parts:
       sections:
       - file: users_guide/installation/Ubuntu
       - file: users_guide/installation/JSC
+      - file: users_guide/installation/source_installation
 
     - file: users_guide/case_examples/README
       title: Running example cases
