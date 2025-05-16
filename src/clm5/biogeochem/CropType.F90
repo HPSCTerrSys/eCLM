@@ -207,7 +207,7 @@ contains
     allocate(this%croplive_patch (begp:endp)) ; this%croplive_patch (:) = .false.
     allocate(this%cropplant_patch(begp:endp)) ; this%cropplant_patch(:) = .false.
     allocate(this%harvdate_patch (begp:endp)) ; this%harvdate_patch (:) = huge(1) 
-    allocate(this%fertnitro_patch(begp:endp)) ; this%fertnitro_patch(:) = spval
+    allocate(this%fertnitro_patch (begp:endp)) ; this%fertnitro_patch (:) = spval
     allocate(this%gddplant_patch (begp:endp)) ; this%gddplant_patch (:) = spval
     allocate(this%gddtsoi_patch  (begp:endp)) ; this%gddtsoi_patch  (:) = spval
     allocate(this%vf_patch       (begp:endp)) ; this%vf_patch       (:) = 0.0_r8
@@ -620,10 +620,10 @@ contains
              * dtime/SHR_CONST_CDAY
           end if
           if (ivt == nwwheat .or. ivt == nirrig_wwheat .or. &
-              ivt == ncovercrop_1 .or. ivt == ncovercrop_2 .or. & 
+              ivt == ncovercrop_1 .or. ivt == ncovercrop_2 .or. &
               ivt == nwbarley  .or. ivt == nirrig_wbarley  .or. &
               ivt == nrapeseed  .or. ivt == nirrig_rapeseed) then
-            rbufslp(p) = rbufslp(p) * this%vf_patch(p)
+             rbufslp(p) = rbufslp(p) * this%vf_patch(p)
           end if
        else
           rbufslp(p) = accumResetVal
@@ -648,7 +648,7 @@ contains
               ivt == ncovercrop_1 .or. ivt == ncovercrop_2 .or. &
               ivt == nwbarley  .or. ivt == nirrig_wbarley  .or. &
               ivt == nrapeseed  .or. ivt == nirrig_rapeseed) then
-            rbufslp(p) = rbufslp(p) * this%vf_patch(p)
+             rbufslp(p) = rbufslp(p) * this%vf_patch(p)
           end if
        else
           rbufslp(p) = accumResetVal

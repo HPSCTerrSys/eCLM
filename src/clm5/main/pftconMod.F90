@@ -98,7 +98,7 @@ module pftconMod
   integer :: npcropmax              ! value for last prognostic crop in list
   integer :: nc3crop                ! value for generic crop (rf)
   integer :: nc3irrig               ! value for irrigated generic crop (ir)
-  
+
   ! Number of crop functional types actually used in the model. This includes each CFT for
   ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if
   ! irrigation is turned off in this run: it just excludes crop types that aren't handled
@@ -257,10 +257,11 @@ module pftconMod
      real(r8), allocatable :: FUN_fracfixers(:)   ! Fraction of C that can be used for fixation.    
      integer , allocatable :: covercrop     (:)   ! Cover crop flag
 
+
      ! pft parameters for dynamic root code
      real(r8), allocatable :: root_dmx(:)     !maximum root depth
 
-     ! pft parameters for cover crop routine 
+     ! pft parameters for cover crop routine
      !integer, allocatable :: covercrop(:)     !cover crop flag
 
    contains
@@ -463,6 +464,7 @@ contains
     allocate( this%fun_cn_flex_c (0:mxpft) )
     allocate( this%FUN_fracfixers(0:mxpft) )
     allocate( this%covercrop     (0:mxpft) )
+    
  
   end subroutine InitAllocate
 
@@ -582,8 +584,8 @@ contains
     expected_pftnames(76) = 'irrigated_tropical_corn            '
     expected_pftnames(77) = 'covercrop_1                        '
     expected_pftnames(78) = 'covercrop_2                        '
-    
-! Set specific vegetation type values
+
+    ! Set specific vegetation type values
 
     if (masterproc) then
        write(iulog,*) 'Attempting to read PFT physiological data .....'
@@ -1103,7 +1105,7 @@ contains
        if ( trim(pftname(i)) == 'irrigated_tropical_corn'             ) nirrig_trp_corn      = i
        if ( trim(pftname(i)) == 'covercrop_1'                         ) ncovercrop_1         = i
        if ( trim(pftname(i)) == 'covercrop_2'                         ) ncovercrop_2         = i
-    
+
     end do
 
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
@@ -1393,7 +1395,7 @@ contains
     deallocate( this%fun_cn_flex_c)
     deallocate( this%FUN_fracfixers)
     deallocate( this%covercrop)
-
+    
   end subroutine Clean
 
 end module pftconMod

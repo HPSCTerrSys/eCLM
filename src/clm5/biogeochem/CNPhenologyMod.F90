@@ -1428,11 +1428,24 @@ contains
     
     ! !USES:
     use clm_time_manager , only : get_curr_date, get_curr_calday, get_days_per_year, get_rad_step_size
-    use pftconMod        , only : ntmp_corn, nswheat, nwwheat, ntmp_soybean, nbarley, nwbarley, nrye, nwrye, ncassava, ncitrus, ncocoa, ncoffee, ncotton, ndatepalm, nfoddergrass, ngrapes, ngroundnuts, nmillet, noilpalm, npotatoes, npulses, nrapeseed, nrice, nsorghum, nsugarbeet, nsunflower, nmiscanthus, nswitchgrass, nc3crop, ncovercrop_1, ncovercrop_2
-    use pftconMod        , only : nirrig_tmp_corn, nirrig_swheat, nirrig_wwheat, nirrig_tmp_soybean, nirrig_barley, nirrig_wbarley, nirrig_rye, nirrig_wrye, nirrig_cassava, nirrig_citrus, nirrig_cocoa, nirrig_coffee, nirrig_cotton, nirrig_datepalm, nirrig_foddergrass, nirrig_grapes, nirrig_groundnuts, nirrig_millet, nirrig_oilpalm, nirrig_potatoes, nirrig_pulses, nirrig_rapeseed, nirrig_rice, nirrig_sorghum, nirrig_sugarbeet, nirrig_sunflower, nirrig_miscanthus, nirrig_switchgrass, nc3irrig
+    use pftconMod        , only : ntmp_corn, nswheat, nwwheat, ntmp_soybean
+    use pftconMod        , only : nirrig_tmp_corn, nirrig_swheat, nirrig_wwheat, nirrig_tmp_soybean
     use pftconMod        , only : ntrp_corn, nsugarcane, ncotton, nrice
     use pftconMod        , only : nirrig_trp_corn, nirrig_sugarcane
     use pftconMod        , only : nirrig_cotton, nirrig_rice
+    use pftconMod        , only : nbarley, nwbarley, nrye, nwrye, ncassava
+    use pftconMod        , only : nirrig_barley, nirrig_wbarley, nirrig_rye, nirrig_wrye, nirrig_cassava
+    use pftconMod        , only : ncitrus, ncocoa, ncoffee, ncotton, ndatepalm
+    use pftconMod        , only : nirrig_citrus, nirrig_cocoa, nirrig_coffee, nirrig_cotton, nirrig_datepalm
+    use pftconMod        , only : nfoddergrass, ngrapes, ngroundnuts, nmillet
+    use pftconMod        , only : nirrig_foddergrass, nirrig_grapes, nirrig_groundnuts, nirrig_millet
+    use pftconMod        , only : noilpalm, npotatoes, npulses, nrapeseed
+    use pftconMod        , only : nirrig_oilpalm, nirrig_potatoes, nirrig_pulses, nirrig_rapeseed
+    use pftconMod        , only : nrice, nsorghum, nsugarbeet, nsunflower
+    use pftconMod        , only : nirrig_rice, nirrig_sorghum, nirrig_sugarbeet, nirrig_sunflower
+    use pftconMod        , only : nmiscanthus, nswitchgrass, nc3crop
+    use pftconMod        , only : nirrig_miscanthus, nirrig_switchgrass, nc3irrig
+    use pftconMod        , only : ncovercrop_1, ncovercrop_2
     use clm_varcon       , only : spval, secspday
     use clm_varctl       , only : use_fertilizer 
     use clm_varctl       , only : use_c13, use_c14
@@ -1482,8 +1495,8 @@ contains
          gddmin            =>    pftcon%gddmin                                 , & ! Input:  
          hybgdd            =>    pftcon%hybgdd                                 , & ! Input:  
          lfemerg           =>    pftcon%lfemerg                                , & ! Input:  
-         grnfill           =>    pftcon%grnfill                                , & ! Input:  
-         covercrop         =>    pftcon%covercrop                              , & ! Input: covercrop flag 
+         grnfill           =>    pftcon%grnfill                               , & ! Input:  
+         covercrop         =>    pftcon%covercrop                              , & ! Input: covercrop flag
 
          t_ref2m_min       =>    temperature_inst%t_ref2m_min_patch            , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
          t10               =>    temperature_inst%t_a10_patch                  , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)    
@@ -1526,7 +1539,7 @@ contains
 
          fert_counter      =>    cnveg_nitrogenflux_inst%fert_counter_patch    , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)                   
          leafn_xfer        =>    cnveg_nitrogenstate_inst%leafn_xfer_patch     , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer                           
-         crop_seedn_to_leaf=>   cnveg_nitrogenflux_inst%crop_seedn_to_leaf_patch, & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to leaf
+         crop_seedn_to_leaf =>   cnveg_nitrogenflux_inst%crop_seedn_to_leaf_patch, & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to leaf
          cphase            =>    crop_inst%cphase_patch                        , & ! Output: [real(r8) (:)]   phenology phase
          fert              =>    cnveg_nitrogenflux_inst%fert_patch            , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
          lt50              =>    crop_inst%lt50_patch                   , & ! Output: [real(r8) (:)] the lethal temperature at which 50% of the individuals are damaged
@@ -1583,7 +1596,6 @@ contains
             ! WINTER TEMPERATE CEREAL = winter (wheat + barley + rye)
             ! represented here by the winter wheat pft
 
-
             if (.not. croplive(p))  then
                cropplant(p) = .false.
                idop(p)      = NOT_Planted
@@ -1601,7 +1613,7 @@ contains
                                         ivt(p) == nwbarley  .or. ivt(p) == nirrig_wbarley  .or. &
                                         ivt(p) == nrapeseed  .or. ivt(p) == nirrig_rapeseed)) then
                cropplant(p) = .true.
-               !           else ! not possible to have croplive and ivt==cornORsoy? (slevis) 
+               !           else ! not possible to have croplive and ivt==cornORsoy? (slevis)
             end if
 
          end if
@@ -1851,7 +1863,6 @@ contains
                   crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
                   crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
 
-
                   ! because leafc_xfer is set above rather than incremneted through the normal process, must also set its isotope
                   ! pools here.  use totvegc_patch as the closest analogue if nonzero, and use initial value otherwise
                   if (use_c13) then
@@ -1963,23 +1974,25 @@ contains
 
          if (croplive(p)) then
             cphase(p) = 1._r8
-          
-           ! old vernalization routine inactive
-           ! call vernalization if winter temperate cereal planted, living, and the
-           ! vernalization factor is not 1;
-           ! vf affects the calculation of gddtsoi & gddplant
-        
-           !if (t_ref2m_min(p) < 1.e30_r8 .and. vf(p) /= 1._r8 .and. &
-           !   (ivt(p) == nwwheat .or. ivt(p) == nirrig_wwheat .or. &
-           !     ivt(p) == ncovercrop_1 .or. ivt(p) == ncovercrop_2 .or. &
-           !     ivt(p) == nwbarley  .or. ivt(p) == nirrig_wbarley  .or. &
-           !     ivt(p) == nrapeseed  .or. ivt(p) == nirrig_rapeseed)) then
-           !     write (iulog,*)  'call vernalization old'
-           !      call vernalization(p, &
-           !          canopystate_inst, temperature_inst, waterstate_inst, cnveg_state_inst, &
-           !          crop_inst)
-          
-           !new vernalization routine
+
+            ! old vernalization routine inactive
+
+            ! call vernalization if winter temperate cereal planted, living, and the
+            ! vernalization factor is not 1;
+            ! vf affects the calculation of gddtsoi & gddplant
+
+            !if (t_ref2m_min(p) < 1.e30_r8 .and. vf(p) /= 1._r8 .and. &
+            !   (ivt(p) == nwwheat .or. ivt(p) == nirrig_wwheat .or. &
+            !     ivt(p) == ncovercrop_1 .or. ivt(p) == ncovercrop_2 .or. &
+            !     ivt(p) == nwbarley  .or. ivt(p) == nirrig_wbarley  .or. &
+            !     ivt(p) == nrapeseed  .or. ivt(p) == nirrig_rapeseed)) then
+            !     write (iulog,*)  'call vernalization old'
+            !      call vernalization(p, &
+            !          canopystate_inst, temperature_inst, waterstate_inst, cnveg_state_inst, &
+            !          crop_inst)
+            !end if
+
+            !new vernalization routine
             if (vf(p) /= 1._r8 .and. &
                (ivt(p) == nwwheat .or. ivt(p) == nirrig_wwheat .or. &
                 ivt(p) == ncovercrop_1 .or. ivt(p) == ncovercrop_2 .or. &
@@ -2002,6 +2015,8 @@ contains
             ! end if
 
 
+            ! days past planting may determine harvest
+
             if (jday >= idop(p)) then
                idpp = jday - idop(p)
             else
@@ -2018,11 +2033,11 @@ contains
 
             if (peaklai(p) >= 1) then
                hui(p) = max(hui(p),huigrain(p))
-            end if
+            endif
 
             if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p) .and. idpp < mxmat(ivt(p))) then
-               cphase(p) = 2._r8           
-              
+               cphase(p) = 2._r8
+
                if (ivt(p)==nwwheat .or. ivt(p) == nirrig_wwheat .or. &
                   ivt(p) == ncovercrop_1 .or. ivt(p) == ncovercrop_2 .or. &
                   ivt(p) == nwbarley  .or. ivt(p) == nirrig_wbarley  .or. &
@@ -2032,17 +2047,16 @@ contains
                        cnveg_nitrogenflux_inst, cnveg_carbonflux_inst, &
                        cnveg_carbonstate_inst, cnveg_nitrogenstate_inst)
                end if
-                
 
                if (abs(onset_counter(p)) > 1.e-6_r8) then
                   onset_flag(p)    = 1._r8
                   onset_counter(p) = dt
-                  fert_counter(p)  = ndays_on * secspday
-                  if (ndays_on .gt. 0) then
-                     fert(p) = (manunitro(ivt(p)) * 1000._r8 + fertnitro(p))/ fert_counter(p)
-                  else
-                     fert(p) = 0._r8
-                  end if
+                    fert_counter(p)  = ndays_on * secspday
+                    if (ndays_on .gt. 0) then
+                       fert(p) = (manunitro(ivt(p)) * 1000._r8 + fertnitro(p))/ fert_counter(p)
+                    else
+                       fert(p) = 0._r8
+                    end if
                else
                   ! this ensures no re-entry to onset of phase2
                   ! b/c onset_counter(p) = onset_counter(p) - dt
@@ -2093,7 +2107,7 @@ contains
                   endif
 
                end if
-             
+
                ! enter phase 3 while previous criteria fail and next is true;
                ! in terms of order, phase 3 occurs before harvest, but when
                ! harvest *can* occur, we want it to have first priority.
@@ -2441,7 +2455,6 @@ contains
 
   end subroutine vernalization
 
-
  !-----------------------------------------------------------------------
   subroutine vernalization_2(p, &
              temperature_inst, waterstate_inst, cnveg_state_inst, crop_inst, cnveg_carbonflux_inst)
@@ -2499,10 +2512,10 @@ contains
       if (t_ref2m(p) < tfrz) then
          tcrown(p) = 2._r8 + (t_ref2m(p) - tfrz) * (0.4_r8 + 0.0018_r8 * &
                   (min(snow_depth(c)*100._r8, 15._r8) - 15._r8)**2)
-      else 
+      else
          tcrown(p) = t_ref2m(p) - tfrz
       end if
-        
+
       ! write (iulog,*)  'subroutine vernalization_2'
 
         ! Vernalization factor calculation
@@ -2548,7 +2561,7 @@ contains
        waterstate_inst,cnveg_state_inst, crop_inst, &
        cnveg_nitrogenflux_inst, cnveg_carbonflux_inst, &
        cnveg_carbonstate_inst, cnveg_nitrogenstate_inst)
-    
+
     ! !DESCRIPTION:
     ! !Subroutine for coldtolerance modified after Lu(2017): 'Representing witer wheat in the Community Land Model (version  4.5) (tboas)
     ! * * * only call for winter temperate cereal * * *
@@ -2582,7 +2595,7 @@ contains
     real(r8) tempfsurv                  ! averaged survival rate
     integer c            ! column indices
     integer g            ! gridcell indices
-    real(r8) dt          ! land model time step (sec) 
+    real(r8) dt          ! land model time step (sec)
     real(r8) dtime       ! convert dt from sec to hour
     integer  :: kyr     ! current year
     integer  :: kmo     ! month of year  (1, ..., 12)
@@ -2745,7 +2758,7 @@ contains
          livestemn_xfer_to_livestemn         =>    cnveg_nitrogenflux_inst%livestemn_xfer_to_livestemn_patch   , & ! Output:  [real(r8) (:) ]                                                    
          deadstemn_xfer_to_deadstemn         =>    cnveg_nitrogenflux_inst%deadstemn_xfer_to_deadstemn_patch   , & ! Output:  [real(r8) (:) ]                                                    
          livecrootn_xfer_to_livecrootn       =>    cnveg_nitrogenflux_inst%livecrootn_xfer_to_livecrootn_patch , & ! Output:  [real(r8) (:) ]                                                    
-         deadcrootn_xfer_to_deadcrootn       =>    cnveg_nitrogenflux_inst%deadcrootn_xfer_to_deadcrootn_patch  & ! Output:  [real(r8) (:) ]                                                    
+         deadcrootn_xfer_to_deadcrootn       =>    cnveg_nitrogenflux_inst%deadcrootn_xfer_to_deadcrootn_patch   & ! Output:  [real(r8) (:) ]                                                    
          )
 
       ! patch loop
