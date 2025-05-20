@@ -3558,6 +3558,7 @@ contains
                      if (h2osfc(c)/frac_h2osfc(c) > capthick) then ! Assuming short-circuit logic will avoid FPE here.
                      ! assume surface ice is impermeable
                      pondres = 1/smallnumber
+                     end if
                   end if
 
                   spec_grnd_cond(c,s) = 1._r8/(1._r8/grnd_ch4_cond(c) + snowres(c) + pondres)
