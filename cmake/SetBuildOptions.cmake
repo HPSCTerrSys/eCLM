@@ -37,6 +37,8 @@ elseif(COMPILER STREQUAL "Intel" OR COMPILER STREQUAL "IntelLLVM")
     set(CMAKE_Fortran_FLAGS "-free -qno-opt-dynamic-align -ftz -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model source -qopenmp")
     if(USE_PDAF)
       # PDAF does not pass all checks from "-check all"
+      # TODO: Resolve the PDAF/non-PDAF difference by either adapting
+      # the compile options or debugging the source code
       set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0") #-check all
     else()
       set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0 -check all")
