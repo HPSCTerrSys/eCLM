@@ -3749,23 +3749,23 @@ contains
        !----------------------------------------------------------
        !| Write driver restart file
        !----------------------------------------------------------
-       if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
-          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
-          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-          if (iamroot_CPLID) then
-             write(logunit,104) ' Write restart file at ',ymd,tod
-             call shr_sys_flush(logunit)
-          endif
+       ! if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
+       !    call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
+       !    call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
+       !    if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+       !    if (iamroot_CPLID) then
+       !       write(logunit,104) ' Write restart file at ',ymd,tod
+       !       call shr_sys_flush(logunit)
+       !    endif
 
-          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
-               atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-               fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
+       !    call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
+       !         atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
+       !         fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+       !         fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
 
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
-       endif
+       !    if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       !    call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
+       ! endif
 
        !----------------------------------------------------------
        !| Write history file, only AVs on CPLID
