@@ -421,13 +421,13 @@ contains
                 if (lev .eq. 1) then
                    clay = clay3d(g,1)
                    sand = sand3d(g,1)
-                   om_frac = organic3d(g,1)/organic_max 
+                   om_frac = min(organic3d(g,1)/organic_max, 1._r8)
                 else if (lev <= nlevsoi) then
                    do j = 1,nlevsoifl-1
                       if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
                          clay = clay3d(g,j+1)
                          sand = sand3d(g,j+1)
-                         om_frac = organic3d(g,j+1)/organic_max    
+                         om_frac = min(organic3d(g,j+1)/organic_max, 1._r8)
                       endif
                    end do
                 else
@@ -440,9 +440,9 @@ contains
                    clay = clay3d(g,lev)
                    sand = sand3d(g,lev)
                    if ( organic_frac_squared )then
-                      om_frac = (organic3d(g,lev)/organic_max)**2._r8
+                      om_frac = min(organic3d(g,lev)/organic_max, 1._r8)**2._r8
                    else
-                      om_frac = organic3d(g,lev)/organic_max
+                      om_frac = min(organic3d(g,lev)/organic_max, 1._r8)
                    end if
                 else
                    clay = clay3d(g,nlevsoi)
@@ -499,6 +499,15 @@ contains
                     xksat                              =  ks(col%gridcell(c), 10)
                 end if
 
+                !— after reading THETAS into watsat_col(c,lev):
+                soilstate_inst%watsat_col(c,lev) = max(0.1_r8, min(soilstate_inst%watsat_col(c,lev), 0.9_r8))
+
+                !— after reading SHAPE_PARAM into bsw_col(c,lev):
+                soilstate_inst%bsw_col(c,lev) = max(soilstate_inst%bsw_col(c,lev), 0.05_r8)
+
+                !— after reading PSIS_SAT into sucsat_col(c,lev):
+                soilstate_inst%sucsat_col(c,lev) = max(soilstate_inst%sucsat_col(c,lev), 1e-3_r8)
+
 
                 om_watsat         = max(0.93_r8 - 0.1_r8   *(zsoi(lev)/zsapric), 0.83_r8)
                 om_b              = min(2.7_r8  + 9.3_r8   *(zsoi(lev)/zsapric), 12.0_r8)
@@ -547,6 +556,12 @@ contains
                 soilstate_inst%watopt_col(c,lev) = soilstate_inst%watsat_col(c,lev) * &
                      (158490._r8/soilstate_inst%sucsat_col(c,lev)) ** (-1._r8/soilstate_inst%bsw_col(c,lev)) 
 
+                !— floor to avoid underflow-to-zero:
+                soilstate_inst%watdry_col(c,lev) = max(soilstate_inst%watdry_col(c,lev), tiny(1._r8))
+                soilstate_inst%watopt_col(c,lev) = max(               &
+                     soilstate_inst%watopt_col(c,lev),                &
+                     soilstate_inst%watdry_col(c,lev) + tiny(1._r8)   &
+                )
                 !! added by K.Sakaguchi for beta from Lee and Pielke, 1992
                 ! water content at field capacity, defined as hk = 0.1 mm/day
                 ! used eqn (7.70) in CLM3 technote with k = 0.1 (mm/day) / secspday (day/sec)
@@ -584,9 +599,9 @@ contains
                 clay    =  soilstate_inst%cellclay_col(c,lev)
                 sand    =  soilstate_inst%cellsand_col(c,lev)
                 if ( organic_frac_squared )then
-                   om_frac = (soilstate_inst%cellorg_col(c,lev)/organic_max)**2._r8
+                   om_frac = min(soilstate_inst%cellorg_col(c,lev)/organic_max, 1._r8)**2._r8
                 else
-                   om_frac = soilstate_inst%cellorg_col(c,lev)/organic_max
+                   om_frac = min(soilstate_inst%cellorg_col(c,lev)/organic_max, 1._r8)
                 end if
              else
                 clay    = soilstate_inst%cellclay_col(c,nlevsoi)
