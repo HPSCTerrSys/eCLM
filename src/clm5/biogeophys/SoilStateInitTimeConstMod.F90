@@ -521,6 +521,10 @@ contains
                 soilstate_inst%sucsat_col(c,lev)    = (1._r8-om_frac) * soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac  
                 soilstate_inst%hksat_min_col(c,lev) = xksat
 
+                ! write(*,*) 'DEBUG(c,lev)=', c, lev,                          &
+                !              ' sucsat=', soilstate_inst%sucsat_col(c,lev),   &
+                !              ' bsw=',    soilstate_inst%bsw_col(c,lev)
+
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
                 if (om_frac > pcalpha) then
                    perc_norm=(1._r8 - pcalpha)**(-pcbeta)
@@ -555,6 +559,18 @@ contains
                      (316230._r8/soilstate_inst%sucsat_col(c,lev)) ** (-1._r8/soilstate_inst%bsw_col(c,lev)) 
                 soilstate_inst%watopt_col(c,lev) = soilstate_inst%watsat_col(c,lev) * &
                      (158490._r8/soilstate_inst%sucsat_col(c,lev)) ** (-1._r8/soilstate_inst%bsw_col(c,lev)) 
+                ! !— after computing watdry_col and watopt_col:
+
+                ! if (soilstate_inst%watdry_col(c,lev) <= 0._r8 .or. &
+                !     soilstate_inst%watopt_col(c,lev) <= 0._r8) then
+
+                !   write(*,*) 'DEBUG(c,lev)=', c, lev,                          &
+                !              ' sucsat=', soilstate_inst%sucsat_col(c,lev),     &
+                !              ' bsw=',    soilstate_inst%bsw_col(c,lev),        &
+                !              ' watdry=', soilstate_inst%watdry_col(c,lev),     &
+                !              ' watopt=', soilstate_inst%watopt_col(c,lev)
+
+                ! end if
 
                 !— floor to avoid underflow-to-zero:
                 soilstate_inst%watdry_col(c,lev) = max(soilstate_inst%watdry_col(c,lev), tiny(1._r8))
