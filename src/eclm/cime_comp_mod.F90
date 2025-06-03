@@ -4125,6 +4125,7 @@ contains
         if (iamroot_CPLID) then
           write(logunit,*) ' '
           write(logunit,103) subname,' NOTE: Stopping from TSMP-PDAF alarm ntsteps'
+          write(logunit,104) '       TSMP-PDAF alarm at ',ymd,tod
           write(logunit,*) ' '
         endif
         stop_alarm = .true.
