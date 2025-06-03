@@ -73,7 +73,7 @@ module WaterfluxType
      real(r8), pointer :: qflx_adv_col             (:,:) ! col advective flux across different soil layer interfaces [mm H2O/s] [+ downward]
      real(r8), pointer :: qflx_rootsoi_col         (:,:) ! col root and soil water exchange [mm H2O/s] [+ into root]
 #ifdef COUP_OAS_PFL
-     real(r8), pointer :: qflx_parflow_col         (:,:) ! col source/sink flux per soil layer sent to ParFlow [mm H2O/s] [- out from root]
+     real(r8), pointer :: qflx_parflow_col         (:,:) ! col source/sink flux per soil layer sent to ParFlow [1/hr] [- out from root]
 #endif
      real(r8), pointer :: qflx_infl_col            (:)   ! col infiltration (mm H2O /s)
      real(r8), pointer :: qflx_surf_col            (:)   ! col surface runoff (mm H2O /s)
