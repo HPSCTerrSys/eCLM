@@ -1,10 +1,8 @@
-# Building eCLM
-
-## Installation
+# Installing eCLM from source
 
 This section shows you how to build eCLM.
 
-### Minimum system requirements
+## Minimum system requirements
 
 * MPI 3.1
 * netCDF-C 4.7.4
@@ -16,7 +14,7 @@ This section shows you how to build eCLM.
   - GCC 9.3.0
   - Intel 19.1.2
 
-### Building eCLM
+## Building eCLM
 
 1. Configure CMake build options.
 
