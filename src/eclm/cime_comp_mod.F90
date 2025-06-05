@@ -4124,8 +4124,7 @@ contains
       if (present(ntsteps) .and. counter == ntsteps) then
         if (iamroot_CPLID) then
           write(logunit,*) ' '
-          write(logunit,103) subname,' NOTE: Stopping from TSMP-PDAF alarm ntsteps'
-          write(logunit,104) '       TSMP-PDAF alarm at ',ymd,tod
+          write(logunit,'(A, A, i10.8, i8)') subname,' NOTE: Stopping from TSMP-PDAF alarm ntsteps at model date = ',ymd,tod
           write(logunit,*) ' '
         endif
         stop_alarm = .true.
