@@ -4059,12 +4059,7 @@ contains
                ice(ens1)%iamroot_compid .or. &
                glc(ens1)%iamroot_compid .or. &
                wav(ens1)%iamroot_compid) then
-#ifdef USE_PDAF
-            ! TSMP-PDAF: Do not print max rss usage
-            call shr_mem_getusage(msize,mrss,.false.)
-#else
-            call shr_mem_getusage(msize,mrss,.true.)
-#endif
+             call shr_mem_getusage(msize,mrss,.false.)
 
              write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
