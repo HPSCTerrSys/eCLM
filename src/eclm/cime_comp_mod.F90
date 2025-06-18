@@ -4059,7 +4059,7 @@ contains
                ice(ens1)%iamroot_compid .or. &
                glc(ens1)%iamroot_compid .or. &
                wav(ens1)%iamroot_compid) then
-             call shr_mem_getusage(msize,mrss,.true.)
+             call shr_mem_getusage(msize,mrss,.false.)
 
              write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
@@ -4119,7 +4119,7 @@ contains
        endif
 
 #ifdef USE_PDAF
-      ! TSMP specific stop condition:
+      ! TSMP-PDAF specific stop condition:
       counter = counter + 1
       if (present(ntsteps) .and. counter == ntsteps) then
         if (iamroot_CPLID) then
