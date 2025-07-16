@@ -4,7 +4,7 @@
 For advanced users.
 ```
 
-**Requirements**
+## Requirements
 
 * MPI compilers (e.g. OpenMPI)
 * CMake
@@ -12,6 +12,7 @@ For advanced users.
 * [netCDF C and Fortran libraries](https://downloads.unidata.ucar.edu/netcdf)
 * [PnetCDF](https://github.com/Parallel-NetCDF/PnetCDF)
 
+## Steps
 
 ```sh
 # Download eCLM
@@ -30,3 +31,7 @@ cmake --build bld --parallel
 cmake --install bld
 ```
 
+## Reference build scripts
+
+- [eCLM build on Ubuntu](https://github.com/HPSCTerrSys/eCLM/blob/4d567d2d68cac0fba977914b4a9c3ba199afd0ff/.github/workflows/CI.yml#L70-L121)
+- [eCLM build on TSMP2](https://github.com/HPSCTerrSys/TSMP2/blob/master/cmake/BuildeCLM.cmake)
