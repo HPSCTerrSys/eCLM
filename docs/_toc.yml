@@ -47,7 +47,7 @@ parts:
   - caption: Reference
     chapters:
     - file: reference/history_fields
-    - url: https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/tech_note/index.html
-      title: Technical Note
+    - url: https://escomp.github.io/CTSM/release-clm5.0/tech_note/index.html
+      title: CLM5 Technical Note
     - url: https://hpscterrsys.github.io/eCLM/src
       title: eCLM Source Code Browser
