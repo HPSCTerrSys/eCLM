@@ -15,12 +15,8 @@ parts:
     - file: users_guide/installation/README
       title: Installing eCLM
       sections:
-      - file: users_guide/installation/Ubuntu
-        title: ... on Ubuntu
-      - file: users_guide/installation/supercomputers
-        title: ... on supercomputers
       - file: users_guide/installation/source_installation
-        title: ... from source
+        title: Building eCLM from source
 
     - file: users_guide/case_examples/README
       title: Running example cases
