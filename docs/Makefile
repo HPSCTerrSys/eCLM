@@ -12,4 +12,4 @@ all: docs src-browser
 .PHONY: clean
 
 clean:
-	jupyter-book clean .
+	myst clean -ay
