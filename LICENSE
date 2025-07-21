@@ -1,8 +1,8 @@
-Copyright (c) 2020-2021, Paul Rigor, Stefan Kollet
+Copyright (c) 2020-2025, Centre for High-Performance Scientific Computing in Terrestrial Systems (HPSC TerrSys)
 Copyright (c) 2005-2018, University Corporation for Atmospheric Research (UCAR)
 All rights reserved.
 
-Developed by: Paul Rigor, Stefan Kollet
+Developed by: Centre for High-Performance Scientific Computing in Terrestrial Systems (HPSC TerrSys)
               https://www.fz-juelich.de/ibg/ibg-3/EN/Home/home_node.html
               
               University Corporation for Atmospheric Research - National Center for Atmospheric Research
@@ -20,7 +20,7 @@ the Software is furnished to do so, subject to the following conditions:
     - Redistributions in binary form must reproduce the above copyright notice, 
       this list of conditions and the following disclaimers in the documentation 
       and/or other materials provided with the distribution.
-    - Neither the names of [Name of Development Group, UCAR], 
+    - Neither the names of [UCAR, HPSC TerrSys],
       nor the names of its contributors may be used to endorse or promote 
       products derived from this Software without specific prior written permission.
 
