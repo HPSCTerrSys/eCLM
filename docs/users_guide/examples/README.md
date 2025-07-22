@@ -1,12 +1,6 @@
 # Running example cases
 
-Always load the eCLM environment before creating a case. This only needs to be done once per terminal session.
+- [Wuestebach](Wuestebach.md)
+- [NRW](NRW.md)
+- [Europe](EURO-CORDEX.md)
 
-```sh
-source $HOME/load-eclm-variables.sh
-```
-
-## Cases
-
-```{tableofcontents}
-```
