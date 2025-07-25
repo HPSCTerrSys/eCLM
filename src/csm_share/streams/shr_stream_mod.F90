@@ -1645,13 +1645,12 @@ contains
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_dimension')
     deallocate(dids)
 
+    ! Yorck
     ! as the time information in the noise files is wrong, the last timesteps which only resemble the number of ensemble
     ! members and the time resolution of the forcing data have to be deleted. It is not necessarily the number 
     ! of ensemble members the experiment is conducted with but the number of ensemble members the noise data was produced with.
 
-    ! After nt is adjusted, also the read in number of timesteps has to be adjusted. I hope this works...
-    ! this could lead to errors, the first setted variable inside the noise stream has to be a noise variable
-    ! but as noise is the only thing setted inside these streams, this should still work if no one changes this...
+    ! After nt is adjusted, also the read in number of timesteps has to be adjusted.
 
     call shr_stream_getModelFieldName(strm,1,mfldName)
     if (INDEX(mfldName, "noise") .ne. 0) then
@@ -3404,6 +3403,7 @@ contains
   end subroutine shr_stream_bcast
 
 
+  ! Yorck
   subroutine shr_stream_get_dt_and_caseId(stream,dt,caseId)
 
    implicit none

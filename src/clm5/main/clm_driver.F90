@@ -1067,7 +1067,7 @@ contains
          waterstate_inst, waterflux_inst, irrigation_inst, energyflux_inst, &
          solarabs_inst, drydepvel_inst,       &
          vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
-         lnd2atm_inst, &
+         lnd2atm_inst, soilhydrology_inst, soilstate_inst, &
          net_carbon_exchange_grc = net_carbon_exchange_grc(bounds_proc%begg:bounds_proc%endg))
     deallocate(net_carbon_exchange_grc)
     call t_stopf('lnd2atm')

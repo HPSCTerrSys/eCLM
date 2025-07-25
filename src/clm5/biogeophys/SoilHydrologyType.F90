@@ -53,6 +53,10 @@ Module SoilHydrologyType
      real(r8), pointer :: i_0_col           (:)     ! col VIC average saturation in top soil layers 
      real(r8), pointer :: ice_col           (:,:)   ! col VIC soil ice (kg/m2) for VIC soil layers
 
+     ! Yorck
+     real(r8), pointer :: wa_col_inc        (:)     ! increment col water in the unconfined aquifer (mm)
+     real(r8), pointer :: wa_col_mean       (:)     ! mean col water in the unconfined aquifer (mm)
+
    contains
 
      ! Public routines
@@ -117,6 +121,10 @@ contains
     allocate(this%zwts_col          (begc:endc))                 ; this%zwts_col          (:)     = nan
 
     allocate(this%wa_col            (begc:endc))                 ; this%wa_col            (:)     = nan
+    ! Yorck
+    allocate(this%wa_col_inc        (begc:endc))                 ; this%wa_col_inc        (:)     = nan
+    allocate(this%wa_col_mean       (begc:endc))                 ; this%wa_col_mean       (:)     = nan
+
     allocate(this%qcharge_col       (begc:endc))                 ; this%qcharge_col       (:)     = nan
     allocate(this%fracice_col       (begc:endc,nlevgrnd))        ; this%fracice_col       (:,:)   = nan
     allocate(this%icefrac_col       (begc:endc,nlevgrnd))        ; this%icefrac_col       (:,:)   = nan

@@ -929,7 +929,6 @@ CONTAINS
           ! it is nt + caseId*24/dt, so that for case 0 (first ensemble member) it takes for
           ! the first time step the first frame, for ens mem 1 the 8th (3 hourly data) and 
           ! so on. With this we ensure different forcings in time and time correlations.
-          ! For now, the time is hard coded. Not sure how to work around this...
           ! idea: plug time and ensemble member into stream
           
           if (INDEX(mfldName, "noise") == 0) then
