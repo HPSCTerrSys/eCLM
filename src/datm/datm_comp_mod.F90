@@ -937,35 +937,35 @@ CONTAINS
           !--- temperature ---
           if (tbotmax < 50.0_R8) a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tkFrz
 
-          ! Temperature perturbations (Yorck)
-          if (stbot_noise > 0) then
-            if (my_task == master_task .and. n==1) then
-               !write(logunit,*) trim(subname),' temperature before: ', a2x%rAttr(ktbot,n)
-               !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(stbot_noise,n)
-            end if
-            a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + avstrm%rAttr(stbot_noise,n)
-            if (my_task == master_task .and. n==1) then
-               !write(logunit,*) trim(subname),' temperature after: ', a2x%rAttr(ktbot,n)
-            end if
-         end if
 
+          !!! begin perturbation block (Yorck) --> perturb temperature, long wave radiation, short wave radiation and precipitation
+          ! --> further variables can be introduced (changes also have to be made in reading in routines of streams for this, for now only
+          ! these variables are included)
+
+          ! tbot
+          if (stbot_noise > 0) then
+            a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + avstrm%rAttr(stbot_noise,n)
+          end if
+
+          ! lwdn
+          if (slwdn_noise > 0) then
+            avstrm%rAttr(slwdn,n) = avstrm%rAttr(slwdn,n) + avstrm%rAttr(slwdn_noise,n)
+          end if
+
+          ! swdn
+          if (sswdn_noise>0) then
+            avstrm%rAttr(sswdn,n) = avstrm%rAttr(sswdn,n) * avstrm%rAttr(sswdn_noise,n)
+          end if
+
+          ! sprecn
+          if (sprecn_noise > 0) then
+            avstrm%rAttr(sprecn,n) = avstrm%rAttr(sprecn,n)*avstrm%rAttr(sprecn_noise,n)
+          end if
+
+          !!! end perturbation block
 
           ! Limit very cold forcing to 180K
           a2x%rAttr(ktbot,n) = max(180._r8, a2x%rAttr(ktbot,n))
-
-
-          ! already here perturbation of lwdn as I do not understand where this is used in the code (Yorck)
-          if (slwdn_noise > 0) then
-            if (my_task == master_task .and. n==1) then
-               !write(logunit,*) trim(subname),' lwdn before: ', avstrm%rAttr(slwdn,n)
-               !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(slwdn_noise,n)
-            end if
-            avstrm%rAttr(slwdn,n) = avstrm%rAttr(slwdn,n) + avstrm%rAttr(slwdn_noise,n)
-            if (my_task == master_task .and. n==1) then
-               !write(logunit,*) trim(subname),' lwdn after: ', avstrm%rAttr(slwdn,n)
-            end if
-          end if
-
           a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
 
           !--- pressure ---
@@ -1027,44 +1027,18 @@ CONTAINS
              ! relationship between incoming NIR or VIS radiation and ratio of
              ! direct to diffuse radiation calculated based on one year's worth of
              ! hourly CAM output from CAM version cam3_5_55
-
-             ! add noise data --> multiplicative: (Yorck)
-             if (sswdn_noise>0) then
-               swndr = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
-             else
-               swndr = avstrm%rAttr(sswdn,n) * 0.50_R8
-             end if
+             swndr = avstrm%rAttr(sswdn,n) * 0.50_R8
              ratio_rvrf =   min(0.99_R8,max(0.29548_R8 + 0.00504_R8*swndr  &
                   -1.4957e-05_R8*swndr**2 + 1.4881e-08_R8*swndr**3,0.01_R8))
              a2x%rAttr(kswndr,n) = ratio_rvrf*swndr
-
-             if (sswdn_noise>0) then
-               swndf = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
-             else
-               swndf = avstrm%rAttr(sswdn,n) * 0.50_R8
-             end if
+             swndf = avstrm%rAttr(sswdn,n) * 0.50_R8
              a2x%rAttr(kswndf,n) = (1._R8 - ratio_rvrf)*swndf
 
-             if (sswdn_noise>0) then
-               if (my_task == master_task .and. n==1) then
-                  !write(logunit,*) trim(subname),' swdn before: ', avstrm%rAttr(sswdn,n)
-                  !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(sswdn_noise,n)
-               end if
-               swvdr = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
-               if (my_task == master_task .and. n==1) then
-                  !write(logunit,*) trim(subname),' swvdr: ', swvdr
-               end if
-             else
-               swvdr = avstrm%rAttr(sswdn,n) * 0.50_R8
-             end if
+             swvdr = avstrm%rAttr(sswdn,n) * 0.50_R8
              ratio_rvrf =   min(0.99_R8,max(0.17639_R8 + 0.00380_R8*swvdr  &
                   -9.0039e-06_R8*swvdr**2 + 8.1351e-09_R8*swvdr**3,0.01_R8))
              a2x%rAttr(kswvdr,n) = ratio_rvrf*swvdr
-             if (sswdn_noise>0) then
-               swvdf = avstrm%rAttr(sswdn,n) * 0.50_R8 * avstrm%rAttr(sswdn_noise,n)
-             else
-               swvdf = avstrm%rAttr(sswdn,n) * 0.50_R8
-             end if
+             swvdf = avstrm%rAttr(sswdn,n) * 0.50_R8
              a2x%rAttr(kswvdf,n) = (1._R8 - ratio_rvrf)*swvdf
           else
              call shr_sys_abort(subName//'ERROR: cannot compute short-wave down')
@@ -1085,21 +1059,8 @@ CONTAINS
              a2x%rAttr(krc,n) = avstrm%rAttr(sprecc,n)
              a2x%rAttr(krl,n) = avstrm%rAttr(sprecl,n)
           elseif (sprecn > 0) then
-             ! precipiation perturbation (Yorck)
-            if (sprecn_noise > 0) then
-               if (my_task == master_task .and. n==1) then
-                  !write(logunit,*) trim(subname),' precn before: ', avstrm%rAttr(sprecn,n)
-                  !write(logunit,*) trim(subname),' perturbation: ', avstrm%rAttr(sprecn_noise,n)
-               end if
-               a2x%rAttr(krc,n) = avstrm%rAttr(sprecn,n)*0.1_R8*avstrm%rAttr(sprecn_noise,n)
-               a2x%rAttr(krl,n) = avstrm%rAttr(sprecn,n)*0.9_R8*avstrm%rAttr(sprecn_noise,n)
-               if (my_task == master_task .and. n==1) then
-                  !write(logunit,*) trim(subname),' precn after: ', avstrm%rAttr(sprecn,n)*avstrm%rAttr(sprecn_noise,n)
-               end if
-             else
-               a2x%rAttr(krc,n) = avstrm%rAttr(sprecn,n)*0.1_R8
-               a2x%rAttr(krl,n) = avstrm%rAttr(sprecn,n)*0.9_R8
-             end if
+             a2x%rAttr(krc,n) = avstrm%rAttr(sprecn,n)*0.1_R8
+             a2x%rAttr(krl,n) = avstrm%rAttr(sprecn,n)*0.9_R8
           else
              call shr_sys_abort(subName//'ERROR: cannot compute rain and snow')
           endif
