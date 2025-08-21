@@ -29,6 +29,13 @@ jobs:
           python-version: 3.12
           cache: 'pip'
 
+      - name: Install Ubuntu dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: nodejs npm
+          version: 1.0
+          execute_install_scripts: true
+
       - name: Install pip packages
         run:  pip install -r ${GITHUB_WORKSPACE}/docs/requirements.txt
 
