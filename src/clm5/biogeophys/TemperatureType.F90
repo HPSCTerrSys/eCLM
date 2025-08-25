@@ -734,7 +734,7 @@ contains
                   end if
                end if
             else
-               this%t_soisno_col(c,1:nlevgrnd) = 274._r8
+               this%t_soisno_col(c,1:nlevgrnd) = 290._r8
 
             endif
          endif
