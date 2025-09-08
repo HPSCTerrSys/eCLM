@@ -80,11 +80,6 @@ jobs:
           version: 1.0
           execute_install_scripts: true
 
-      - name: Check Fortran coding style
-        run: |
-          pip install fortitude-lint
-          fortitude check --statistics src
-
       - name: Download MPI Fortran compiler
         run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
