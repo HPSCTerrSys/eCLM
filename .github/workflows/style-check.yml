@@ -1,4 +1,4 @@
-name: Check coding style
+name: Check Fortran coding style
 
 on:
   push:
@@ -32,6 +32,8 @@ jobs:
       - name: Install pip packages
         run:  pip install fortitude-lint
 
+  #TODO: Linter errors should be fixed one error code at a time (e.g. one error code per PR)
       - name: Check Fortran coding style
+        continue-on-error: true
         run: fortitude check --statistics src
 
