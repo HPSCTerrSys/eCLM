@@ -2,6 +2,7 @@
 add_pfunit_ctest (${PROJECT_NAME}_abort
     TEST_SOURCES
         shr_abort_test/test_shr_abort.pf
+        shr_abort_test/shr_abort_mod_abortthrows.F90
     LINK_LIBRARIES ${PROJECT_NAME}
 )
 

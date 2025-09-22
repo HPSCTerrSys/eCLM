@@ -4,7 +4,7 @@ module test_shr_abort
   ! rather than aborting
 
   use funit
-  use shr_abort_mod
+  use shr_abort_mod_abortthrows
   use shr_kind_mod , only : r8 => shr_kind_r8
 
   implicit none
