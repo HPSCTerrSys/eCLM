@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     strategy:
+      fail-fast: false
       matrix:
         config:
         - {
@@ -74,7 +75,6 @@ jobs:
       OASIS_INSTALL_PREFIX: ${{ github.workspace }}/oasis3-mct/install
       PFUNIT_TAG: v4.10.0
       PFUNIT_INSTALL_PREFIX:  ${{ github.workspace }}/pFUnit/install
-      CMAKE_BUILD_PARALLEL_LEVEL: 4
 
     steps:
       - uses: actions/checkout@v4
@@ -120,8 +120,6 @@ jobs:
         name: Add OASIS to CMAKE_PREFIX_PATH
         run: |
           echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_INSTALL_PREFIX}" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
-          tree -FUCh --du --filelimit 20 -L 2 ${OASIS_INSTALL_PREFIX}
       #
       # pFUnit
       #
@@ -152,11 +150,9 @@ jobs:
       - name: Add pFUnit to CMAKE_PREFIX_PATH
         run: |
           echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${PFUNIT_INSTALL_PREFIX}" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
-          tree -FUCh --du --filelimit 20 -L 2 ${PFUNIT_INSTALL_PREFIX}
 
       #
-      # eCLM
+      # Configure, build, and install eCLM
       #
       - name: Configure eCLM
         run: |
@@ -179,3 +175,11 @@ jobs:
 
       - name: Install eCLM namelist generator
         run: pip3 install --user ./namelist_generator
+
+      #
+      # Run tests
+      #
+      - name: Run eCLM tests
+        run: |
+          cd $BUILD_DIR
+          ctest -V --output-on-failure

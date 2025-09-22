@@ -14,14 +14,6 @@ if (USE_PDAF)
   set(CMAKE_Fortran_MODULE_DIRECTORY_GPTL ${CMAKE_BINARY_DIR}/externals/gptl/include)
 endif()
 
-add_subdirectory(externals)
-add_subdirectory(csm_share)
-add_subdirectory(clm5)
-add_subdirectory(stub_comps)
-add_subdirectory(datm)
-add_subdirectory(mosart)
-add_subdirectory(eclm)
-
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if (ENABLE_TESTS)
   find_package(PFUNIT REQUIRED)
@@ -29,6 +21,14 @@ if (ENABLE_TESTS)
   message(STATUS "Found pFUnit v${PFUNIT_VERSION}")
   message(STATUS "Unit tests enabled.")
 endif()
+
+add_subdirectory(externals)
+add_subdirectory(csm_share)
+add_subdirectory(clm5)
+add_subdirectory(stub_comps)
+add_subdirectory(datm)
+add_subdirectory(mosart)
+add_subdirectory(eclm)
 
 # Make sure that the required libraries are always found 
 # independent from  LD_LIBRARY_PATH and the install location. 

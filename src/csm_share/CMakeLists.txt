@@ -132,4 +132,8 @@ if (USE_PDAF)
   target_compile_definitions(${PROJECT_NAME} PUBLIC USE_PDAF)
 endif()
 
+if (ENABLE_TESTS)
+    add_subdirectory(util/test)
+endif()
+
 install (TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
