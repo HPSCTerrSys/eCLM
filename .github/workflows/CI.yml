@@ -183,6 +183,14 @@ jobs:
       # Run tests
       #
       - name: Run eCLM tests
+        id: eclm-unit-test
+        working-directory: ${{ env.BUILD_DIR }}
+        continue-on-error: true
         run: |
-          cd $BUILD_DIR
-          ctest -V --output-on-failure
+          ctest
+
+      - name: Re-run failed eCLM tests with verbose logging
+        if: steps.eclm-unit-test.outcome == 'failure'
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ctest --rerun-failed --output-on-failure
