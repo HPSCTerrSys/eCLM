@@ -1,7 +1,12 @@
 name: eCLM CI Test
 
-# Controls when the action will run.
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   eclm_build_job:
@@ -13,6 +18,15 @@ jobs:
         config:
         - {
             name: "eCLM-Standalone",
+            build_type: "RELEASE",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-Standalone_DEBUG",
+            build_type: "DEBUG",
             use_oasis: "False",
             coup_oas_icon: "False",
             coup_oas_pfl: "False",
@@ -20,6 +34,15 @@ jobs:
           }
         - {
             name: "eCLM-ParFlow-ICON",
+            build_type: "RELEASE",
+            use_oasis: "True",
+            coup_oas_icon: "True",
+            coup_oas_pfl: "True",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-ParFlow-ICON_DEBUG",
+            build_type: "DEBUG",
             use_oasis: "True",
             coup_oas_icon: "True",
             coup_oas_pfl: "True",
@@ -27,6 +50,15 @@ jobs:
           }
         - {
             name: "eCLM-PDAF",
+            build_type: "RELEASE",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "True"
+          }
+        - {
+            name: "eCLM-PDAF_DEBUG",
+            build_type: "DEBUG",
             use_oasis: "False",
             coup_oas_icon: "False",
             coup_oas_pfl: "False",
@@ -128,16 +160,16 @@ jobs:
       #
       - name: Configure eCLM
         run: |
-          cmake -S src -B $BUILD_DIR                               \
-                -DCMAKE_BUILD_TYPE="RELEASE"                       \
-                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                \
-                -DCMAKE_C_COMPILER=$CC                             \
-                -DCMAKE_Fortran_COMPILER=$FC                       \
-                -DUSE_OASIS=${{ matrix.config.use_oasis }}         \
-                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }} \
-                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}   \
-                -DUSE_PDAF=${{ matrix.config.use_pdaf }}           \
-                -DENABLE_TESTS="True"
+          cmake -S src -B $BUILD_DIR                                \
+                -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}  \
+                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                 \
+                -DCMAKE_PREFIX_PATH="$HOME/.local"                  \
+                -DCMAKE_C_COMPILER=$CC                              \
+                -DCMAKE_Fortran_COMPILER=$FC                        \
+                -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
+                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}  \
+                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}    \
+                -DUSE_PDAF=${{ matrix.config.use_pdaf }}
 
       - name: Build eCLM
         run: cmake --build $BUILD_DIR

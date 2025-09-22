@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - master
-      - 'docs-**'
+  pull_request:
+    branches:
+      - master
 
 env:
   BASE_URL: /${{ github.event.repository.name }}
@@ -16,24 +18,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-docs:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
+  build-docs:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.12
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install pip packages
         run:  pip install -r ${GITHUB_WORKSPACE}/docs/requirements.txt
 
       - name: Build eCLM doc homepage
@@ -47,10 +43,26 @@ jobs:
           make src-browser
 
       - name: Upload documentation artifacts
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: "docs/_build/html"
+          name: eCLM_docs
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+  deploy-docs:
+    if: github.event_name != 'pull_request'
+    needs: build-docs
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      with:
+        artifact_name: eCLM_docs
