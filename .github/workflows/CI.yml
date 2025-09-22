@@ -73,7 +73,7 @@ jobs:
       INSTALL_DIR: install
       OASIS_TAG: tsmp-patches-v0.1
       OASIS_INSTALL_PREFIX: ${{ github.workspace }}/oasis3-mct/install
-      PFUNIT_TAG: v4.10.0
+      PFUNIT_TAG: v4.12.0
       PFUNIT_INSTALL_PREFIX:  ${{ github.workspace }}/pFUnit/install
 
     steps:
@@ -108,6 +108,7 @@ jobs:
           cd util/make_dir
           echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
           make realclean static-libs -f TopMakefileOasis3
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_INSTALL_PREFIX}" >> $GITHUB_ENV
 
       - if: matrix.config.use_oasis == 'True' && steps.cache-oasis-restore.outputs.cache-hit != 'true'
         name: Cache OASIS3-MCT ${{ env.OASIS_TAG }}
@@ -116,10 +117,6 @@ jobs:
           path: ${{ env.OASIS_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.OASIS_TAG }}
 
-      - if: matrix.config.use_oasis == 'True'
-        name: Add OASIS to CMAKE_PREFIX_PATH
-        run: |
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${OASIS_INSTALL_PREFIX}" >> $GITHUB_ENV
       #
       # pFUnit
       #
@@ -139,6 +136,7 @@ jobs:
           cmake -S . -B bld -DCMAKE_INSTALL_PREFIX=install
           cmake --build bld
           cmake --install bld
+          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${PFUNIT_INSTALL_PREFIX}" >> $GITHUB_ENV
 
       - if: steps.cache-pFUnit-restore.outputs.cache-hit != 'true'
         name: Cache pFUnit ${{ env.PFUNIT_TAG }}
@@ -146,10 +144,6 @@ jobs:
         with:
           path: ${{ env.PFUNIT_INSTALL_PREFIX }}
           key: cache-${{ matrix.config.name }}-${{ env.PFUNIT_TAG }}
-
-      - name: Add pFUnit to CMAKE_PREFIX_PATH
-        run: |
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${PFUNIT_INSTALL_PREFIX}" >> $GITHUB_ENV
 
       #
       # Configure, build, and install eCLM
@@ -166,6 +160,7 @@ jobs:
                 -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}  \
                 -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}    \
                 -DUSE_PDAF=${{ matrix.config.use_pdaf }}
+                -DENABLE_TESTS="True"
 
       - name: Build eCLM
         run: cmake --build $BUILD_DIR
