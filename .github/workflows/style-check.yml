@@ -1,0 +1,39 @@
+name: Check Fortran coding style
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  BASE_URL: /${{ github.event.repository.name }}
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  style-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: 'pip'
+
+      - name: Install pip packages
+        run:  pip install fortitude-lint
+
+  #TODO: Linter errors should be fixed one error code at a time (e.g. one error code per PR)
+      - name: Check Fortran coding style
+        continue-on-error: true
+        run: fortitude check --statistics src
+

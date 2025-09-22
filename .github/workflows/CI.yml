@@ -1,4 +1,4 @@
-name: eCLM CI Test
+name: eCLM build test
 
 on:
   push:
