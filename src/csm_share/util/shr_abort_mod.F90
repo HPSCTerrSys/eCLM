@@ -20,9 +20,6 @@ module shr_abort_mod
 #endif
 
   implicit none
-
-  ! PUBLIC: Public interfaces
-
   private
 
   ! The public routines here are only meant to be used directly by shr_sys_mod. Other code
@@ -31,11 +28,42 @@ module shr_abort_mod
   ! when these routines were defined in shr_sys_mod.)
   public :: shr_abort_abort     ! abort a program
   public :: shr_abort_backtrace ! print a backtrace, if possible
+  public :: set_abort_method    ! change abort method (necessary for unit testing)
+  public :: abort_program
 
+  abstract interface
+    subroutine abort_interface(error_msg, error_code)
+      character(len=*)    , intent(in), optional :: error_msg
+      integer             , intent(in), optional :: error_code
+    end subroutine abort_interface
+  end interface
+
+  procedure (abort_interface), pointer :: abort_method => null()
+  logical, save :: initialized = .false.
 contains
 
+  subroutine initialize()
+      abort_method => abort_program
+      initialized = .true.
+  end subroutine initialize
+
+  subroutine set_abort_method(method)
+      procedure (abort_interface) :: method
+      if (.not. initialized) call initialize()
+      abort_method => method
+  end subroutine set_abort_method
+
+  subroutine shr_abort_abort(error_msg, error_code)
+    character(len=*)    , intent(in), optional :: error_msg
+    integer             , intent(in), optional :: error_code
+
+    if (.not. initialized) call initialize()
+
+    call abort_method(error_msg, error_code)
+  end subroutine shr_abort_abort
+
   !===============================================================================
-  subroutine shr_abort_abort(string,rc)
+  subroutine abort_program(string,rc)
     ! Consistent stopping mechanism
 
     !----- arguments -----
@@ -75,7 +103,7 @@ contains
     ! usually sends SIGTERM to the process, and we don't catch that signal.
     call abort()
 
-  end subroutine shr_abort_abort
+  end subroutine abort_program
   !===============================================================================
 
   !===============================================================================
