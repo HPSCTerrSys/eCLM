@@ -29,13 +29,16 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
         with:
-          path: "~/extpar_eclm_wuestebach_sp"
+          path: "${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp"
           key: wtb-${{ env.VER_EXTPAR_WTB_SP }}
 
       - if: steps.cache-wtb-restore.outputs.cache-hit != 'true'
         name: Clone extpar_eclm_wuestebach_sp
+        working-directory: "${GITHUB_WORKSPACE}"
         run: |
+          pwd
           time git clone -b ${VER_EXTPAR_WTB_SP} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
+          du -ch extpar_eclm_wuestebach_sp
 
       - name: Check integrity of downloaded static files
         run: |
@@ -45,11 +48,11 @@ jobs:
         uses: actions/cache/save@v4
         id: cache-wtb-save
         with:
-          path: "~/extpar_eclm_wuestebach_sp"
+          path: "${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp"
           key: wtb-${{ env.VER_EXTPAR_WTB_SP }}
 
       - name: Show Wuestebach static files
-        working-directory: "~/extpar_eclm_wuestebach_sp"
+        working-directory: "${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp"
         run: |
           tree $(pwd)
 
