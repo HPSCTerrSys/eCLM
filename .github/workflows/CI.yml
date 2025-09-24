@@ -120,10 +120,27 @@ jobs:
                 -DUSE_PDAF=${{ matrix.config.use_pdaf }}
 
       - name: Build eCLM
-        run: cmake --build $BUILD_DIR
+        run: |
+          cmake --build $BUILD_DIR
 
       - name: Install eCLM
-        run: cmake --install $BUILD_DIR
+        run: |
+          cmake --install $BUILD_DIR
+          tree ${INSTALL_DIR}
 
       - name: Install eCLM namelist generator
-        run: pip3 install --user ./namelist_generator
+        run: |
+          pip3 install --user ./namelist_generator
+
+      # TODO: Set up Wuestebach case and run eCLM
+      - name: Load Wuestebach static files from cache
+        uses: actions/cache/restore@v4
+        id: cache-wtb-restore
+        with:
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          key: wtb-${{ env.WTB_REPO_TAG }}
+
+      - if: steps.cache-wtb-restore.outputs.cache-hit == 'true'
+        name: Check Wuestebach static files
+        run: |
+          tree ${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp
