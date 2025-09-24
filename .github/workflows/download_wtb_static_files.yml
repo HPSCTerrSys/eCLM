@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      VER_EXTPAR_WTB_SP: 0.1
+      WTB_REPO_NAME: "extpar_eclm_wuestebach_sp"
+      WTB_REPO_TAG: 0.1
 
     steps:
       - uses: actions/checkout@v4
@@ -29,18 +30,19 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
         with:
-          path: "${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp"
-          key: wtb-${{ env.VER_EXTPAR_WTB_SP }}
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          key: wtb-${{ env.WTB_REPO_TAG }}
 
       - if: steps.cache-wtb-restore.outputs.cache-hit != 'true'
-        name: Clone extpar_eclm_wuestebach_sp
-        working-directory: "${GITHUB_WORKSPACE}"
+        name: Clone ${{ env.WTB_REPO_NAME }}
+        working-directory: ${{ github.workspace }}
         run: |
           pwd
-          time git clone -b ${VER_EXTPAR_WTB_SP} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
-          du -ch extpar_eclm_wuestebach_sp
+          time git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
+          du -ch ${WTB_REPO_NAME}
 
       - name: Check integrity of downloaded static files
+        working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
         run: |
           git lfs fsck
 
@@ -48,11 +50,11 @@ jobs:
         uses: actions/cache/save@v4
         id: cache-wtb-save
         with:
-          path: "${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp"
-          key: wtb-${{ env.VER_EXTPAR_WTB_SP }}
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          key: wtb-${{ env.WTB_REPO_TAG }}
 
       - name: Show Wuestebach static files
-        working-directory: "${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp"
+        working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
         run: |
           tree $(pwd)
 
