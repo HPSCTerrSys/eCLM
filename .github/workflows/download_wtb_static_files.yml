@@ -1,0 +1,55 @@
+name: Download Wuestebach static files
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  download_wtb_job:
+    name: Download Wuestebach static files
+    runs-on: ubuntu-24.04
+
+    env:
+      VER_EXTPAR_WTB_SP: 0.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize git lfs
+        run: |
+          sudo apt-get update
+          sudo apt-get install git-lfs
+          git lfs install
+
+      - name: Restore cached Wuestebach static files
+        uses: actions/cache/restore@v4
+        id: cache-wtb-restore
+        with:
+          path: "~/extpar_eclm_wuestebach_sp"
+          key: wtb-${{ env.VER_EXTPAR_WTB_SP }}
+
+      - if: steps.cache-wtb-restore.outputs.cache-hit != 'true'
+        name: Clone extpar_eclm_wuestebach_sp
+        run: |
+          time git clone -b ${VER_EXTPAR_WTB_SP} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
+
+      - name: Check integrity of downloaded static files
+        run: |
+          git lfs fsck
+
+      - name: Save Wuestebach static files
+        uses: actions/cache/save@v4
+        id: cache-wtb-save
+        with:
+          path: "~/extpar_eclm_wuestebach_sp"
+          key: wtb-${{ env.VER_EXTPAR_WTB_SP }}
+
+      - name: Show Wuestebach static files
+        working-directory: "~/extpar_eclm_wuestebach_sp"
+        run: |
+          tree $(pwd)
+
