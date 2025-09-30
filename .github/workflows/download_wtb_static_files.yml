@@ -8,14 +8,15 @@ on:
     branches:
       - master
 
+env:
+  WTB_REPO_NAME: "extpar_eclm_wuestebach_sp"
+  WTB_REPO_TAG: 0.1
+
 jobs:
   download_wtb_job:
     name: Download Wuestebach static files
     runs-on: ubuntu-24.04
 
-    env:
-      WTB_REPO_NAME: "extpar_eclm_wuestebach_sp"
-      WTB_REPO_TAG: 0.1
 
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +32,7 @@ jobs:
         id: cache-wtb-restore
         with:
           path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
-          key: wtb-${{ env.WTB_REPO_TAG }}
+          key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
 
       - if: steps.cache-wtb-restore.outputs.cache-hit != 'true'
         name: Clone ${{ env.WTB_REPO_NAME }}
@@ -51,7 +52,7 @@ jobs:
         id: cache-wtb-save
         with:
           path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
-          key: wtb-${{ env.WTB_REPO_TAG }}
+          key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
 
       - name: Show Wuestebach static files
         working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}

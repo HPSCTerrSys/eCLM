@@ -132,15 +132,17 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
-      # TODO: Set up Wuestebach case and run eCLM
-      - name: Load Wuestebach static files from cache
+      # WTB_REPO_NAME and WTB_REPO_TAG are defined in download_wtb_static_files.yml
+      - name: Load Wuestebach test files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
         with:
-          path: ${{ github.workspace }}/extpar_eclm_wuestebach_sp
-          key: wtb-0.1
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
+          fail-on-cache-miss: true
 
       - if: steps.cache-wtb-restore.outputs.cache-hit == 'true'
-        name: Check Wuestebach static files
+        name: Check Wuestebach test files
+        working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
         run: |
-          tree ${GITHUB_WORKSPACE}/extpar_eclm_wuestebach_sp
+          tree $(pwd)
