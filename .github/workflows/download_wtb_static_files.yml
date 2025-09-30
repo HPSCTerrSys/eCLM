@@ -35,29 +35,21 @@ jobs:
         with:
           path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
           key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
+          lookup-only: true
 
       - if: steps.cache-wtb-restore.outputs.cache-hit != 'true'
         name: Clone ${{ env.WTB_REPO_NAME }}
         working-directory: ${{ github.workspace }}
         run: |
-          pwd
-          time git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
+          git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
           du -ch ${WTB_REPO_NAME}
-
-      - name: Check integrity of downloaded static files
-        working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
-        run: |
           git lfs fsck
+          tree $(pwd)
 
-      - name: Save Wuestebach static files
+      - if: steps.cache-wtb-restore.outputs.cache-hit != 'true'
+        name: Save Wuestebach static files
         uses: actions/cache/save@v4
         id: cache-wtb-save
         with:
           path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
           key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
-
-      - name: Show Wuestebach static files
-        working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
-        run: |
-          tree $(pwd)
-

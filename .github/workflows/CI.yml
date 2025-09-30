@@ -11,7 +11,6 @@ on:
 jobs:
   eclm_build_job:
     name: ${{ matrix.config.name }}
-    needs: download_wtb_job
     runs-on: ubuntu-22.04
 
     strategy:
