@@ -11,6 +11,7 @@ on:
 jobs:
   eclm_build_job:
     name: ${{ matrix.config.name }}
+    needs: download_wtb_job
     runs-on: ubuntu-22.04
 
     strategy:
@@ -71,6 +72,8 @@ jobs:
       BUILD_DIR: bld
       INSTALL_DIR: install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
+      WTB_REPO_NAME: ${{ needs.download_wtb_job.outputs.WTB_REPO_NAME }}
+      WTB_REPO_TAG: ${{ needs.download_wtb_job.outputs.WTB_REPO_TAG }}
 
     steps:
       - uses: actions/checkout@v4
@@ -132,7 +135,6 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
-      # WTB_REPO_NAME and WTB_REPO_TAG are defined in download_wtb_static_files.yml
       - name: Load Wuestebach test files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
