@@ -12,7 +12,6 @@ jobs:
   eclm_build_job:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-22.04
-    needs: download_wtb_job
     strategy:
       matrix:
         config:
@@ -71,8 +70,8 @@ jobs:
       BUILD_DIR: bld
       INSTALL_DIR: install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
-      WTB_REPO_NAME: ${{ needs.download_wtb_job.outputs.WTB_REPO_NAME }}
-      WTB_REPO_TAG: ${{ needs.download_wtb_job.outputs.WTB_REPO_TAG }}
+      WTB_REPO_NAME: extpar_eclm_wuestebach_sp # TODO: Wuestebach repo name and tag must match with
+      WTB_REPO_TAG: 0.1                        #       the ones defined in download_wtb_static_files.yml
 
     steps:
       - uses: actions/checkout@v4
