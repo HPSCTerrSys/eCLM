@@ -138,12 +138,13 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
         with:
-          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
-          key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
+          path: ${{ github.workspace }}/${{ jobs.download_wtb_job.wtb_repo_name }}
+          key: ${{ jobs.download_wtb_job.wtb_repo_name }}-${{ jobs.download_wtb_job.wtb_repo_tag }}
           fail-on-cache-miss: true
 
       - if: steps.cache-wtb-restore.outputs.cache-hit == 'true'
         name: Check Wuestebach test files
-        working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+        working-directory: ${{ github.workspace }}/${{ jobs.download_wtb_job.wtb_repo_name }}
         run: |
+          git lfs fsck
           tree $(pwd)

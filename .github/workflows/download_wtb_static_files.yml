@@ -8,17 +8,14 @@ on:
     branches:
       - master
 
-env:
-  WTB_REPO_NAME: "extpar_eclm_wuestebach_sp"
-  WTB_REPO_TAG: 0.1
 
 jobs:
   download_wtb_job:
     name: Download Wuestebach static files
     runs-on: ubuntu-24.04
-    outputs:
-      wtb_repo_name: ${{ env.WTB_REPO_NAME }}
-      wtb_tag: ${{ env.WTB_REPO_TAG }}
+    env:
+      WTB_REPO_NAME: "extpar_eclm_wuestebach_sp"
+      WTB_REPO_TAG: 0.1
 
     steps:
       - uses: actions/checkout@v4
