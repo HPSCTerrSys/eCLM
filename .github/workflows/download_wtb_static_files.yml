@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       WTB_REPO_NAME: "extpar_eclm_wuestebach_sp"
-      WTB_REPO_TAG: 0.1
+      WTB_REPO_TAG: 0.2
 
     steps:
       - uses: actions/checkout@v4
