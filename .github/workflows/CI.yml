@@ -71,7 +71,7 @@ jobs:
       INSTALL_DIR: install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
       WTB_REPO_NAME: extpar_eclm_wuestebach_sp # TODO: Wuestebach repo name and tag must match with
-      WTB_REPO_TAG: 0.1                        #       the ones defined in download_wtb_static_files.yml
+      WTB_REPO_TAG: 0.2                        #       the ones defined in download_wtb_static_files.yml
 
     steps:
       - uses: actions/checkout@v4
@@ -147,3 +147,11 @@ jobs:
         run: |
           git lfs fsck
           tree $(pwd)
+
+      - name: Run Wuestebach test case
+        working-directory: ${{ github.workspace }}
+        run: |
+          bash ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
+          cd 1x1_wuestebach
+          mpirun -np 1 ${INSTALL_DIR}/bin/eclm.exe
+
