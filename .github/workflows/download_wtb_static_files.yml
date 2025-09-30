@@ -20,12 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Initialize git lfs
-        run: |
-          sudo apt-get update
-          sudo apt-get install git-lfs
-          git lfs install
-
       - name: Restore cached Wuestebach static files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
