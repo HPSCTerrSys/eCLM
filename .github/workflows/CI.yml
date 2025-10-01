@@ -133,6 +133,7 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
+      # TODO: Synchronize this step with download_wtb_static_files job
       - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False'
         name: Load Wuestebach test files
         uses: actions/cache/restore@v4
@@ -162,11 +163,12 @@ jobs:
         working-directory: ${{ github.workspace }}/1x1_wuestebach
         run: |
           ls
+          echo ""
           ncdump -h wtb_1x1.clm2.h0.2010-01-01-00000.nc
 
       # Save 1x1 Wuestebach outputs in GitHub (only enabled for builds in 'master' branch). This could be potentially helpful for debugging.
       # Artifacts can be manually downloaded: https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts
-      - if: github.ref == 'refs/heads/ci-wuestebach-test' && matrix.config.use_pdaf == 'False' && matrix.config.name == 'eCLM-Standalone'
+      - if: github.ref == 'refs/heads/master' && matrix.config.name == 'eCLM-Standalone'
         name: Save 1x1 Wuestebach model outputs
         uses: actions/upload-artifact@v4
         with:
