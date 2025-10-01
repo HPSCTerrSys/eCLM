@@ -71,7 +71,7 @@ jobs:
       INSTALL_DIR: install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
       WTB_REPO_NAME: extpar_eclm_wuestebach_sp # TODO: Wuestebach repo name and tag must match with
-      WTB_REPO_TAG: 0.2                        #       the ones defined in download_wtb_static_files.yml
+      WTB_REPO_TAG: 0.3                        #       the ones defined in download_wtb_static_files.yml
 
     steps:
       - uses: actions/checkout@v4
