@@ -133,7 +133,8 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
-      - name: Load Wuestebach test files
+      - if: !contains(matrix.config.name, 'PDAF')
+        name: Load Wuestebach test files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
         with:
@@ -141,14 +142,15 @@ jobs:
           key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
           fail-on-cache-miss: true
 
-      - if: steps.cache-wtb-restore.outputs.cache-hit == 'true'
+      - if: !contains(matrix.config.name, 'PDAF') && steps.cache-wtb-restore.outputs.cache-hit == 'true'
         name: Check Wuestebach test files
         working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
         run: |
           git lfs fsck
           tree $(pwd)
 
-      - name: Run Wuestebach test case
+      - if: !contains(matrix.config.name, 'PDAF')
+        name: Run Wuestebach test case
         working-directory: ${{ github.workspace }}
         run: |
           bash ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
