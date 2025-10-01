@@ -133,8 +133,7 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
-      - if: !contains(matrix.config.name, 'PDAF')
-        name: Load Wuestebach test files
+      - name: Load Wuestebach test files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
         with:
