@@ -67,8 +67,8 @@ jobs:
     env:
       CC: mpicc
       FC: mpifort
-      BUILD_DIR: bld
-      INSTALL_DIR: install
+      BUILD_DIR: ${{ github.workspace }}/bld
+      INSTALL_DIR: ${{ github.workspace }}/install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
       WTB_REPO_NAME: extpar_eclm_wuestebach_sp # TODO: Wuestebach repo name and tag must match with
       WTB_REPO_TAG: 0.3                        #       the ones defined in download_wtb_static_files.yml
