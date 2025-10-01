@@ -1,3 +1,14 @@
+#
+# Separate job to download the Wuestebach static files hosted at:
+#
+#   https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp/-/tree/master?ref_type=heads
+#
+# This was done to avoid DDOS'ing the IBG3-cluster hosting the icg4geo Gitlab instance.
+#
+# Be mindful of the CI cache limits! GitHub free users are limited to 10GB usage and the Wuestebach static files are ~5.5GB
+# If you are updating the WTB_REPO_TAG, make sure to delete the previous cached data 'extpar_eclm_wuestebach_sp-<old-tag>' at
+# https://github.com/HPSCTerrSys/eCLM/actions/caches to save space.
+#
 name: Download Wuestebach static files
 
 on:
