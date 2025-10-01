@@ -133,7 +133,7 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
-      - if: matrix.config.use_pdaf == 'False' && steps.cache-wtb-restore.outputs.cache-hit == 'true'
+      - if: matrix.config.use_pdaf == 'False'
         name: Load Wuestebach test files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
