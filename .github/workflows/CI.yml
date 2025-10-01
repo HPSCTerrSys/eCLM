@@ -133,7 +133,7 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
-      - if: matrix.config.use_pdaf == 'False'
+      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False'
         name: Load Wuestebach test files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
@@ -142,14 +142,14 @@ jobs:
           key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
           fail-on-cache-miss: true
 
-      - if: matrix.config.use_pdaf == 'False' && steps.cache-wtb-restore.outputs.cache-hit == 'true'
+      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False' && steps.cache-wtb-restore.outputs.cache-hit == 'true'
         name: Check integrity of Wuestebach test files
         working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
         run: |
           git lfs fsck
           tree $(pwd)
 
-      - if: matrix.config.use_pdaf == 'False'
+      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False'
         name: Run 1x1 Wuestebach test case
         working-directory: ${{ github.workspace }}
         run: |
@@ -157,3 +157,18 @@ jobs:
           cd 1x1_wuestebach
           mpirun -np 1 ${INSTALL_DIR}/bin/eclm.exe
 
+      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False'
+        name: Inspect 1x1 Wuestebach model outputs
+        working-directory: ${{ github.workspace }}/1x1_wuestebach
+        run: |
+          ls
+          ncdump -h wtb_1x1.clm2.h0.2010-01-01-00000.nc
+
+      # Save 1x1 Wuestebach outputs in GitHub (only enabled for builds in 'master' branch). This could be potentially helpful for debugging.
+      # Artifacts can be manually downloaded: https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts
+      - if: github.ref == 'refs/heads/ci-wuestebach-test' && matrix.config.use_pdaf == 'False' && matrix.config.name == 'eCLM-Standalone'
+        name: Save 1x1 Wuestebach model outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1x1_wuestebach_model_outputs
+          path: ${{ github.workspace }}/1x1_wuestebach
