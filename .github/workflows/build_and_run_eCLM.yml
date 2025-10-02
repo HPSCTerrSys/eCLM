@@ -181,6 +181,7 @@ jobs:
       # Artifacts can be manually downloaded: https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts
       - if: github.ref == 'refs/heads/master' && matrix.config.name == 'eCLM-Standalone_DEBUG'
         name: Save 1x1 Wuestebach model outputs
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: 1x1_wuestebach_model_outputs
