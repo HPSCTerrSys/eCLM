@@ -146,7 +146,7 @@ jobs:
 
       - if: matrix.config.name == 'eCLM-Standalone_DEBUG' && steps.cache-wtb-restore.outputs.cache-hit != 'true'
         name: Download Wuestebach test files
-        working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+        working-directory: ${{ github.workspace }}
         run: |
           git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
           du -ch ${WTB_REPO_NAME}
@@ -181,6 +181,7 @@ jobs:
       # Artifacts can be manually downloaded: https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts
       - if: github.ref == 'refs/heads/master' && matrix.config.name == 'eCLM-Standalone_DEBUG'
         name: Save 1x1 Wuestebach model outputs
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: 1x1_wuestebach_model_outputs
