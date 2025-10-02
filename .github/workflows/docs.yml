@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+      - 'docs/**'
 
 env:
   BASE_URL: /${{ github.event.repository.name }}
@@ -37,6 +39,7 @@ jobs:
         run:  |
           make clean docs
 
+      # TODO: Either skip this or find a way to conditionally run this very slow step
       - name: Build eCLM Source Code browser
         working-directory: ./docs
         run:  |
