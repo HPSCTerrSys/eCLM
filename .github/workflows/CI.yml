@@ -1,4 +1,4 @@
-name: eCLM build test
+name: Build and run eCLM
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  eclm_build_job:
+  build_and_run_eCLM:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-22.04
     strategy:
@@ -70,8 +70,8 @@ jobs:
       BUILD_DIR: ${{ github.workspace }}/bld
       INSTALL_DIR: ${{ github.workspace }}/install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
-      WTB_REPO_NAME: extpar_eclm_wuestebach_sp # TODO: Wuestebach repo name and tag must match with
-      WTB_REPO_TAG: 0.3                        #       the ones defined in download_wtb_static_files.yml
+      WTB_REPO_NAME: extpar_eclm_wuestebach_sp
+      WTB_REPO_TAG: 0.3
 
     steps:
       - uses: actions/checkout@v4
@@ -133,32 +133,43 @@ jobs:
         run: |
           pip3 install --user ./namelist_generator
 
-      # TODO: Synchronize this step with download_wtb_static_files job
-      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False'
+      #
+      # TODO: Wuestebach test should also run for eCLM-Standalone_RELEASE configuration.
+      #
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG'
         name: Load Wuestebach test files
         uses: actions/cache/restore@v4
         id: cache-wtb-restore
         with:
           path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
           key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
-          fail-on-cache-miss: true
 
-      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False' && steps.cache-wtb-restore.outputs.cache-hit == 'true'
-        name: Check integrity of Wuestebach test files
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG' && steps.cache-wtb-restore.outputs.cache-hit != 'true'
+        name: Download Wuestebach test files
         working-directory: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
         run: |
+          git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
+          du -ch ${WTB_REPO_NAME}
           git lfs fsck
           tree $(pwd)
 
-      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False'
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG' && steps.cache-wtb-restore.outputs.cache-hit != 'true'
+        name: Save Wuestebach static files
+        uses: actions/cache/save@v4
+        id: cache-wtb-save
+        with:
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
+
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG'
         name: Run 1x1 Wuestebach test case
         working-directory: ${{ github.workspace }}
         run: |
-          bash ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
+          ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
           cd 1x1_wuestebach
           mpirun -np 1 ${INSTALL_DIR}/bin/eclm.exe
 
-      - if: matrix.config.use_pdaf == 'False' && matrix.config.use_oasis == 'False'
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG'
         name: Inspect 1x1 Wuestebach model outputs
         working-directory: ${{ github.workspace }}/1x1_wuestebach
         run: |
@@ -168,7 +179,7 @@ jobs:
 
       # Save 1x1 Wuestebach outputs in GitHub (only enabled for builds in 'master' branch). This could be potentially helpful for debugging.
       # Artifacts can be manually downloaded: https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts
-      - if: github.ref == 'refs/heads/master' && matrix.config.name == 'eCLM-Standalone'
+      - if: github.ref == 'refs/heads/master' && matrix.config.name == 'eCLM-Standalone_DEBUG'
         name: Save 1x1 Wuestebach model outputs
         uses: actions/upload-artifact@v4
         with:
