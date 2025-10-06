@@ -37,8 +37,6 @@ parts:
 
 - caption: Developer's Guide
   chapters:
-  - file: users_guide/installation/source_installation
-    title: Building eCLM from source
   - url: https://hpscterrsys.github.io/eCLM/src
     title: eCLM Source Code Browser
 
