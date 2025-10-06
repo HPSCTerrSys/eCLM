@@ -1,14 +1,10 @@
-# Installing eCLM
+# Quickstart
 
-## Requirements
+```{warning}
+TODO
+```
 
-* MPI compilers (e.g. OpenMPI)
-* CMake
-* LAPACK
-* [netCDF C and Fortran libraries](https://downloads.unidata.ucar.edu/netcdf)
-* [PnetCDF](https://github.com/Parallel-NetCDF/PnetCDF)
-
-## Method 1: Build eCLM through TSMP2 (recommended)
+## Build eCLM
 
 The easiest way to install eCLM is through [TSMP2 build system](https://github.com/HPSCTerrSys/TSMP2).
 
@@ -21,22 +17,14 @@ cd TSMP2
 ./build_tsmp2.sh --eCLM
 ```
 
-## Method 2: Building from source (for advanced users)
+## Run Wuestebach test case
 
 ```sh
-# Download eCLM
-git clone https://github.com/HPSCTerrSys/eCLM.git
-cd eCLM
+git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
+cd extpar_eclm_wuestebach_sp/static.resources
+generate_wtb_namelists.sh 1x1_wuestebach
+cd 1x1_wuestebach
 
-# Create eCLM install directory
-mkdir install
-
-# Set compilers
-export CC=mpicc FC=mpifort
-
-# Build and install eCLM
-cmake -S src -B bld -DCMAKE_INSTALL_PREFIX=install
-cmake --build bld --parallel
-cmake --install bld
+mpirun -np 1 eclm.exe
 ```
 
