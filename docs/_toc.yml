@@ -27,13 +27,6 @@ parts:
 
   - file: users_guide/case_creation/README
     title: Creating a custom case
-    sections:
-    - file: users_guide/case_creation/1_create_grid_file
-    - file: users_guide/case_creation/2_create_mapping_file
-    - file: users_guide/case_creation/3_create_domain_file
-    - file: users_guide/case_creation/4_create_surface_file
-    - file: users_guide/case_creation/5_modifications_surface_domain_file
-    - file: users_guide/case_creation/6_create_atm_forcings
 
 - caption: Developer's Guide
   chapters:
@@ -45,7 +38,3 @@ parts:
   - file: reference/history_fields
   - url: https://escomp.github.io/CTSM/release-clm5.0/tech_note/index.html
     title: CLM5 Technical Note
-  - url: https://github.com/HPSCTerrSys/eCLM_static-file-generator/blob/main/README.md)
-    title: eCLM static file generator
-  - url: https://hpscterrsys.github.io/TSMP2_workflow-engine
-    title: TSMP2 Workflow Engine
