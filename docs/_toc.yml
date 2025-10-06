@@ -5,8 +5,8 @@ root: INDEX
 parts:
 - caption: Introduction
   chapters:
-  - file: users_guide/installation/README
-    title: Installing eCLM
+  - file: users_guide/introduction/Quickstart.md
+    title: Quickstart
   - file: users_guide/introduction/introduction
     title: Scientific Background
 
@@ -30,6 +30,8 @@ parts:
 
 - caption: Developer's Guide
   chapters:
+  - file: users_guide/installation/source_installation
+    title: Building eCLM from source
   - url: https://hpscterrsys.github.io/eCLM/src
     title: eCLM Source Code Browser
 
