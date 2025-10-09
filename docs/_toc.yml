@@ -5,10 +5,10 @@ root: INDEX
 parts:
 - caption: Introduction
   chapters:
-  - file: users_guide/introduction/Quickstart.md
-    title: Quickstart
   - file: users_guide/introduction/introduction
     title: Scientific Background
+  - file: users_guide/introduction/first_tutorial.md
+    title: First Tutorial
 
 - caption: User's Guide
   chapters:
