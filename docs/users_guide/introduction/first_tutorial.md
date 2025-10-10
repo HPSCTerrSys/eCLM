@@ -9,10 +9,10 @@ An HPC environment and a personal computing environment (*e.g.* your laptop) use
 the same task. However, the goal is not overwhelm you with tool usage (which could be an interesting exercise in itself),
 but rather focus on a common workflow that gets you up to speed with eCLM:
 
-[1. Load eCLM dependencies](#my-multi-word-header)
-[2. Build eCLM](#my-multi-word-header)
-[3. Generate namelists](#my-multi-word-header)
-[4. Run eCLM](#my-multi-word-header)
+[1. Load eCLM dependencies](./first_tutorial.md#load-eclm-dependencies)
+[2. Build eCLM](#build-eclm)
+[3. Generate namelists](#generate-namelists)
+[4. Run eCLM](#run-eclm)
 
 ## Prerequisites
 
