@@ -1,5 +1,9 @@
 # Creating a custom case
 
+```{warning}
+TODO
+```
+
 This workflow will guide you through creating your own input datasets at a resolution of your choice for eCLM simulations.
 
 Throughout this process, you will use a range of different scripts to create the necessary files.
@@ -22,13 +26,3 @@ cd /p/project1/projectID/user1 # replace projectID with your compute project and
 git clone https://github.com/HPSCTerrSys/eCLM_static_file_workflow.git 
 ```
 
-Sourcing the environment file that is contained in the repository will load all the required software modules.
-
-```sh
-cd eCLM_static_file_workflow/
-source jsc.2023_Intel.sh
-```
-You are now ready to start with the workflow.
-
-```{tableofcontents}
-```
