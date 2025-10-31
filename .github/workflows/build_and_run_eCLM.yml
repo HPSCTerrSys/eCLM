@@ -1,0 +1,188 @@
+name: Build and run eCLM
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_and_run_eCLM:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        config:
+        - {
+            name: "eCLM-Standalone",
+            build_type: "RELEASE",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-Standalone_DEBUG",
+            build_type: "DEBUG",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-ParFlow-ICON",
+            build_type: "RELEASE",
+            use_oasis: "True",
+            coup_oas_icon: "True",
+            coup_oas_pfl: "True",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-ParFlow-ICON_DEBUG",
+            build_type: "DEBUG",
+            use_oasis: "True",
+            coup_oas_icon: "True",
+            coup_oas_pfl: "True",
+            use_pdaf: "False"
+          }
+        - {
+            name: "eCLM-PDAF",
+            build_type: "RELEASE",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "True"
+          }
+        - {
+            name: "eCLM-PDAF_DEBUG",
+            build_type: "DEBUG",
+            use_oasis: "False",
+            coup_oas_icon: "False",
+            coup_oas_pfl: "False",
+            use_pdaf: "True"
+          }
+
+    env:
+      CC: mpicc
+      FC: mpifort
+      BUILD_DIR: ${{ github.workspace }}/bld
+      INSTALL_DIR: ${{ github.workspace }}/install
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
+      WTB_REPO_NAME: extpar_eclm_wuestebach_sp
+      WTB_REPO_TAG: 0.3
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libxml2-utils pylint wget cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
+          version: 1.0
+          execute_install_scripts: true
+
+      - name: Download MPI Fortran compiler
+        run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
+
+      - if: matrix.config.use_oasis == 'True'
+        name: Cache OASIS3-MCT
+        uses: actions/cache@v4
+        id: cache-deps
+        env:
+          cache-name: cache-eCLM-dependencies
+        with:
+          path: "~/.local"
+          key: cache-${{ matrix.config.name }}
+
+      - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
+        name: Install OASIS3-MCT
+        run: |
+          git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
+          cd oasis3-mct
+          export OASIS_ROOT=$(pwd)
+          echo "OASIS_ROOT=${OASIS_ROOT}"
+          echo "DEPENDENCIES_DIR=${DEPENDENCIES_DIR}"
+          cd util/make_dir
+          echo "include ${GITHUB_WORKSPACE}/.github/build.oasis3-mct.ubuntu22.04" > make.inc
+          cat make.inc
+          make realclean static-libs -f TopMakefileOasis3
+
+      - name: Configure eCLM
+        run: |
+          cmake -S src -B $BUILD_DIR                                \
+                -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}  \
+                -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR                 \
+                -DCMAKE_PREFIX_PATH="$HOME/.local"                  \
+                -DCMAKE_C_COMPILER=$CC                              \
+                -DCMAKE_Fortran_COMPILER=$FC                        \
+                -DUSE_OASIS=${{ matrix.config.use_oasis }}          \
+                -DCOUP_OAS_ICON=${{ matrix.config.coup_oas_icon }}  \
+                -DCOUP_OAS_PFL=${{ matrix.config.coup_oas_pfl }}    \
+                -DUSE_PDAF=${{ matrix.config.use_pdaf }}
+
+      - name: Build eCLM
+        run: |
+          cmake --build $BUILD_DIR
+
+      - name: Install eCLM
+        run: |
+          cmake --install $BUILD_DIR
+          tree ${INSTALL_DIR}
+
+      - name: Install eCLM namelist generator
+        run: |
+          pip3 install --user ./namelist_generator
+
+      #
+      # TODO: Wuestebach test should also run for eCLM-Standalone_RELEASE configuration.
+      #
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG'
+        name: Load Wuestebach test files
+        uses: actions/cache/restore@v4
+        id: cache-wtb-restore
+        with:
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
+
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG' && steps.cache-wtb-restore.outputs.cache-hit != 'true'
+        name: Download Wuestebach test files
+        working-directory: ${{ github.workspace }}
+        run: |
+          git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
+          du -ch ${WTB_REPO_NAME}
+          git lfs fsck
+          tree $(pwd)
+
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG' && steps.cache-wtb-restore.outputs.cache-hit != 'true'
+        name: Save Wuestebach static files
+        uses: actions/cache/save@v4
+        id: cache-wtb-save
+        with:
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
+
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG'
+        name: Run 1x1 Wuestebach test case
+        working-directory: ${{ github.workspace }}
+        run: |
+          ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
+          cd 1x1_wuestebach
+          mpirun -np 1 ${INSTALL_DIR}/bin/eclm.exe
+
+      - if: matrix.config.name == 'eCLM-Standalone_DEBUG'
+        name: Inspect 1x1 Wuestebach model outputs
+        working-directory: ${{ github.workspace }}/1x1_wuestebach
+        run: |
+          ls
+          echo ""
+          ncdump -h wtb_1x1.clm2.h0.2010-01-01-00000.nc
+
+      # Save 1x1 Wuestebach outputs in GitHub (only enabled for builds in 'master' branch). This could be potentially helpful for debugging.
+      # Artifacts can be manually downloaded: https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts
+      - if: github.ref == 'refs/heads/master' && matrix.config.name == 'eCLM-Standalone_DEBUG'
+        name: Save 1x1 Wuestebach model outputs
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1x1_wuestebach_model_outputs
+          path: ${{ github.workspace }}/1x1_wuestebach

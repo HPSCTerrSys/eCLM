@@ -4,7 +4,7 @@
 
 # eCLM
 
-[![CI](https://github.com/HPSCTerrSys/eCLM/actions/workflows/CI.yml/badge.svg)](https://github.com/HPSCTerrSys/eCLM/actions/workflows/CI.yml)
+[![CI](https://github.com/HPSCTerrSys/eCLM/actions/workflows/build_and_run_eCLM.yml/badge.svg)](https://github.com/HPSCTerrSys/eCLM/actions/workflows/build_and_run_eCLM.yml)
 [![docs](https://github.com/HPSCTerrSys/eCLM/actions/workflows/docs.yml/badge.svg)](https://github.com/HPSCTerrSys/eCLM/actions/workflows/docs.yml)
 [![latest tag](https://badgen.net/github/tag/HPSCTerrSys/eCLM)](https://github.com/HPSCTerrSys/eCLM/tags)
 
