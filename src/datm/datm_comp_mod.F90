@@ -201,10 +201,10 @@ module datm_comp_mod
                                 ! isotopic forcing
        "rh_18O          ","rh_HDO          ", &
        "precn_16O       ","precn_18O       ","precn_HDO       "  &
-#ifdef USE_PDAF       
+#ifdef USE_PDAF
                                        ! add perturbations (Yorck)
        ,"tbot_noise      ","precn_noise     ","swdn_noise      ","lwdn_noise      " &
-#endif       
+#endif
        /)
 
   character(CL), pointer :: ilist_av(:)     ! input list for translation
