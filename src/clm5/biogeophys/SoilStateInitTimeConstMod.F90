@@ -314,9 +314,9 @@ contains
       if (.not. readvar) then
          parameters_in_file = .False.
       end if
-   end if
+    end if
 
-   call ncd_io(ncid=ncid, varname='THETAS_adj', flag='read', data=thetas_adj, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='THETAS_adj', flag='read', data=thetas_adj, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
       parameters_in_file_adj = .False.
     else
@@ -339,7 +339,7 @@ contains
       if (.not. readvar) then
          parameters_in_file_adj = .False.
       end if
-   end if
+    end if
 #endif
     do p = begp,endp
        g = patch%gridcell(p)
