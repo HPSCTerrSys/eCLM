@@ -1,7 +1,3 @@
-`dev-perturbation`-Branch: Generated for usage of eCLM-PDAF with
-Perturbation routine from
-https://gitlab.jsc.fz-juelich.de/detect/cluster-c/c01/perturbationroutineclm5
-
 # eCLM
 
 [![CI](https://github.com/HPSCTerrSys/eCLM/actions/workflows/build_and_run_eCLM.yml/badge.svg)](https://github.com/HPSCTerrSys/eCLM/actions/workflows/build_and_run_eCLM.yml)
