@@ -545,11 +545,11 @@ contains
                      soilstate_inst%sucsat_col(c,lev)   =  psis_sat(col%gridcell(c), lev)
                      xksat                              =  ks(col%gridcell(c), lev) ! mm/s
                   else
-                     ! Use the value from the 10th soil level as a default value
-                     soilstate_inst%watsat_col(c,lev)   =  thetas(col%gridcell(c), 10)
-                     soilstate_inst%bsw_col(c,lev)      =  shape_param(col%gridcell(c), 10)
-                     soilstate_inst%sucsat_col(c,lev)   =  psis_sat(col%gridcell(c), 10)
-                     xksat                              =  ks(col%gridcell(c), 10)
+                     ! Use the value from the 10th (default of nlevsoifl) soil level as a default value
+                     soilstate_inst%watsat_col(c,lev)   =  thetas(col%gridcell(c), nlevsoifl)
+                     soilstate_inst%bsw_col(c,lev)      =  shape_param(col%gridcell(c), nlevsoifl)
+                     soilstate_inst%sucsat_col(c,lev)   =  psis_sat(col%gridcell(c), nlevsoifl)
+                     xksat                              =  ks(col%gridcell(c), nlevsoifl)
                   end if
                end if
 #endif
