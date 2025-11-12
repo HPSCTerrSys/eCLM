@@ -249,7 +249,7 @@ contains
     allocate(shape_param_adj(begg:endg,nlevgrnd))
     allocate(psis_sat_adj(begg:endg,nlevgrnd))
     allocate(ks_adj(begg:endg,nlevgrnd))
-#ifdef
+#endif
 
     ! Determine organic_max from parameter file
 
