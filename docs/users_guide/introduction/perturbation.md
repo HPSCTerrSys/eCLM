@@ -25,7 +25,15 @@ Allows reading perturbed hydraulic parameters from input files instead of comput
 
 #### 2. Noise-Based Forcing Perturbation
 
-Adds spatiotemporal noise to atmospheric forcing data for ensemble data assimilation.
+When having an ensemble run, the memory consumption is too large if
+the forcing data is perturbed one by one so that I get a file for each
+month for each member idea: perturb the forcings in the CLM sourcecode
+with a noise file.  for each perturbed variable (temperature,
+precipitation, longwave and shortwave radiation), a stream is
+introduced.
+
+Adds spatiotemporal noise to atmospheric forcing data for ensemble
+data assimilation.
 
 **Modified files:**
 - `shr_stream_mod.F90`
