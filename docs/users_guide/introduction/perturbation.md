@@ -53,10 +53,15 @@ data assimilation.
 - Stores ensemble metadata in stream structure:
   - `caseId` - ensemble member ID
   - `dt` - forcing time resolution
-  - `numEns` - total ensemble size
+  - `numEns` - ensemble sizethat the perturbation file was created
+    for. Example: Running with 50 ensemble members with a noise file
+    created for an ensemble of up to 200 members. Then, `numEns`
+    should be set to 200 in the stream file for right usage of
+    perturbation dimension.
 - **Time-shifting mechanism**: Different ensemble members read different temporal frames from the same noise file
   - Formula: `frame = nt + caseId * 24/dt`
-  - Example: For 3-hourly data (`dt=3`), member 0 starts at frame `nt`, member 1 at `nt+8`, member 2 at `nt+16`, etc.
+  - Example: For 3-hourly data (`dt=3`), member 0 starts at frame
+    `nt`, member 1 at `nt+8`, member 2 at `nt+16`, etc.
 - Detects noise fields by checking if model field name contains `"noise"`
 - Adjusts time coordinate reading to account for ensemble-extended noise files
 
