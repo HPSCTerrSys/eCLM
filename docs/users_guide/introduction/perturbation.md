@@ -19,9 +19,44 @@ Allows reading perturbed hydraulic parameters from input files instead of comput
 - `KSAT` - saturated hydraulic conductivity (`xksat`)
 
 **Implementation:**
-- Reads both original parameters (for `nlevsoifl=10` soil layers) and adjusted parameters with `_adj` suffix (for all `nlevgrnd` layers)
+- Reads both original parameters (for `nlevsoifl=10` soil layers) and
+  applies organic matter mixing
+- OR: Reads adjusted parameters with `_adj` suffix (for all `nlevgrnd`
+  layers) and **overwrites** parameters from organic matter mixing.
 - Falls back to pedotransfer functions if parameters aren't in the file
 - Modifies organic matter mixing to preserve perturbed parameter values
+
+##### Brooks-Corey Shape Parameter Mixing with Organic Matter
+
+**Backward Compatibility Note:** In the branch `dev-perturbation` it
+is modified how the Brooks-Corey shape parameter (`bsw`) is mixed with
+organic matter, which causes numerical differences compared to the
+standard CLM configuration.
+
+**Standard CLM behavior**
+```fortran
+bsw = (1-om_frac) * (2.91 + 0.159*clay) + om_frac*om_b
+```
+
+`dev-perturbation` **behavior**
+```fortran
+bsw = (1-om_frac) * bsw + om_frac*om_b
+```
+
+**Impact:** In standard CLM, the mineral soil contribution to `bsw` in
+organic matter mixing always uses the hard-coded Cosby et al. (1984)
+Table 5 formula (`2.91 + 0.159*clay`), regardless of which
+pedotransfer function was used to initially compute `bsw`. In
+`dev-perturbation`, the mixing uses the actual `bsw` value computed by
+the selected pedotransfer function (or read from file if parameters
+are provided).
+
+This change affects both soil and lake columns (see
+`SoilStateInitTimeConstMod.F90:565,567,675,677`).
+
+When comparing test cases to numerical precision, this will produce
+differences even when not using perturbed parameters from input files,
+since the organic matter mixing calculation differs.
 
 #### 2. Noise-Based Forcing Perturbation
 
