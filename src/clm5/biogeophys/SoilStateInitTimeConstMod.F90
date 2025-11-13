@@ -564,7 +564,11 @@ contains
 #ifndef USE_PDAF
                 soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b   
 #else
-                soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * soilstate_inst%bsw_col(c,lev) + om_frac*om_b
+                if (parameters_in_file) then
+                  soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * soilstate_inst%bsw_col(c,lev) + om_frac*om_b
+                else
+                  soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
+                end if
 #endif
                 soilstate_inst%sucsat_col(c,lev)    = (1._r8-om_frac) * soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac  
                 soilstate_inst%hksat_min_col(c,lev) = xksat
@@ -674,7 +678,11 @@ contains
 #ifndef USE_PDAF
              soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
 #else
-             soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*soilstate_inst%bsw_col(c,lev) + om_frac * om_b_lake
+             if (parameters_in_file .or. parameters_in_file_adj) then
+               soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*soilstate_inst%bsw_col(c,lev) + om_frac * om_b_lake
+             else
+               soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
+             end if
 #endif
 
              soilstate_inst%sucsat_col(c,lev) = (1._r8-om_frac)*soilstate_inst%sucsat_col(c,lev) + om_sucsat_lake * om_frac
