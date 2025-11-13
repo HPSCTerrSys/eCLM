@@ -1,4 +1,4 @@
-## Perturbation routines
+# Perturbation routines #
 
 This section describes **perturbation capabilities for eCLM-PDAF**.
 
@@ -6,9 +6,9 @@ The implementation of the perturbation routines was first introduced
 by Yorck Ewerdwalbesloh in
 https://gitlab.jsc.fz-juelich.de/detect/cluster-c/c01/perturbationroutineclm5.
 
-### Key Components
+## Key Components ##
 
-#### 1. Soil Parameter Perturbation (`SoilStateInitTimeConstMod.F90`)
+### 1. Soil Parameter Perturbation (`SoilStateInitTimeConstMod.F90`) ###
 
 Allows reading perturbed hydraulic parameters from input files instead of computing them via pedotransfer functions.
 
@@ -26,13 +26,13 @@ Allows reading perturbed hydraulic parameters from input files instead of comput
 - Falls back to pedotransfer functions if parameters aren't in the file
 - Modifies organic matter mixing to preserve perturbed parameter values
 
-##### Note about the Brooks-Corey Shape Parameter
+#### Note about the Brooks-Corey Shape Parameter ####
 
 When perturbed soil parameters are read from input files, the organic
 matter mixing for `bsw` uses the file-read value instead of the
 hard-coded Cosby et al. (1984) Table 5 formula (`2.91 + 0.159*clay`).
 
-#### 2. Noise-Based Forcing Perturbation
+### 2. Noise-Based Forcing Perturbation ###
 
 When having an ensemble run, the memory consumption is too large if
 the forcing data is perturbed one by one so that I get a file for each
@@ -53,7 +53,7 @@ data assimilation.
 - Stores ensemble metadata in stream structure:
   - `caseId` - ensemble member ID
   - `dt` - forcing time resolution
-  - `numEns` - ensemble sizethat the perturbation file was created
+  - `numEns` - ensemble size that the perturbation file was created
     for. Example: Running with 50 ensemble members with a noise file
     created for an ensemble of up to 200 members. Then, `numEns`
     should be set to 200 in the stream file for right usage of
@@ -65,14 +65,14 @@ data assimilation.
 - Detects noise fields by checking if model field name contains `"noise"`
 - Adjusts time coordinate reading to account for ensemble-extended noise files
 
-#### 3. DATM Integration (`datm_comp_mod.F90`)
+### 3. DATM Integration (`datm_comp_mod.F90`) ###
 
 Passes ensemble information (`inst_index`, `dt_option`, `ninst`) from
 the data atmosphere (DATM) component to the stream infrastructure,
 enabling the noise perturbation mechanism to operate correctly within
 CESM's multi-instance framework.
 
-### Design Rationale
+## Design Rationale ##
 
 1. **Dual perturbation approach**:
    - Parameter perturbation for soil properties (offline preprocessing)
@@ -84,13 +84,12 @@ CESM's multi-instance framework.
 
 4. **Flexibility**: Soil parameters can be perturbed or computed traditionally based on file contents
 
-### Modified Files
+## Modified Source Code ##
 
-- `src/clm5/biogeophys/SoilStateInitTimeConstMod.F90` - 121 additions
-- `src/csm_share/streams/shr_stream_mod.F90` - 211 additions
-- `src/csm_share/streams/shr_strdata_mod.F90` - 72 additions
-- `src/csm_share/streams/shr_dmodel_mod.F90` - 40 additions
-- `src/datm/datm_comp_mod.F90` - 62 additions
-- `README.md` - documentation
+- `src/clm5/biogeophys/SoilStateInitTimeConstMod.F90`
+- `src/csm_share/streams/shr_stream_mod.F90`
+- `src/csm_share/streams/shr_strdata_mod.F90`
+- `src/csm_share/streams/shr_dmodel_mod.F90`
+- `src/datm/datm_comp_mod.F90`
 
 
