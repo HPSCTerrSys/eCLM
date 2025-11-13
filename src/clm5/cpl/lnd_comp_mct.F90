@@ -725,7 +725,7 @@ contains
     ! Otherwise restart was modified and we are resuming from data assimulation
     else
        resume_from_data_assim = .true.
-       !write(iulog,*) 'resume_from_DA ', resume_from_data_assim
+       write(iulog,*) 'resume_from_DA ', resume_from_data_assim
     end if
     if ( resume_from_data_assim ) call update_DA_nstep()
  

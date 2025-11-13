@@ -106,14 +106,14 @@ module clm_varcon
   ! Keep this negative to avoid conflicts with possible valid values
   integer , public, parameter :: ispval = -9999             ! special value for int data
 
-
+#ifdef USE_PDAF
   ! ------------------------------------------------------------------------
   ! Yorck variables
   ! ------------------------------------------------------------------------
 
   integer :: averaging_var = 0 ! averaging integer for averaging TWS variables according to GRACE interval
   integer :: set_averaging_to_zero = ispval ! integer indicating at which point in time the averageTemp has to be set to zero due to missing observation values
-
+#endif
   ! ------------------------------------------------------------------------
   ! These are tunable constants from clm2_3
   ! ------------------------------------------------------------------------

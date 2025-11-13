@@ -54,7 +54,7 @@ module WaterstateType
      real(r8), pointer :: ice1_grc               (:)   ! grc initial gridcell total h2o ice content
      real(r8), pointer :: ice2_grc               (:)   ! grc post land cover change total ice content
      real(r8), pointer :: tws_grc                (:)   ! grc total water storage (mm H2O)
-
+#ifdef USE_PDAF
      ! Yorck additions, variables for getting monthly means which can be compared to a GRACE measurements, other variables will just
      ! provide instantaneous values
 
@@ -104,7 +104,7 @@ module WaterstateType
      real(r8), pointer :: h2ocan_state_after           (:)    ! canopy state
 
      ! END Yorck
-
+#endif
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: pfl_psi_col            (:,:) ! ParFlow pressure head   COUP_OAS_PFL
      real(r8), pointer :: pfl_h2osoi_liq_col     (:,:) ! ParFlow soil liquid     COUP_OAS_PFL
@@ -262,6 +262,7 @@ contains
     allocate(this%ice2_grc               (begg:endg))                     ; this%ice2_grc               (:)   = nan
     allocate(this%tws_grc                (begg:endg))                     ; this%tws_grc                (:)   = nan
 
+#ifdef USE_PDAF
     ! Yorck additions (see above)
     allocate(this%h2osoi_ice_col_mean    (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col_mean    (:,:) = nan
     allocate(this%h2osoi_liq_col_mean    (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col_mean    (:,:) = nan
@@ -296,7 +297,7 @@ contains
     allocate(this%h2osfc_state_after     (begg:endg))                     ; this%h2osfc_state_after     (:)   = nan
     allocate(this%h2ocan_state_after     (begg:endg))                     ; this%h2ocan_state_after     (:)   = nan
     ! END Yorck
-
+#endif
     allocate(this%total_plant_stored_h2o_col(begc:endc))                  ; this%total_plant_stored_h2o_col(:) = nan
 
     allocate(this%snw_rds_col            (begc:endc,-nlevsno+1:0))        ; this%snw_rds_col            (:,:) = nan
@@ -488,12 +489,13 @@ contains
          avgflag='A', long_name='total water storage', &
          ptr_lnd=this%tws_grc)
 
+#ifdef USE_PDAF
     ! Yorck: add also TWS_hactive in history outputs
     this%tws_hactive(begg:endg) = spval
     call hist_addfld1d (fname='TWS_hactive',  units='mm',  &
          avgflag='A', long_name='total water storage of hydrological active cells', &
          ptr_lnd=this%tws_hactive)
-
+#endif
     ! (rgk 02-02-2017) There is intentionally no entry  here for stored plant water
     !                  I think that since the value is zero in all cases except
     !                  for FATES plant hydraulics, it will be confusing for users

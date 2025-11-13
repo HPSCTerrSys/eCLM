@@ -12,7 +12,10 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use shr_fire_emis_mod    , only : shr_fire_emis_mechcomps_n
   use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevsoi !ndst = number of dust bins.
-  use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval, set_averaging_to_zero, averaging_var, aquifer_water_baseline
+  use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
+#ifdef USE_PDAF
+  use clm_varcon           , only : set_averaging_to_zero, averaging_var, aquifer_water_baseline
+#endif
   use clm_varctl           , only : iulog, use_lch4
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -38,11 +41,12 @@ module lnd2atmMod
   use LandunitType         , only : lun
   use GridcellType         , only : grc                
   use landunit_varcon      , only : istice_mec, istsoil, istcrop
+#ifdef USE_PDAF
   use clm_time_manager     , only : get_nstep
   use SoilHydrologyType    , only : soilhydrology_type
   use SoilStateType        , only : soilstate_type
   use PatchType            , only : patch
-
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -131,7 +135,10 @@ contains
        waterstate_inst, waterflux_inst, irrigation_inst, energyflux_inst, &
        solarabs_inst, drydepvel_inst,  &
        vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
-       lnd2atm_inst, soilhydrology_inst, soilstate_inst, &
+       lnd2atm_inst, &
+#ifdef USE_PDAF
+       soilhydrology_inst, soilstate_inst, &
+#endif
        net_carbon_exchange_grc) 
     !
     ! !DESCRIPTION:
@@ -158,23 +165,31 @@ contains
     type(ch4_type)              , intent(in)    :: ch4_inst
     type(glc_behavior_type)     , intent(in)    :: glc_behavior
     type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst 
+#ifdef USE_PDAF
     ! Yorck
     type(soilhydrology_type)    , intent(inout) :: soilhydrology_inst
     type(soilstate_type)        , intent(inout) :: soilstate_inst
     ! end Yorck
+#endif
     real(r8)                    , intent(in)    :: net_carbon_exchange_grc( bounds%begg: )  ! net carbon exchange between land and atmosphere, positive for source (gC/m2/s)
     !
     ! !LOCAL VARIABLES:
-    integer  :: c, g, j, p, l, index, counter  ! indices
+    integer  :: c, g, j  ! indices
+#ifdef USE_PDAF
+    integer  :: p, l, index, counter  ! indices
+#endif
     real(r8) :: qflx_ice_runoff_col(bounds%begc:bounds%endc)    ! total column-level ice runoff
     real(r8) :: eflx_sh_ice_to_liq_grc(bounds%begg:bounds%endg) ! sensible heat flux generated from the ice to liquid conversion, averaged to gridcell
     real(r8), parameter :: amC   = 12.0_r8                      ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8                      ! Atomic mass number for Oxygen
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO             ! Atomic mass number for CO2
+#ifdef USE_PDAF
     real(r8), parameter :: m_per_mm = 1.e-3_r8                  ! 0.001 meters per mm
     real(r8), parameter :: sec_per_hr = 3600                    ! 3600 s in 1 hour
+#endif
     ! The following converts g of C to kg of CO2
     real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
+#ifdef USE_PDAF
     integer             :: nstep                   ! time step number
 
     REAL, allocatable :: h2osoi_liq_grc(:)
@@ -184,6 +199,7 @@ contains
     REAL, allocatable :: h2ocan_grc(:)
     logical, allocatable :: found(:)
     logical, allocatable :: found_patch(:)
+#endif
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(net_carbon_exchange_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
@@ -462,6 +478,7 @@ contains
     enddo
 #endif
 
+#ifdef USE_PDAF
      ! Yorck: update also TWS of hydrological active cells
 
      if (allocated(h2osoi_liq_grc)) deallocate(h2osoi_liq_grc)
@@ -621,6 +638,7 @@ contains
           waterstate_inst%h2ocan_patch_mean(p) = (waterstate_inst%h2ocan_patch(p)+(averaging_var-1)*waterstate_inst%h2ocan_patch_mean(p))/averaging_var
           waterstate_inst%snocan_patch_mean(p) = (waterstate_inst%snocan_patch(p)+(averaging_var-1)*waterstate_inst%snocan_patch_mean(p))/averaging_var
      end do
+#endif
 
   end subroutine lnd2atm
 
