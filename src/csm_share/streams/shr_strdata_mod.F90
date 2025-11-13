@@ -1385,17 +1385,20 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
   subroutine shr_strdata_create_newway(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg, &
-   !--- streams stuff required ---
-   yearFirst, yearLast, yearAlign, offset,          &
-   domFilePath, domFileName,                        &
-   domTvarName, domXvarName, domYvarName, domAreaName, domMaskName, &
-   filePath, filename, fldListFile, fldListModel,   &
-   !--- strdata optional ---
-   caseId, dt, numEns, nzg, domZvarName,                    &
-   taxMode, dtlimit, tintalgo, readmode,            &
-   fillalgo, fillmask, fillread, fillwrite,         &
-   mapalgo, mapmask, mapread, mapwrite,             &
-   calendar)
+       !--- streams stuff required ---
+       yearFirst, yearLast, yearAlign, offset,          &
+       domFilePath, domFileName,                        &
+       domTvarName, domXvarName, domYvarName, domAreaName, domMaskName, &
+       filePath, filename, fldListFile, fldListModel,   &
+       !--- strdata optional ---
+#ifdef USE_PDAF       
+       caseId, dt, numEns,                              &
+#endif
+       nzg, domZvarName,                                &
+       taxMode, dtlimit, tintalgo, readmode,            &
+       fillalgo, fillmask, fillread, fillwrite,         &
+       mapalgo, mapmask, mapread, mapwrite,             &
+       calendar)
 
     implicit none
 
@@ -1441,11 +1444,12 @@ contains
     character(*),optional ,intent(in)   :: readmode  ! file read mode
     character(*),optional, intent(in)   :: calendar
 
-   ! Yorck
+#ifdef USE_PDAF
+    ! Yorck
     integer(IN) ,optional ,intent(in)   :: caseId
     integer(IN) ,optional ,intent(in)   :: dt
     integer(IN) ,optional ,intent(in)   :: numEns
-
+#endif
     !EOP
 
     !  --- local ---
@@ -1508,37 +1512,61 @@ contains
     endif
 
     !---- Backwards compatibility requires Z be optional
-    ! Yorck adjustments: optionality of caseId, dt and numEns
 
     if (present(domZvarName)) then
+#ifndef USE_PDAF      
+       call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset,taxMode, &
+            fldListFile,fldListModel,domFilePath,domFileName, &
+            domTvarName,domXvarName,domYvarName,domZvarName, &
+            domAreaName,domMaskName, &
+            filePath,filename,trim(name))
+#else
+    ! Yorck adjustments: optionality of caseId, dt and numEns
       if (present(caseId)) then
-        call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset,caseId,dt,numEns, &
-           taxMode,fldListFile,fldListModel,domFilePath,domFileName, &
-           domTvarName,domXvarName,domYvarName,domZvarName, &
-           domAreaName,domMaskName, &
-           filePath,filename,trim(name))
+       call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset, &
+            caseId,dt,numEns, &
+            taxMode, &
+            fldListFile,fldListModel,domFilePath,domFileName, &
+            domTvarName,domXvarName,domYvarName,domZvarName, &
+            domAreaName,domMaskName, &
+            filePath,filename,trim(name))
       else
-        call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset,0,0,0, &
-           taxMode,fldListFile,fldListModel,domFilePath,domFileName, &
-           domTvarName,domXvarName,domYvarName,domZvarName, &
-           domAreaName,domMaskName, &
-           filePath,filename,trim(name))
+       call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset, &
+            0,0,0, &
+            taxMode, &
+            fldListFile,fldListModel,domFilePath,domFileName, &
+            domTvarName,domXvarName,domYvarName,domZvarName, &
+            domAreaName,domMaskName, &
+            filePath,filename,trim(name))
       end if
-   else
+#endif
+    else
+#ifndef USE_PDAF      
+       call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset,taxMode, &
+            fldListFile,fldListModel,domFilePath,domFileName, &
+            domTvarName,domXvarName,domYvarName,'undefined', &
+            domAreaName,domMaskName, &
+            filePath,filename,trim(name))
+#else
       if (present(caseId)) then
-        call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset,caseId,dt,numEns, &
-           taxMode,fldListFile,fldListModel,domFilePath,domFileName, &
-           domTvarName,domXvarName,domYvarName,'undefined', &
-           domAreaName,domMaskName, &
-           filePath,filename,trim(name))
+       call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset, &
+            caseId,dt,numEns, &
+            taxMode, &
+            fldListFile,fldListModel,domFilePath,domFileName, &
+            domTvarName,domXvarName,domYvarName,'undefined', &
+            domAreaName,domMaskName, &
+            filePath,filename,trim(name))
       else
-        call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset,0,0,0, &
-           taxMode,fldListFile,fldListModel,domFilePath,domFileName, &
-           domTvarName,domXvarName,domYvarName,'undefined', &
-           domAreaName,domMaskName, &
-           filePath,filename,trim(name))
+       call shr_stream_set(SDAT%stream(1),yearFirst,yearLast,yearAlign,offset, &
+            0,0,0, &
+            taxMode, &
+            fldListFile,fldListModel,domFilePath,domFileName, &
+            domTvarName,domXvarName,domYvarName,'undefined', &
+            domAreaName,domMaskName, &
+            filePath,filename,trim(name))
       end if
-   endif
+#endif
+    endif
 
     if (present(nzg)) then
        call shr_strdata_init(SDAT, mpicom, compid, &
@@ -1558,7 +1586,10 @@ contains
        filePath, filename, fldListFile, fldListModel,   &
        pio_subsystem, pio_iotype,                       &
        !--- strdata optional ---
-       caseId, dt, numEns, nzg, domZvarName,                                &
+#ifdef USE_PDAF
+       caseId, dt, numEns,                              &
+#endif
+       nzg, domZvarName,                                &
        taxMode, dtlimit, tintalgo, readmode,            &
        fillalgo, fillmask, fillread, fillwrite,         &
        mapalgo, mapmask, mapread, mapwrite,             &
@@ -1611,21 +1642,33 @@ contains
     character(*),optional ,intent(in)   :: readmode  ! file read mode
     character(*),optional, intent(in)   :: calendar
 
+#ifdef USE_PDAF
     ! Yorck
     integer(IN) ,optional ,intent(in)   :: caseId
     integer(IN) ,optional ,intent(in)   :: dt
     integer(IN) ,optional ,intent(in)   :: numEns
-
+#endif
     !EOP
     ! pio variables are already in SDAT no need to copy them
+#ifndef USE_PDAF    
     call shr_strdata_create_newway(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg,&
          yearFirst, yearLast, yearAlign, offset, domFilePath, domFilename, domTvarName, &
          domXvarName, domYvarName, domAreaName, domMaskName, &
-         filePath, filename, fldListFile, fldListModel, caseId=caseId, dt=dt, numEns=numEns, nzg=nzg, domZvarName=domZvarName,&
+         filePath, filename, fldListFile, fldListModel, nzg=nzg, domZvarName=domZvarName,&
          taxMode=taxMode,dtlimit=dtlimit,tintalgo=tintalgo,readmode=readmode,&
          fillalgo=fillalgo,fillmask=fillmask,fillread=fillread,fillwrite=fillwrite,mapalgo=mapalgo,&
          mapmask=mapmask,mapread=mapread,mapwrite=mapwrite,calendar=calendar)
-
+#else
+    call shr_strdata_create_newway(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg,&
+         yearFirst, yearLast, yearAlign, offset, domFilePath, domFilename, domTvarName, &
+         domXvarName, domYvarName, domAreaName, domMaskName, &
+         filePath, filename, fldListFile, fldListModel, &
+         caseId=caseId, dt=dt, numEns=numEns, &
+         nzg=nzg, domZvarName=domZvarName,&
+         taxMode=taxMode,dtlimit=dtlimit,tintalgo=tintalgo,readmode=readmode,&
+         fillalgo=fillalgo,fillmask=fillmask,fillread=fillread,fillwrite=fillwrite,mapalgo=mapalgo,&
+         mapmask=mapmask,mapread=mapread,mapwrite=mapwrite,calendar=calendar)
+#endif
 
   end subroutine shr_strdata_create_oldway
   !===============================================================================
