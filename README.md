@@ -1,3 +1,7 @@
+# `dev-soil-temperature-debug`
+
+Debug output in `SoilTemperatureMod`.
+
 # eCLM
 
 [![CI](https://github.com/HPSCTerrSys/eCLM/actions/workflows/build_and_run_eCLM.yml/badge.svg)](https://github.com/HPSCTerrSys/eCLM/actions/workflows/build_and_run_eCLM.yml)
