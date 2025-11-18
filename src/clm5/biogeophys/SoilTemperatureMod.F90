@@ -1207,6 +1207,17 @@ contains
                if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop .or. col%itype(c) == icol_road_perv) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
+                     ! Diagnostic checks for potential floating point
+                     ! exceptions in phase change computations
+                     if (bsw(c,j) <= 0._r8) then
+                        write(iulog,*) 'ERROR: invalid bsw at c,j:', c, j, 'bsw=', bsw(c,j)
+                     endif
+                     if (sucsat(c,j) <= 0._r8) then
+                        write(iulog,*) 'ERROR: invalid sucsat at c,j:', c, j, 'sucsat=', sucsat(c,j)
+                     endif
+                     if (smp/sucsat(c,j) < 0._r8) then
+                        write(iulog,*) 'ERROR: negative smp/sucsat at c,j:', c, j, 'smp=', smp, 'sucsat=', sucsat(c,j)
+                     endif
                      supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
                      supercool(c,j) = supercool(c,j)*dz(c,j)*1000._r8       ! (mm)
                   endif
