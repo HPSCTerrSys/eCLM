@@ -139,8 +139,7 @@ perturbations.
 
 The `tools/correlatedNoise.py` script generates monthly NetCDF files
 containing spatiotemporally correlated noise fields for all ensemble
-members. The script implements the correlation structures described in
-the [Description](#description) section.
+members.
 
 **Key Configuration Parameters:**
 
