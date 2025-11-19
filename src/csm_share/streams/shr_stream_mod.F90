@@ -77,6 +77,10 @@ module shr_stream_mod
   public :: shr_stream_setAbort          ! set internal shr_stream abort flag
   public :: shr_stream_getDebug          ! get internal shr_stream debug level
   public :: shr_stream_isInit            ! check if stream is initialized
+#ifdef USE_PDAF
+    ! Yorck
+  public :: shr_stream_get_dt_and_caseId ! return dt and caseId
+#endif
   !   public :: shr_stream_bcast             ! broadcast a stream (untested)
 
   ! !PUBLIC DATA MEMBERS:
@@ -150,6 +154,16 @@ module shr_stream_mod
      character(SHR_KIND_CS) :: domZvarName       ! domain file: z-dim var name
      character(SHR_KIND_CS) :: domAreaName       ! domain file: area  var name
      character(SHR_KIND_CS) :: domMaskName       ! domain file: mask  var name
+
+#ifdef USE_PDAF
+     ! Yorck: in the stream, also the time resolution of the forcing data and the caseId
+     ! is saved. This is done to get the right frame of the noise file later.
+     ! Also: the number of ensemble members the noise data was produced for has
+     ! to be included to make sure that the time information is right
+     integer(SHR_KIND_IN) :: caseId
+     integer(SHR_KIND_IN) :: dt
+     integer(SHR_KIND_IN) :: numEns
+#endif
 
      character(SHR_KIND_CS) :: tInterpAlgo       ! Algorithm to use for time interpolation
      character(SHR_KIND_CL) :: calendar          ! stream calendar
@@ -642,6 +656,78 @@ contains
 
     close(nUnit)
 
+#ifdef USE_PDAF
+    !-----------------------------------------------------------------------------
+    ! Yorck adaptations: read in time resolution of forcings and caseId, numEns
+    !-----------------------------------------------------------------------------
+
+    !--- find start tag ---
+    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    startTag =  "<fieldInfo>"
+    endTag = "</fieldInfo>"
+    call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
+    if (rCode2 /= 0)then
+       rCode = rCode2
+       goto 999
+    end if
+    startTag =  "<caseId>"
+    endTag = "</caseId>"
+    call shr_stream_readUpToTag(nUnit,startTag,optionalTag=.true.,rc=rCode2)
+    if (rCode2 == 0) then
+       !--- read data ---
+       read(nUnit,*,END=999) int
+       strm%caseId = int
+    else
+       strm%caseId = 0
+    end if
+
+    close(nUnit)
+
+    !--- find start tag ---
+    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    startTag =  "<fieldInfo>"
+    endTag = "</fieldInfo>"
+    call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
+    if (rCode2 /= 0)then
+       rCode = rCode2
+       goto 999
+    end if
+    startTag =  "<timeInformation>"
+    endTag = "</timeInformation>"
+    call shr_stream_readUpToTag(nUnit,startTag,optionalTag=.true.,rc=rCode2)
+    if (rCode2 == 0) then
+       !--- read data ---
+       read(nUnit,*,END=999) int
+       strm%dt = int
+    else
+       strm%dt = 0
+    end if
+
+    close(nUnit)
+
+    !--- find start tag ---
+    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    startTag =  "<fieldInfo>"
+    endTag = "</fieldInfo>"
+    call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
+    if (rCode2 /= 0)then
+       rCode = rCode2
+       goto 999
+    end if
+    startTag =  "<numEns>"
+    endTag = "</numEns>"
+    call shr_stream_readUpToTag(nUnit,startTag,optionalTag=.true.,rc=rCode2)
+    if (rCode2 == 0) then
+       !--- read data ---
+       read(nUnit,*,END=999) int
+       strm%numEns = int
+    else
+       strm%numEns = 0
+    end if
+
+    close(nUnit)
+#endif
+
     !-----------------------------------------------------------------------------
     ! get initial calendar value
     !-----------------------------------------------------------------------------
@@ -681,12 +767,19 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
+#ifdef USE_PDAF
+  subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset, caseId, dt, &
+   numEns, taxMode, fldListFile,fldListModel,domFilePath,domFileName, &
+   domTvarName,domXvarName,domYvarName,domZvarName,  &
+   domAreaName,domMaskName, &
+   filePath,filename,dataSource,rc)
+#else
   subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
        fldListFile,fldListModel,domFilePath,domFileName, &
        domTvarName,domXvarName,domYvarName,domZvarName,  &
        domAreaName,domMaskName, &
        filePath,filename,dataSource,rc)
-
+#endif
     ! !INPUT/OUTPUT PARAMETERS:
 
     type(shr_stream_streamType)    ,intent(inout) :: strm      ! data stream
@@ -710,6 +803,12 @@ contains
     character(*)          ,optional,intent(in)    :: dataSource ! comment line
     integer  (SHR_KIND_IN),optional,intent(out)   :: rc        ! return code
 
+#ifdef USE_PDAF
+    ! Yorck
+    integer  (SHR_KIND_IN),optional,intent(in)    :: caseId    ! ensemble member case ID
+    integer  (SHR_KIND_IN),optional,intent(in)    :: dt        ! time resolution of forcing data
+    integer  (SHR_KIND_IN),optional,intent(in)    :: numEns    ! number of ensemble members set to produce noise data
+#endif
     !EOP
 
     !----- local -----
@@ -791,6 +890,21 @@ contains
        call fileVec%move_out(strm%file)
     endif
 
+#ifdef USE_PDAF
+    ! Yorck
+    if (present(caseId)) then
+      strm%caseId = caseId
+    end if
+
+    if (present(dt)) then
+      strm%dt = dt
+    end if
+
+    if (present(numEns)) then
+      strm%numEns = numEns
+    end if
+#endif
+
     !-----------------------------------------------------------------------------
     ! get initial calendar value
     !-----------------------------------------------------------------------------
@@ -870,6 +984,12 @@ contains
     strm%domZvarName      = ' '
     strm%domAreaName      = ' '
     strm%domMaskName      = ' '
+
+#ifdef USE_PDAF
+    strm%caseId           = 0
+    strm%dt               = 0
+    strm%numEns           = 0
+#endif
 
     strm%calendar         = shr_cal_noleap
 
@@ -1516,6 +1636,11 @@ contains
     integer(SHR_KIND_IN)   :: ndate         ! calendar date of time value
     real(SHR_KIND_R8)      :: nsec          ! elapsed secs on calendar date
     real(SHR_KIND_R8),allocatable :: tvar(:)
+#ifdef USE_PDAF
+    character(SHR_KIND_CL) :: mfldName !Yorck
+    integer(SHR_KIND_IN)   :: nt_  ! Yorck
+    real(SHR_KIND_R8),allocatable :: tvar_lok(:) ! Yorck
+#endif
     !----- formats -----
     character(*),parameter :: subname = '(shr_stream_readTCoord) '
     character(*),parameter :: F01   = "('(shr_stream_readTCoord) ',a,2i7)"
@@ -1538,6 +1663,28 @@ contains
     rCode = nf90_inquire_dimension(fid,dids(1),len=nt)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_dimension')
     deallocate(dids)
+
+#ifdef USE_PDAF
+    ! Yorck
+    ! as the time information in the noise files is wrong, the last timesteps which only resemble the number of ensemble
+    ! members and the time resolution of the forcing data have to be deleted. It is not necessarily the number 
+    ! of ensemble members the experiment is conducted with but the number of ensemble members the noise data was produced with.
+
+    ! After nt is adjusted, also the read in number of timesteps has to be adjusted.
+
+    call shr_stream_getModelFieldName(strm,1,mfldName)
+    if (INDEX(mfldName, "noise") .ne. 0) then
+      nt_ = nt
+      if (strm%numEns == 0) then
+         call shr_sys_abort(subname//' ERROR: number of ensemble members that were used for producing noise data has to be set in stream')
+      end if
+      if (strm%dt == 0) then
+         call shr_sys_abort(subname//' ERROR: time resolution of forcing data has to be set in stream')
+      end if
+      ! (numEns-1)*(24/dt) is the number of extra time steps introduced in the noise preperation
+      nt = nt - (strm%numEns-1)*(24/strm%dt)
+    end if
+#endif
 
     allocate(strm%file(k)%date(nt),strm%file(k)%secs(nt))
     strm%file(k)%nt = nt
@@ -1563,10 +1710,30 @@ contains
     strm%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
     allocate(tvar(nt))
+#ifdef USE_PDAF
+    ! Yorck
+    if (INDEX(mfldName, "noise") .ne. 0) then
+      allocate(tvar_lok(nt_))
+      rcode = nf90_get_var(fid,vid,tvar_lok)
+      if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_var')
+         rCode = nf90_close(fid)
+      if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
+
+      do n = 1, nt
+         tvar(n) = tvar_lok(n)
+      end do
+      deallocate(tvar_lok)
+
+    else
+#endif
     rcode = nf90_get_var(fid,vid,tvar)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_var')
     rCode = nf90_close(fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
+#ifdef USE_PDAF
+    end if
+    ! End Yorck
+#endif
     do n = 1,nt
        call shr_cal_advDate(tvar(n),bunits,bdate,bsec,ndate,nsec,calendar)
        strm%file(k)%date(n) = ndate
@@ -2582,6 +2749,11 @@ contains
        write(nUnit) strm(k)%domAreaName  ! domain file: area  var name
        write(nUnit) strm(k)%domMaskName  ! domain file: mask  var name
 
+#ifdef USE_PDAF
+       write(nUnit) strm(k)%dt           ! Yorck
+       write(nUnit) strm(k)%caseId       ! Yorck
+       write(nUnit) strm(k)%numEns       ! Yorck
+#endif
     end do
 
     close(nUnit)
@@ -2884,6 +3056,12 @@ contains
     write(s_logunit,F00) "domZvarName  = ", trim(strm%domZvarName)
     write(s_logunit,F00) "domAreaName  = ", trim(strm%domAreaName)
     write(s_logunit,F00) "domMaskName  = ", trim(strm%domMaskName)
+
+#ifdef USE_PDAF
+    write(s_logunit,F01) "dt           = ", strm%dt   ! Yorck
+    write(s_logunit,F01) "caseId       = ", strm%caseId ! Yorck
+    write(s_logunit,F01) "numEns       = ", strm%numEns !Yorck
+#endif
 
   end subroutine shr_stream_dataDump
 
@@ -3232,6 +3410,12 @@ contains
     call shr_mpi_bcast(stream%domZvarName ,comm,subName)
     call shr_mpi_bcast(stream%domMaskName ,comm,subName)
     call shr_mpi_bcast(stream%calendar    ,comm,subName)
+    
+#ifdef USE_PDAF
+    !Yorck
+    call shr_mpi_bcast(stream%dt          ,comm,subName)
+    call shr_mpi_bcast(stream%caseId      ,comm,subName)
+#endif
 
     if (pid /= 0) allocate(stream%file(stream%nFiles))
 
@@ -3246,6 +3430,31 @@ contains
     enddo
 
   end subroutine shr_stream_bcast
+
+#ifdef USE_PDAF
+  ! Yorck
+  subroutine shr_stream_get_dt_and_caseId(stream,dt,caseId)
+
+   implicit none
+
+   ! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_stream_streamType)  ,intent(in)  :: stream  ! stream in question
+   integer(SHR_KIND_IN)         ,intent(out) :: dt      ! 
+   integer(SHR_KIND_IN)         ,intent(out) :: caseId      ! 
+
+
+
+   !-------------------------------------------------------------------------------
+   ! Notes:
+   !-------------------------------------------------------------------------------
+
+   dt = stream%dt
+   caseId = stream%caseId
+
+
+ end subroutine shr_stream_get_dt_and_caseId
+#endif
 
   !===============================================================================
 end module shr_stream_mod
