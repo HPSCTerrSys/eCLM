@@ -150,7 +150,7 @@ contains
     real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
-#ifdef USE_PDAF
+! SHP start
     real(r8) ,pointer  :: psis_sat (:,:)                ! read in - soil parameter: sucsat (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: shape_param (:,:)             ! read in - soil parameter: bsw (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: thetas (:,:)                  ! read in - soil parameter: watsat (needs to be a pointer for use in ncdio)
@@ -160,16 +160,16 @@ contains
     real(r8) ,pointer  :: shape_param_adj (:,:)             ! read in - soil parameter: bsw (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: thetas_adj (:,:)                  ! read in - soil parameter: watsat (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: ks_adj (:,:)                      ! read in - soil parameter: xksat (needs to be a pointer for use in ncdio)
-#endif
+! SHP end
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: ipedof  
     integer            :: begp, endp
     integer            :: begc, endc
     integer            :: begg, endg
-#ifdef USE_PDAF
+! SHP start
     logical            :: parameters_in_file, parameters_in_file_adj
-#endif
+! SHP end
     !-----------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -239,7 +239,7 @@ contains
 
     allocate(sand3d(begg:endg,nlevsoifl))
     allocate(clay3d(begg:endg,nlevsoifl))
-#ifdef USE_PDAF
+! SHP start
     allocate(thetas(begg:endg,nlevsoifl))
     allocate(shape_param(begg:endg,nlevsoifl))
     allocate(psis_sat(begg:endg,nlevsoifl))
@@ -249,7 +249,7 @@ contains
     allocate(shape_param_adj(begg:endg,nlevgrnd))
     allocate(psis_sat_adj(begg:endg,nlevgrnd))
     allocate(ks_adj(begg:endg,nlevgrnd))
-#endif
+! SHP end
 
     ! Determine organic_max from parameter file
 
@@ -287,7 +287,7 @@ contains
        call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(sourcefile, __LINE__)) 
     end if
 
-#ifdef USE_PDAF
+! SHP start
     ! include option to also read hydraulic parameters from file. Keep it variable so that the code also works for surface files that were
     ! generated without parameter perturbation and parameter as input variables
 
@@ -340,7 +340,7 @@ contains
          parameters_in_file_adj = .False.
       end if
     end if
-#endif
+! SHP end
     do p = begp,endp
        g = patch%gridcell(p)
        if ( sand3d(g,1)+clay3d(g,1) == 0.0_r8 )then
@@ -533,7 +533,7 @@ contains
                 call pedotransf(ipedof, sand, clay, &
                      soilstate_inst%watsat_col(c,lev), soilstate_inst%bsw_col(c,lev), soilstate_inst%sucsat_col(c,lev), xksat)
 
-#ifdef USE_PDAF
+! SHP start
                ! if parameters are included in the file, watsat,... are overwritten with the values from there. If not, the pedotransfer
                ! function is used
 
@@ -552,7 +552,7 @@ contains
                      xksat                              =  ks(col%gridcell(c), nlevsoifl)
                   end if
                end if
-#endif
+! SHP end
                 om_watsat         = max(0.93_r8 - 0.1_r8   *(zsoi(lev)/zsapric), 0.83_r8)
                 om_b              = min(2.7_r8  + 9.3_r8   *(zsoi(lev)/zsapric), 12.0_r8)
                 om_sucsat         = min(10.3_r8 - 0.2_r8   *(zsoi(lev)/zsapric), 10.1_r8)
@@ -561,15 +561,13 @@ contains
                 soilstate_inst%bd_col(c,lev)        = (1._r8 - soilstate_inst%watsat_col(c,lev))*2.7e3_r8 
                 soilstate_inst%watsat_col(c,lev)    = (1._r8 - om_frac) * soilstate_inst%watsat_col(c,lev) + om_watsat*om_frac
                 tkm                                 = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
-#ifndef USE_PDAF
-                soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b   
-#else
+! SHP adapt start
                 if (parameters_in_file) then
                   soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * soilstate_inst%bsw_col(c,lev) + om_frac*om_b
                 else
-                  soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
+                soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
                 end if
-#endif
+! SHP adapt end
                 soilstate_inst%sucsat_col(c,lev)    = (1._r8-om_frac) * soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac  
                 soilstate_inst%hksat_min_col(c,lev) = xksat
 
@@ -593,7 +591,7 @@ contains
                 end if
                 soilstate_inst%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
 
-#ifdef USE_PDAF
+! SHP start
                 if (parameters_in_file_adj) then
                   ! Use values from the file for the soil layers
                   soilstate_inst%watsat_col(c,lev)   =  thetas_adj(col%gridcell(c), lev)
@@ -601,7 +599,7 @@ contains
                   soilstate_inst%sucsat_col(c,lev)   =  psis_sat_adj(col%gridcell(c), lev)
                   soilstate_inst%hksat_col(c,lev)    =  ks_adj(col%gridcell(c), lev) ! mm/s
                 end if
-#endif
+! SHP end
                 soilstate_inst%tkmg_col(c,lev)   = tkm ** (1._r8- soilstate_inst%watsat_col(c,lev))           
 
                 soilstate_inst%tksatu_col(c,lev) = soilstate_inst%tkmg_col(c,lev)*0.57_r8**soilstate_inst%watsat_col(c,lev)
@@ -675,15 +673,13 @@ contains
              soilstate_inst%watsat_col(c,lev) = (1._r8 - om_frac)*soilstate_inst%watsat_col(c,lev) + om_watsat_lake * om_frac
 
              tkm = (1._r8-om_frac)*(8.80_r8*sand+2.92_r8*clay)/(sand+clay) + om_tkm * om_frac ! W/(m K)
-#ifndef USE_PDAF
-             soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
-#else
+! SHP adapt start
              if (parameters_in_file .or. parameters_in_file_adj) then
                soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*soilstate_inst%bsw_col(c,lev) + om_frac * om_b_lake
              else
-               soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
+             soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
              end if
-#endif
+! SHP adapt end
 
              soilstate_inst%sucsat_col(c,lev) = (1._r8-om_frac)*soilstate_inst%sucsat_col(c,lev) + om_sucsat_lake * om_frac
 
@@ -747,10 +743,10 @@ contains
 
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl, dzsoifl)
-#ifdef USE_PDAF
+! SHP start
     deallocate(thetas, shape_param, psis_sat, ks)
     deallocate(thetas_adj, shape_param_adj, psis_sat_adj, ks_adj)
-#endif
+! SHP end
 
   end subroutine SoilStateInitTimeConst
 
