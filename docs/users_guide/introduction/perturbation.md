@@ -2,9 +2,12 @@
 
 This section describes **perturbation capabilities for eCLM-PDAF**.
 
-The implementation of the perturbation routines was first introduced
-by Yorck Ewerdwalbesloh in
-https://gitlab.jsc.fz-juelich.de/detect/cluster-c/c01/perturbationroutineclm5.
+The implementation of the Soil Hydraulic Parameter perturbation was
+first introduced by Fernand Eloundou and adapted by Yorck
+Ewerdwalbesloh.
+
+The implementation of the atmospheric forcing perturbation routines
+was first introduced by Yorck Ewerdwalbesloh.
 
 ## Description
 
