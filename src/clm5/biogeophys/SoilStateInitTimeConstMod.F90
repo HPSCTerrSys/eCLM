@@ -22,6 +22,8 @@ module SoilStateInitTimeConstMod
   ! !PRIVATE DATA:
   ! Control variables (from namelist)
   logical, private :: organic_frac_squared ! If organic fraction should be squared (as in CLM4.5)
+  logical, private :: parameters_in_file ! If soil hydraulic parameters should be read from file
+  logical, private :: parameters_in_file_adj ! If adjusted soil hydraulic parameters should be read from file
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -55,11 +57,14 @@ contains
 
     character(len=*), parameter :: nl_name  = 'clm_soilstate_inparm'  ! Namelist name
                                                                       ! MUST agree with name in namelist and read
-    namelist / clm_soilstate_inparm / organic_frac_squared
+    namelist / clm_soilstate_inparm / organic_frac_squared, parameters_in_file, &
+      parameters_in_file_adj
 
     ! preset values
 
     organic_frac_squared = .false.
+    parameters_in_file = .false.
+    parameters_in_file_adj = .false.
 
     if ( masterproc )then
 
@@ -80,6 +85,14 @@ contains
     end if
 
     call shr_mpi_bcast(organic_frac_squared, mpicom)
+    call shr_mpi_bcast(parameters_in_file, mpicom)
+    call shr_mpi_bcast(parameters_in_file_adj, mpicom)
+
+    ! Check for incompatible namelist settings
+    if (parameters_in_file .and. parameters_in_file_adj) then
+       call endrun(msg=' ERROR: parameters_in_file and parameters_in_file_adj cannot both be .true.'//&
+            errmsg(sourcefile, __LINE__))
+    end if
 
   end subroutine ReadNL
 
@@ -167,9 +180,6 @@ contains
     integer            :: begp, endp
     integer            :: begc, endc
     integer            :: begg, endg
-! SHP start
-    logical            :: parameters_in_file, parameters_in_file_adj
-! SHP end
     !-----------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -240,15 +250,19 @@ contains
     allocate(sand3d(begg:endg,nlevsoifl))
     allocate(clay3d(begg:endg,nlevsoifl))
 ! SHP start
-    allocate(thetas(begg:endg,nlevsoifl))
-    allocate(shape_param(begg:endg,nlevsoifl))
-    allocate(psis_sat(begg:endg,nlevsoifl))
-    allocate(ks(begg:endg,nlevsoifl))
+    if(parameters_in_file) then
+      allocate(thetas(begg:endg,nlevsoifl))
+      allocate(shape_param(begg:endg,nlevsoifl))
+      allocate(psis_sat(begg:endg,nlevsoifl))
+      allocate(ks(begg:endg,nlevsoifl))
+    end if
 
-    allocate(thetas_adj(begg:endg,nlevgrnd))
-    allocate(shape_param_adj(begg:endg,nlevgrnd))
-    allocate(psis_sat_adj(begg:endg,nlevgrnd))
-    allocate(ks_adj(begg:endg,nlevgrnd))
+    if(parameters_in_file_adj) then
+      allocate(thetas_adj(begg:endg,nlevgrnd))
+      allocate(shape_param_adj(begg:endg,nlevgrnd))
+      allocate(psis_sat_adj(begg:endg,nlevgrnd))
+      allocate(ks_adj(begg:endg,nlevgrnd))
+    end if
 ! SHP end
 
     ! Determine organic_max from parameter file
@@ -279,65 +293,59 @@ contains
 
     call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(sourcefile, __LINE__)) 
+       call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(sourcefile, __LINE__))
     end if
 
     call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(sourcefile, __LINE__)) 
+       call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(sourcefile, __LINE__))
     end if
 
 ! SHP start
     ! include option to also read hydraulic parameters from file. Keep it variable so that the code also works for surface files that were
     ! generated without parameter perturbation and parameter as input variables
 
-    call ncd_io(ncid=ncid, varname='THETAS', flag='read', data=thetas, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-      parameters_in_file = .False.
-    else
-      parameters_in_file = .True.
-    end if
+    if (parameters_in_file) then
+      call ncd_io(ncid=ncid, varname='THETAS', flag='read', data=thetas, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+        call endrun(msg=' ERROR: THETAS NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+      end if
 
-    if (parameters_in_file) then ! read also other paramters, if one of them is not included, use sand and clay to compute parameters
-      ! via pedotransfer function
       call ncd_io(ncid=ncid, varname='SHAPE_PARAM', flag='read', data=shape_param, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file = .False.
+        call endrun(msg=' ERROR: SHAPE_PARAM NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='PSIS_SAT', flag='read', data=psis_sat, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file = .False.
+        call endrun(msg=' ERROR: PSIS_SAT NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='KSAT', flag='read', data=ks, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file = .False.
+        call endrun(msg=' ERROR: KSAT NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
     end if
 
-    call ncd_io(ncid=ncid, varname='THETAS_adj', flag='read', data=thetas_adj, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-      parameters_in_file_adj = .False.
-    else
-      parameters_in_file_adj = .True.
-    end if
+    if (parameters_in_file_adj) then
+      call ncd_io(ncid=ncid, varname='THETAS_adj', flag='read', data=thetas_adj, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+        call endrun(msg=' ERROR: THETAS_ADJ NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+      end if
 
-    if (parameters_in_file_adj) then ! read also other paramters, if one of them is not included, use sand and clay to compute parameters
-      ! via pedotransfer function
       call ncd_io(ncid=ncid, varname='SHAPE_PARAM_adj', flag='read', data=shape_param_adj, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file_adj = .False.
+        call endrun(msg=' ERROR: SHAPE_PARAM_adj NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='PSIS_SAT_adj', flag='read', data=psis_sat_adj, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file_adj = .False.
+        call endrun(msg=' ERROR: PSIS_SAT_adj NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='KSAT_adj', flag='read', data=ks_adj, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file_adj = .False.
+        call endrun(msg=' ERROR: KSAT_adj NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
     end if
 ! SHP end
@@ -744,8 +752,12 @@ contains
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl, dzsoifl)
 ! SHP start
-    deallocate(thetas, shape_param, psis_sat, ks)
-    deallocate(thetas_adj, shape_param_adj, psis_sat_adj, ks_adj)
+    if(parameters_in_file) then
+      deallocate(thetas, shape_param, psis_sat, ks)
+    end if
+    if(parameters_in_file_adj) then
+      deallocate(thetas_adj, shape_param_adj, psis_sat_adj, ks_adj)
+    end if
 ! SHP end
 
   end subroutine SoilStateInitTimeConst

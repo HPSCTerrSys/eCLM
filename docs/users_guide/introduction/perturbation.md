@@ -159,20 +159,78 @@ with the `_adj` suffix:
 - If adjusted parameters are not present in the surface file, eCLM falls
   back to the original parameters or pedotransfer functions
 
-#### Parameter Priority and Fallback Option
+#### Namelist Configuration
 
-The code in `SoilStateInitTimeConstMod.F90` follows this priority order:
+The soil hydraulic parameter reading behavior is controlled by two
+namelist settings in the `clm_soilstate_inparm` section of the `lnd_in`
+namelist file:
 
-1. **First priority**: Read `_adj` parameters (if present) → applies
-  to all `nlevgrnd` layers → **overwrites** organic matter mixing
-  results
-2. **Second priority**: Read original parameters → applies to first 10
-  layers (`nlevsoifl`) → undergoes organic matter mixing
-3. **Fallback**: Use pedotransfer functions if parameters are absent
-  from the file
+##### `parameters_in_file`
 
-This hierarchical approach ensures maximum flexibility for both
-standard simulations and data assimilation applications.
+**Type:** logical
+**Default:** `.false.`
+**Description:** Controls whether to read baseline hydraulic parameters
+from the surface dataset file.
+
+When set to `.true.`:
+- eCLM reads `THETAS`, `SHAPE_PARAM`, `PSIS_SAT`, and `KSAT` from the
+  surface file
+- Parameters apply to the first 10 soil layers (`nlevsoifl=10`)
+- Parameters undergo organic matter mixing
+- If any required variable is missing, the model aborts with an error
+  message
+
+When set to `.false.` (default):
+- Hydraulic parameters are computed via pedotransfer functions from
+  sand and clay fractions
+- No parameters are read from the surface file
+
+##### `parameters_in_file_adj`
+
+**Type:** logical
+**Default:** `.false.`
+**Description:** Controls whether to read adjusted hydraulic parameters
+from the surface dataset file.
+
+When set to `.true.`:
+- eCLM reads `THETAS_adj`, `SHAPE_PARAM_adj`, `PSIS_SAT_adj`, and
+  `KSAT_adj` from the surface file
+- Parameters apply to **all** `nlevgrnd` soil layers (typically 25
+  layers)
+- Adjusted parameters **overwrite** the results from organic matter
+  mixing
+- If any required variable is missing, the model aborts with an error
+  message
+
+When set to `.false.` (default):
+- No adjusted parameters are read from the surface file
+- Organic matter mixing results are used as final parameter values
+
+##### Example Configuration
+
+```fortran
+&clm_soilstate_inparm
+  organic_frac_squared = .false.
+  parameters_in_file = .false.
+  parameters_in_file_adj = .true.
+/
+```
+
+This configuration:
+- Reads adjusted parameters from the surface file which override the
+  organic matter mixing results
+- Is typical for ensemble data assimilation applications with perturbed
+  soil parameters
+
+##### Error Handling
+
+Both namelist parameters enforce strict error checking:
+- If set to `.true.`, **all** required parameters must be present in
+  the surface file
+- Missing variables trigger an immediate model abort with a descriptive
+  error message
+- This ensures users are explicitly aware when parameter files are
+  incomplete
 
 #### Note about the Brooks-Corey Shape Parameter ####
 
