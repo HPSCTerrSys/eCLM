@@ -126,7 +126,7 @@ The soil hydraulic parameter reading behavior is controlled by two
 namelist settings in the `clm_soilstate_inparm` section of the `lnd_in`
 namelist file:
 
-#### `soil_hyd_inparm_from_surfdata`
+#### `soil_hyd_inparm_from_file`
 
 **Type:** logical
 **Default:** `.false.`
@@ -146,7 +146,7 @@ When set to `.false.` (default):
   sand and clay fractions
 - No parameters are read from the surface file
 
-#### `soil_hyd_inparm_from_surfdata_adj`
+#### `soil_hyd_inparm_from_file_adj`
 
 **Type:** logical
 **Default:** `.false.`
@@ -172,8 +172,8 @@ When set to `.false.` (default):
 ```fortran
 &clm_soilstate_inparm
   organic_frac_squared = .false.
-  soil_hyd_inparm_from_surfdata = .false.
-  soil_hyd_inparm_from_surfdata_adj = .true.
+  soil_hyd_inparm_from_file = .false.
+  soil_hyd_inparm_from_file_adj = .true.
 /
 ```
 
