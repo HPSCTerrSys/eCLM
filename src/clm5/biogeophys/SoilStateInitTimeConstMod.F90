@@ -22,8 +22,8 @@ module SoilStateInitTimeConstMod
   ! !PRIVATE DATA:
   ! Control variables (from namelist)
   logical, private :: organic_frac_squared ! If organic fraction should be squared (as in CLM4.5)
-  logical, private :: parameters_in_file ! If soil hydraulic parameters should be read from file
-  logical, private :: parameters_in_file_adj ! If adjusted soil hydraulic parameters should be read from file
+  logical, private :: soil_hyd_inparm_from_surfdata ! If soil hydraulic parameters should be read from file
+  logical, private :: soil_hyd_inparm_from_surfdata_adj ! If adjusted soil hydraulic parameters should be read from file
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -57,14 +57,14 @@ contains
 
     character(len=*), parameter :: nl_name  = 'clm_soilstate_inparm'  ! Namelist name
                                                                       ! MUST agree with name in namelist and read
-    namelist / clm_soilstate_inparm / organic_frac_squared, parameters_in_file, &
-      parameters_in_file_adj
+    namelist / clm_soilstate_inparm / organic_frac_squared, soil_hyd_inparm_from_surfdata, &
+      soil_hyd_inparm_from_surfdata_adj
 
     ! preset values
 
     organic_frac_squared = .false.
-    parameters_in_file = .false.
-    parameters_in_file_adj = .false.
+    soil_hyd_inparm_from_surfdata = .false.
+    soil_hyd_inparm_from_surfdata_adj = .false.
 
     if ( masterproc )then
 
@@ -85,12 +85,12 @@ contains
     end if
 
     call shr_mpi_bcast(organic_frac_squared, mpicom)
-    call shr_mpi_bcast(parameters_in_file, mpicom)
-    call shr_mpi_bcast(parameters_in_file_adj, mpicom)
+    call shr_mpi_bcast(soil_hyd_inparm_from_surfdata, mpicom)
+    call shr_mpi_bcast(soil_hyd_inparm_from_surfdata_adj, mpicom)
 
     ! Check for incompatible namelist settings
-    if (parameters_in_file .and. parameters_in_file_adj) then
-       call endrun(msg=' ERROR: parameters_in_file and parameters_in_file_adj cannot both be .true.'//&
+    if (soil_hyd_inparm_from_surfdata .and. soil_hyd_inparm_from_surfdata_adj) then
+       call endrun(msg=' ERROR: soil_hyd_inparm_from_surfdata and soil_hyd_inparm_from_surfdata_adj cannot both be .true.'//&
             errmsg(sourcefile, __LINE__))
     end if
 
@@ -250,14 +250,14 @@ contains
     allocate(sand3d(begg:endg,nlevsoifl))
     allocate(clay3d(begg:endg,nlevsoifl))
 ! SHP start
-    if(parameters_in_file) then
+    if(soil_hyd_inparm_from_surfdata) then
       allocate(thetas(begg:endg,nlevsoifl))
       allocate(shape_param(begg:endg,nlevsoifl))
       allocate(psis_sat(begg:endg,nlevsoifl))
       allocate(ks(begg:endg,nlevsoifl))
     end if
 
-    if(parameters_in_file_adj) then
+    if(soil_hyd_inparm_from_surfdata_adj) then
       allocate(thetas_adj(begg:endg,nlevgrnd))
       allocate(shape_param_adj(begg:endg,nlevgrnd))
       allocate(psis_sat_adj(begg:endg,nlevgrnd))
@@ -305,7 +305,7 @@ contains
     ! include option to also read hydraulic parameters from file. Keep it variable so that the code also works for surface files that were
     ! generated without parameter perturbation and parameter as input variables
 
-    if (parameters_in_file) then
+    if (soil_hyd_inparm_from_surfdata) then
       call ncd_io(ncid=ncid, varname='THETAS', flag='read', data=thetas, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
         call endrun(msg=' ERROR: THETAS NOT on surfdata file'//errMsg(sourcefile, __LINE__))
@@ -327,7 +327,7 @@ contains
       end if
     end if
 
-    if (parameters_in_file_adj) then
+    if (soil_hyd_inparm_from_surfdata_adj) then
       call ncd_io(ncid=ncid, varname='THETAS_adj', flag='read', data=thetas_adj, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
         call endrun(msg=' ERROR: THETAS_ADJ NOT on surfdata file'//errMsg(sourcefile, __LINE__))
@@ -545,7 +545,7 @@ contains
                ! if parameters are included in the file, watsat,... are overwritten with the values from there. If not, the pedotransfer
                ! function is used
 
-               if (parameters_in_file) then
+               if (soil_hyd_inparm_from_surfdata) then
                   if (lev <= nlevsoifl) then
                      ! Use values from the file for the soil layers
                      soilstate_inst%watsat_col(c,lev)   =  thetas(col%gridcell(c), lev)
@@ -570,7 +570,7 @@ contains
                 soilstate_inst%watsat_col(c,lev)    = (1._r8 - om_frac) * soilstate_inst%watsat_col(c,lev) + om_watsat*om_frac
                 tkm                                 = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
 ! SHP adapt start
-                if (parameters_in_file) then
+                if (soil_hyd_inparm_from_surfdata) then
                   soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * soilstate_inst%bsw_col(c,lev) + om_frac*om_b
                 else
                 soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
@@ -600,8 +600,9 @@ contains
                 soilstate_inst%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
 
 ! SHP start
-                if (parameters_in_file_adj) then
-                  ! Use values from the file for the soil layers
+                if (soil_hyd_inparm_from_surfdata_adj) then
+                  ! Ovewrite organic-matter-adjusted parameters from
+                  ! the file for all ground layers
                   soilstate_inst%watsat_col(c,lev)   =  thetas_adj(col%gridcell(c), lev)
                   soilstate_inst%bsw_col(c,lev)      =  shape_param_adj(col%gridcell(c), lev)
                   soilstate_inst%sucsat_col(c,lev)   =  psis_sat_adj(col%gridcell(c), lev)
@@ -682,7 +683,7 @@ contains
 
              tkm = (1._r8-om_frac)*(8.80_r8*sand+2.92_r8*clay)/(sand+clay) + om_tkm * om_frac ! W/(m K)
 ! SHP adapt start
-             if (parameters_in_file .or. parameters_in_file_adj) then
+             if (soil_hyd_inparm_from_surfdata .or. soil_hyd_inparm_from_surfdata_adj) then
                soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*soilstate_inst%bsw_col(c,lev) + om_frac * om_b_lake
              else
              soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
@@ -752,10 +753,10 @@ contains
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl, dzsoifl)
 ! SHP start
-    if(parameters_in_file) then
+    if(soil_hyd_inparm_from_surfdata) then
       deallocate(thetas, shape_param, psis_sat, ks)
     end if
-    if(parameters_in_file_adj) then
+    if(soil_hyd_inparm_from_surfdata_adj) then
       deallocate(thetas_adj, shape_param_adj, psis_sat_adj, ks_adj)
     end if
 ! SHP end

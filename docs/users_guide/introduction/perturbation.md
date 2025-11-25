@@ -168,7 +168,7 @@ The soil hydraulic parameter reading behavior is controlled by two
 namelist settings in the `clm_soilstate_inparm` section of the `lnd_in`
 namelist file:
 
-##### `parameters_in_file`
+##### `soil_hyd_inparm_from_surfdata`
 
 **Type:** logical
 **Default:** `.false.`
@@ -188,12 +188,12 @@ When set to `.false.` (default):
   sand and clay fractions
 - No parameters are read from the surface file
 
-##### `parameters_in_file_adj`
+##### `soil_hyd_inparm_from_surfdata_adj`
 
 **Type:** logical
 **Default:** `.false.`
-**Description:** Controls whether to read adjusted hydraulic parameters
-from the surface dataset file.
+**Description:** Controls whether to read organic-matter-adjusted
+hydraulic parameters from the surface dataset file.
 
 When set to `.true.`:
 - eCLM reads `THETAS_adj`, `SHAPE_PARAM_adj`, `PSIS_SAT_adj`, and
@@ -206,7 +206,7 @@ When set to `.true.`:
   message
 
 When set to `.false.` (default):
-- No adjusted parameters are read from the surface file
+- No organic-matter-adjusted parameters are read from the surface file
 - Organic matter mixing results are used as final parameter values
 
 ##### Example Configuration
@@ -214,8 +214,8 @@ When set to `.false.` (default):
 ```fortran
 &clm_soilstate_inparm
   organic_frac_squared = .false.
-  parameters_in_file = .false.
-  parameters_in_file_adj = .true.
+  soil_hyd_inparm_from_surfdata = .false.
+  soil_hyd_inparm_from_surfdata_adj = .true.
 /
 ```
 
