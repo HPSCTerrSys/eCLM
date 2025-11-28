@@ -669,7 +669,7 @@ contains
 #ifdef USE_PDAF
       if (present(pdaf_id) .and. present(pdaf_max)) then
         call seq_comm_init(global_comm, driver_comm, NLFileName, pdaf_id=pdaf_id, pdaf_max=pdaf_max)
-        cpl_inst_tag = ''
+        write(cpl_inst_tag,'("_",i4.4)') pdaf_id
       else
         call shr_sys_abort( subname//':: pdaf_id and pdaf_max'// &
           ' have to be present for PDAF' )
