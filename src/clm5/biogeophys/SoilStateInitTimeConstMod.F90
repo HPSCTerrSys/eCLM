@@ -22,6 +22,8 @@ module SoilStateInitTimeConstMod
   ! !PRIVATE DATA:
   ! Control variables (from namelist)
   logical, private :: organic_frac_squared ! If organic fraction should be squared (as in CLM4.5)
+  logical, private :: soil_hyd_inparm_from_file ! If soil hydraulic parameters should be read from file
+  logical, private :: soil_hyd_inparm_from_file_adj ! If adjusted soil hydraulic parameters should be read from file
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -55,11 +57,14 @@ contains
 
     character(len=*), parameter :: nl_name  = 'clm_soilstate_inparm'  ! Namelist name
                                                                       ! MUST agree with name in namelist and read
-    namelist / clm_soilstate_inparm / organic_frac_squared
+    namelist / clm_soilstate_inparm / organic_frac_squared, soil_hyd_inparm_from_file, &
+      soil_hyd_inparm_from_file_adj
 
     ! preset values
 
     organic_frac_squared = .false.
+    soil_hyd_inparm_from_file = .false.
+    soil_hyd_inparm_from_file_adj = .false.
 
     if ( masterproc )then
 
@@ -80,6 +85,14 @@ contains
     end if
 
     call shr_mpi_bcast(organic_frac_squared, mpicom)
+    call shr_mpi_bcast(soil_hyd_inparm_from_file, mpicom)
+    call shr_mpi_bcast(soil_hyd_inparm_from_file_adj, mpicom)
+
+    ! Check for incompatible namelist settings
+    if (soil_hyd_inparm_from_file .and. soil_hyd_inparm_from_file_adj) then
+       call endrun(msg=' ERROR: soil_hyd_inparm_from_file and soil_hyd_inparm_from_file_adj cannot both be .true.'//&
+            errmsg(sourcefile, __LINE__))
+    end if
 
   end subroutine ReadNL
 
@@ -150,7 +163,7 @@ contains
     real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
-#ifdef USE_PDAF
+! SHP start
     real(r8) ,pointer  :: psis_sat (:,:)                ! read in - soil parameter: sucsat (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: shape_param (:,:)             ! read in - soil parameter: bsw (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: thetas (:,:)                  ! read in - soil parameter: watsat (needs to be a pointer for use in ncdio)
@@ -160,7 +173,7 @@ contains
     real(r8) ,pointer  :: shape_param_adj (:,:)             ! read in - soil parameter: bsw (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: thetas_adj (:,:)                  ! read in - soil parameter: watsat (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: ks_adj (:,:)                      ! read in - soil parameter: xksat (needs to be a pointer for use in ncdio)
-#endif
+! SHP end
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: ipedof  
@@ -239,17 +252,21 @@ contains
 
     allocate(sand3d(begg:endg,nlevsoifl))
     allocate(clay3d(begg:endg,nlevsoifl))
-#ifdef USE_PDAF
-    allocate(thetas(begg:endg,nlevsoifl))
-    allocate(shape_param(begg:endg,nlevsoifl))
-    allocate(psis_sat(begg:endg,nlevsoifl))
-    allocate(ks(begg:endg,nlevsoifl))
+! SHP start
+    if(soil_hyd_inparm_from_file) then
+      allocate(thetas(begg:endg,nlevsoifl))
+      allocate(shape_param(begg:endg,nlevsoifl))
+      allocate(psis_sat(begg:endg,nlevsoifl))
+      allocate(ks(begg:endg,nlevsoifl))
+    end if
 
-    allocate(thetas_adj(begg:endg,nlevgrnd))
-    allocate(shape_param_adj(begg:endg,nlevgrnd))
-    allocate(psis_sat_adj(begg:endg,nlevgrnd))
-    allocate(ks_adj(begg:endg,nlevgrnd))
-#endif
+    if(soil_hyd_inparm_from_file_adj) then
+      allocate(thetas_adj(begg:endg,nlevgrnd))
+      allocate(shape_param_adj(begg:endg,nlevgrnd))
+      allocate(psis_sat_adj(begg:endg,nlevgrnd))
+      allocate(ks_adj(begg:endg,nlevgrnd))
+    end if
+! SHP end
 
     ! Determine organic_max from parameter file
 
@@ -279,68 +296,62 @@ contains
 
     call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(sourcefile, __LINE__)) 
+       call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(sourcefile, __LINE__))
     end if
 
     call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(sourcefile, __LINE__)) 
+       call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(sourcefile, __LINE__))
     end if
 
-#ifdef USE_PDAF
+! SHP start
     ! include option to also read hydraulic parameters from file. Keep it variable so that the code also works for surface files that were
     ! generated without parameter perturbation and parameter as input variables
 
-    call ncd_io(ncid=ncid, varname='THETAS', flag='read', data=thetas, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-      parameters_in_file = .False.
-    else
-      parameters_in_file = .True.
-    end if
+    if (soil_hyd_inparm_from_file) then
+      call ncd_io(ncid=ncid, varname='THETAS', flag='read', data=thetas, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+        call endrun(msg=' ERROR: THETAS NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+      end if
 
-    if (parameters_in_file) then ! read also other paramters, if one of them is not included, use sand and clay to compute parameters
-      ! via pedotransfer function
       call ncd_io(ncid=ncid, varname='SHAPE_PARAM', flag='read', data=shape_param, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file = .False.
+        call endrun(msg=' ERROR: SHAPE_PARAM NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='PSIS_SAT', flag='read', data=psis_sat, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file = .False.
+        call endrun(msg=' ERROR: PSIS_SAT NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='KSAT', flag='read', data=ks, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file = .False.
+        call endrun(msg=' ERROR: KSAT NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
     end if
 
-    call ncd_io(ncid=ncid, varname='THETAS_adj', flag='read', data=thetas_adj, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-      parameters_in_file_adj = .False.
-    else
-      parameters_in_file_adj = .True.
-    end if
+    if (soil_hyd_inparm_from_file_adj) then
+      call ncd_io(ncid=ncid, varname='THETAS_adj', flag='read', data=thetas_adj, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+        call endrun(msg=' ERROR: THETAS_ADJ NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+      end if
 
-    if (parameters_in_file_adj) then ! read also other paramters, if one of them is not included, use sand and clay to compute parameters
-      ! via pedotransfer function
       call ncd_io(ncid=ncid, varname='SHAPE_PARAM_adj', flag='read', data=shape_param_adj, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file_adj = .False.
+        call endrun(msg=' ERROR: SHAPE_PARAM_adj NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='PSIS_SAT_adj', flag='read', data=psis_sat_adj, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file_adj = .False.
+        call endrun(msg=' ERROR: PSIS_SAT_adj NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
 
       call ncd_io(ncid=ncid, varname='KSAT_adj', flag='read', data=ks_adj, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         parameters_in_file_adj = .False.
+        call endrun(msg=' ERROR: KSAT_adj NOT on surfdata file'//errMsg(sourcefile, __LINE__))
       end if
     end if
-#endif
+! SHP end
     do p = begp,endp
        g = patch%gridcell(p)
        if ( sand3d(g,1)+clay3d(g,1) == 0.0_r8 )then
@@ -533,11 +544,11 @@ contains
                 call pedotransf(ipedof, sand, clay, &
                      soilstate_inst%watsat_col(c,lev), soilstate_inst%bsw_col(c,lev), soilstate_inst%sucsat_col(c,lev), xksat)
 
-#ifdef USE_PDAF
+! SHP start
                ! if parameters are included in the file, watsat,... are overwritten with the values from there. If not, the pedotransfer
                ! function is used
 
-               if (parameters_in_file) then
+               if (soil_hyd_inparm_from_file) then
                   if (lev <= nlevsoifl) then
                      ! Use values from the file for the soil layers
                      soilstate_inst%watsat_col(c,lev)   =  thetas(col%gridcell(c), lev)
@@ -552,7 +563,7 @@ contains
                      xksat                              =  ks(col%gridcell(c), nlevsoifl)
                   end if
                end if
-#endif
+! SHP end
                 om_watsat         = max(0.93_r8 - 0.1_r8   *(zsoi(lev)/zsapric), 0.83_r8)
                 om_b              = min(2.7_r8  + 9.3_r8   *(zsoi(lev)/zsapric), 12.0_r8)
                 om_sucsat         = min(10.3_r8 - 0.2_r8   *(zsoi(lev)/zsapric), 10.1_r8)
@@ -561,15 +572,13 @@ contains
                 soilstate_inst%bd_col(c,lev)        = (1._r8 - soilstate_inst%watsat_col(c,lev))*2.7e3_r8 
                 soilstate_inst%watsat_col(c,lev)    = (1._r8 - om_frac) * soilstate_inst%watsat_col(c,lev) + om_watsat*om_frac
                 tkm                                 = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
-#ifndef USE_PDAF
-                soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b   
-#else
-                if (parameters_in_file) then
+! SHP adapt start
+                if (soil_hyd_inparm_from_file) then
                   soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * soilstate_inst%bsw_col(c,lev) + om_frac*om_b
                 else
-                  soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
+                soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
                 end if
-#endif
+! SHP adapt end
                 soilstate_inst%sucsat_col(c,lev)    = (1._r8-om_frac) * soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac  
                 soilstate_inst%hksat_min_col(c,lev) = xksat
 
@@ -593,15 +602,16 @@ contains
                 end if
                 soilstate_inst%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
 
-#ifdef USE_PDAF
-                if (parameters_in_file_adj) then
-                  ! Use values from the file for the soil layers
+! SHP start
+                if (soil_hyd_inparm_from_file_adj) then
+                  ! Ovewrite organic-matter-adjusted parameters from
+                  ! the file for all ground layers
                   soilstate_inst%watsat_col(c,lev)   =  thetas_adj(col%gridcell(c), lev)
                   soilstate_inst%bsw_col(c,lev)      =  shape_param_adj(col%gridcell(c), lev)
                   soilstate_inst%sucsat_col(c,lev)   =  psis_sat_adj(col%gridcell(c), lev)
                   soilstate_inst%hksat_col(c,lev)    =  ks_adj(col%gridcell(c), lev) ! mm/s
                 end if
-#endif
+! SHP end
                 soilstate_inst%tkmg_col(c,lev)   = tkm ** (1._r8- soilstate_inst%watsat_col(c,lev))           
 
                 soilstate_inst%tksatu_col(c,lev) = soilstate_inst%tkmg_col(c,lev)*0.57_r8**soilstate_inst%watsat_col(c,lev)
@@ -675,15 +685,13 @@ contains
              soilstate_inst%watsat_col(c,lev) = (1._r8 - om_frac)*soilstate_inst%watsat_col(c,lev) + om_watsat_lake * om_frac
 
              tkm = (1._r8-om_frac)*(8.80_r8*sand+2.92_r8*clay)/(sand+clay) + om_tkm * om_frac ! W/(m K)
-#ifndef USE_PDAF
-             soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
-#else
-             if (parameters_in_file .or. parameters_in_file_adj) then
+! SHP adapt start
+             if (soil_hyd_inparm_from_file .or. soil_hyd_inparm_from_file_adj) then
                soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*soilstate_inst%bsw_col(c,lev) + om_frac * om_b_lake
              else
-               soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
+             soilstate_inst%bsw_col(c,lev)    = (1._r8-om_frac)*(2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake
              end if
-#endif
+! SHP adapt end
 
              soilstate_inst%sucsat_col(c,lev) = (1._r8-om_frac)*soilstate_inst%sucsat_col(c,lev) + om_sucsat_lake * om_frac
 
@@ -747,10 +755,14 @@ contains
 
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl, dzsoifl)
-#ifdef USE_PDAF
-    deallocate(thetas, shape_param, psis_sat, ks)
-    deallocate(thetas_adj, shape_param_adj, psis_sat_adj, ks_adj)
-#endif
+! SHP start
+    if(soil_hyd_inparm_from_file) then
+      deallocate(thetas, shape_param, psis_sat, ks)
+    end if
+    if(soil_hyd_inparm_from_file_adj) then
+      deallocate(thetas_adj, shape_param_adj, psis_sat_adj, ks_adj)
+    end if
+! SHP end
 
   end subroutine SoilStateInitTimeConst
 
