@@ -13,6 +13,9 @@ module lnd2atmMod
   use shr_fire_emis_mod    , only : shr_fire_emis_mechcomps_n
   use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevsoi !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
+#ifdef USE_PDAF
+  use clm_varcon           , only : set_averaging_to_zero, averaging_var, aquifer_water_baseline
+#endif
   use clm_varctl           , only : iulog, use_lch4
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -38,6 +41,12 @@ module lnd2atmMod
   use LandunitType         , only : lun
   use GridcellType         , only : grc                
   use landunit_varcon      , only : istice_mec, istsoil, istcrop
+#ifdef USE_PDAF
+  use clm_time_manager     , only : get_nstep
+  use SoilHydrologyType    , only : soilhydrology_type
+  use SoilStateType        , only : soilstate_type
+  use PatchType            , only : patch
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -127,6 +136,9 @@ contains
        solarabs_inst, drydepvel_inst,  &
        vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
        lnd2atm_inst, &
+#ifdef USE_PDAF
+       soilhydrology_inst, soilstate_inst, &
+#endif
        net_carbon_exchange_grc) 
     !
     ! !DESCRIPTION:
@@ -153,17 +165,41 @@ contains
     type(ch4_type)              , intent(in)    :: ch4_inst
     type(glc_behavior_type)     , intent(in)    :: glc_behavior
     type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst 
+#ifdef USE_PDAF
+    ! Yorck
+    type(soilhydrology_type)    , intent(inout) :: soilhydrology_inst
+    type(soilstate_type)        , intent(inout) :: soilstate_inst
+    ! end Yorck
+#endif
     real(r8)                    , intent(in)    :: net_carbon_exchange_grc( bounds%begg: )  ! net carbon exchange between land and atmosphere, positive for source (gC/m2/s)
     !
     ! !LOCAL VARIABLES:
     integer  :: c, g, j  ! indices
+#ifdef USE_PDAF
+    integer  :: p, l, index, counter  ! indices
+#endif
     real(r8) :: qflx_ice_runoff_col(bounds%begc:bounds%endc)    ! total column-level ice runoff
     real(r8) :: eflx_sh_ice_to_liq_grc(bounds%begg:bounds%endg) ! sensible heat flux generated from the ice to liquid conversion, averaged to gridcell
     real(r8), parameter :: amC   = 12.0_r8                      ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8                      ! Atomic mass number for Oxygen
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO             ! Atomic mass number for CO2
+#ifdef USE_PDAF
+    real(r8), parameter :: m_per_mm = 1.e-3_r8                  ! 0.001 meters per mm
+    real(r8), parameter :: sec_per_hr = 3600                    ! 3600 s in 1 hour
+#endif
     ! The following converts g of C to kg of CO2
     real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
+#ifdef USE_PDAF
+    integer             :: nstep                   ! time step number
+
+    REAL, allocatable :: h2osoi_liq_grc(:)
+    REAL, allocatable :: h2osoi_ice_grc(:)
+    REAL, allocatable :: h2osno_grc(:)
+    REAL, allocatable :: h2osfc_grc(:)
+    REAL, allocatable :: h2ocan_grc(:)
+    logical, allocatable :: found(:)
+    logical, allocatable :: found_patch(:)
+#endif
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(net_carbon_exchange_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
@@ -440,6 +476,168 @@ contains
       end if
      end do
     enddo
+#endif
+
+#ifdef USE_PDAF
+     ! Yorck: update also TWS of hydrological active cells
+
+     if (allocated(h2osoi_liq_grc)) deallocate(h2osoi_liq_grc)
+     allocate(h2osoi_liq_grc(bounds%begg:bounds%endg))
+     h2osoi_liq_grc(bounds%begg:bounds%endg) = spval
+
+     if (allocated(h2osoi_ice_grc)) deallocate(h2osoi_ice_grc)
+     allocate(h2osoi_ice_grc(bounds%begg:bounds%endg))
+     h2osoi_ice_grc(bounds%begg:bounds%endg) = spval
+
+     if (allocated(h2osno_grc)) deallocate(h2osno_grc)
+     allocate(h2osno_grc(bounds%begg:bounds%endg))
+     h2osno_grc(bounds%begg:bounds%endg) = spval
+
+     if (allocated(h2osfc_grc)) deallocate(h2osfc_grc)
+     allocate(h2osfc_grc(bounds%begg:bounds%endg))
+     h2osfc_grc(bounds%begg:bounds%endg) = spval
+
+     if (allocated(h2ocan_grc)) deallocate(h2ocan_grc)
+     allocate(h2ocan_grc(bounds%begg:bounds%endg))
+     h2ocan_grc(bounds%begg:bounds%endg) = spval
+
+     if (allocated(found)) deallocate(found)
+     allocate(found(bounds%begg:bounds%endg))
+     found(bounds%begg:bounds%endg) = .false.
+
+     if (allocated(found_patch)) deallocate(found_patch)
+     allocate(found_patch(bounds%begg:bounds%endg))
+     found_patch(bounds%begg:bounds%endg) = .false.
+
+     do g = bounds%begg, bounds%endg
+          counter = 0
+          do c = bounds%begc, bounds%endc
+               if (col%hydrologically_active(c) .and. col%gridcell(c)==g) then
+                    do j = 1,nlevsoi
+                         if (j==1 .and. .not. found(g)) then
+                              found(g) = .true.
+                              h2osoi_liq_grc(g) = 0._r8
+                              h2osoi_ice_grc(g) = 0._r8
+                              h2osno_grc(g) = 0._r8
+                              h2osfc_grc(g) = 0._r8
+                         end if
+                         if (j<=col%nbedrock(c)) then
+                              h2osoi_liq_grc(g) = h2osoi_liq_grc(g) + waterstate_inst%h2osoi_liq_col(c,j)
+                              h2osoi_ice_grc(g) = h2osoi_ice_grc(g) + waterstate_inst%h2osoi_ice_col(c,j)
+                         end if
+                    end do
+
+
+
+                    h2osno_grc(g) = h2osno_grc(g) + waterstate_inst%h2osno_col(c)
+                    h2osfc_grc(g) = h2osfc_grc(g) + waterstate_inst%h2osfc_col(c)
+                    counter= counter+1
+               end if
+          end do
+          if (counter.ne.0) then
+               h2osoi_liq_grc(g) = h2osoi_liq_grc(g)/counter
+               h2osoi_ice_grc(g) = h2osoi_ice_grc(g)/counter
+               h2osno_grc(g) = h2osno_grc(g)/counter
+               h2osfc_grc(g) = h2osfc_grc(g)/counter
+          end if
+
+
+          counter = 0
+          do p = bounds%begp, bounds%endp
+               c = patch%column(p)
+               if (col%hydrologically_active(c) .and. col%gridcell(c)==g .and. patch%active(p)) then
+                    if (.not. found_patch(g)) then
+                         found_patch(g) = .true.
+                         h2ocan_grc(g) = 0
+                    end if
+                    h2ocan_grc(g) = h2ocan_grc(g) + waterstate_inst%h2ocan_patch(p)
+                    counter = counter+1
+               end if
+          end do
+          if (counter.ne.0) then
+               h2ocan_grc(g) = h2ocan_grc(g)/counter
+          else
+               h2ocan_grc(g) = 0
+          end if
+
+          if (found(g)) then
+               waterstate_inst%tws_hactive(g) = h2osoi_liq_grc(g) + h2osoi_ice_grc(g) + h2osno_grc(g) + h2osfc_grc(g) + h2ocan_grc(g)
+          end if
+     end do
+
+     if (allocated(h2osoi_liq_grc)) deallocate(h2osoi_liq_grc)
+
+     if (allocated(h2osoi_ice_grc)) deallocate(h2osoi_ice_grc)
+
+     if (allocated(h2osno_grc)) deallocate(h2osno_grc)
+
+     if (allocated(h2osfc_grc)) deallocate(h2osfc_grc)
+
+     if (allocated(h2ocan_grc)) deallocate(h2ocan_grc)
+
+     if (allocated(found)) deallocate(found)
+
+     if (allocated(found_patch)) deallocate(found_patch)
+
+
+     ! YORCK --> idea: when TWS is calculated at the end of a time step, update all running mean variables.
+     ! this is done for all compartments of TWS, the variables are initialized in the respective type modules
+     ! here because the update of all important variables inside CLM is finished!
+     nstep = get_nstep()
+     if (nstep.eq.set_averaging_to_zero) then
+
+          averaging_var = 0
+
+     end if
+
+     averaging_var = averaging_var+1
+
+     ! if averaging var was resetted, reset also running averages
+     if (averaging_var == 1) then
+          do c = bounds%begc, bounds%endc
+               waterstate_inst%h2osno_col_mean(c) = 0._r8
+               soilhydrology_inst%wa_col_mean(c) = 0._r8
+               waterstate_inst%h2osfc_col_mean(c) = 0._r8
+               waterstate_inst%total_plant_stored_h2o_col_mean(c) = 0._r8
+               do j = 1,nlevgrnd
+                    waterstate_inst%h2osoi_liq_col_mean(c,j) = 0._r8
+                    waterstate_inst%h2osoi_ice_col_mean(c,j) = 0._r8
+               end do
+          end do
+          do g = bounds%begg, bounds%endg
+               atm2lnd_inst%volr_grc_mean(g) = 0._r8
+               waterstate_inst%tws_hactive_mean(g) = 0._r8
+          end do
+
+          do p = bounds%begp, bounds%endp
+               waterstate_inst%h2ocan_patch_mean(p) = 0._r8
+               waterstate_inst%snocan_patch_mean(p) = 0._r8
+          end do
+     end if
+
+     ! Yorck
+     ! update running average with mean = (var + (count-1)*mean)/count for all variables that contribute to TWS
+     do c = bounds%begc, bounds%endc
+          waterstate_inst%h2osno_col_mean(c) = (waterstate_inst%h2osno_col(c)+(averaging_var-1)*waterstate_inst%h2osno_col_mean(c))/averaging_var
+          soilhydrology_inst%wa_col_mean(c) = (soilhydrology_inst%wa_col(c)+(averaging_var-1)*soilhydrology_inst%wa_col_mean(c))/averaging_var
+          waterstate_inst%h2osfc_col_mean(c) = (waterstate_inst%h2osfc_col(c)+(averaging_var-1)*waterstate_inst%h2osfc_col_mean(c))/averaging_var
+          waterstate_inst%total_plant_stored_h2o_col_mean(c) = (waterstate_inst%total_plant_stored_h2o_col(c)+(averaging_var-1) * & 
+               waterstate_inst%total_plant_stored_h2o_col_mean(c))/averaging_var
+          do j = 1,nlevgrnd
+               waterstate_inst%h2osoi_liq_col_mean(c,j) = (waterstate_inst%h2osoi_liq_col(c,j)+(averaging_var-1)* waterstate_inst%h2osoi_liq_col_mean(c,j))/averaging_var
+               waterstate_inst%h2osoi_ice_col_mean(c,j) = (waterstate_inst%h2osoi_ice_col(c,j)+(averaging_var-1)* waterstate_inst%h2osoi_ice_col_mean(c,j))/averaging_var
+          end do
+     end do
+
+     do g = bounds%begg, bounds%endg
+          atm2lnd_inst%volr_grc_mean(g) = (atm2lnd_inst%volr_grc(g)+(averaging_var-1)*atm2lnd_inst%volr_grc_mean(g))/averaging_var
+          waterstate_inst%tws_hactive_mean(g) = (waterstate_inst%tws_hactive(g)+(averaging_var-1)*waterstate_inst%tws_hactive_mean(g))/averaging_var
+     end do
+
+     do p = bounds%begp, bounds%endp
+          waterstate_inst%h2ocan_patch_mean(p) = (waterstate_inst%h2ocan_patch(p)+(averaging_var-1)*waterstate_inst%h2ocan_patch_mean(p))/averaging_var
+          waterstate_inst%snocan_patch_mean(p) = (waterstate_inst%snocan_patch(p)+(averaging_var-1)*waterstate_inst%snocan_patch_mean(p))/averaging_var
+     end do
 #endif
 
   end subroutine lnd2atm
