@@ -764,6 +764,13 @@ CONTAINS
     logical :: fileopen
     character(CL) :: currfile
 
+#ifdef USE_PDAF
+    ! Yorck: 
+    character(CL) :: mfldName
+    integer :: position ! integer to look if string contains noise
+    integer :: caseId ! which ensemble member?
+    integer :: dt ! time sampling of forcings
+#endif
     integer(in) :: ndims
     integer(in),pointer :: dimid(:)
     type(file_desc_t) :: pioid
@@ -910,9 +917,42 @@ CONTAINS
           if (my_task == master_task) then
              call shr_stream_getFileFieldName(stream,k,sfldName)
           endif
+#ifdef USE_PDAF
+          ! Yorck adjustment
+          if (my_task == master_task) then
+            call shr_stream_getModelFieldName(stream,k,mfldName)
+          end if
+          call shr_mpi_bcast(mfldName,mpicom,'mfldName')
+#endif          
           call shr_mpi_bcast(sfldName,mpicom,'sfldName')
           rcode = pio_inq_varid(pioid,trim(sfldName),varid)
+#ifdef USE_PDAF
+          !------------------------------------------------------------------------------------
+          ! Yorck adjustments :
+          ! if noise paramter, the frame has to be adjusted depending on the ensemble member
+          ! it is nt + caseId*24/dt, so that for case 0 (first ensemble member) it takes for
+          ! the first time step the first frame, for ens mem 1 the 8th (3 hourly data) and 
+          ! so on. With this we ensure different forcings in time and time correlations.
+          ! idea: plug time and ensemble member into stream
+          
+          if (INDEX(mfldName, "noise") == 0) then
+#endif
           frame = nt
+#ifdef USE_PDAF          
+          else
+            if (my_task == master_task) then
+               call shr_stream_get_dt_and_caseId(stream,dt,caseId)
+            end if
+
+            call shr_mpi_bcast(caseId,mpicom)
+            call shr_mpi_bcast(dt,mpicom)
+
+            if (dt == 0) then
+               call shr_sys_abort(subname//"dt is zero, time resolution of forcing data has to be provided in noise streams")
+            end if
+            frame = nt+caseId*24/dt
+          end if
+#endif
           call pio_setframe(pioid,varid,frame)
           call pio_read_darray(pioid,varid,pio_iodesc,av%rattr(k,:),rcode)
        enddo
