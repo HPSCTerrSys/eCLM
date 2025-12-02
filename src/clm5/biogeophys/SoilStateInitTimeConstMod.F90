@@ -180,9 +180,6 @@ contains
     integer            :: begp, endp
     integer            :: begc, endc
     integer            :: begg, endg
-#ifdef USE_PDAF
-    logical            :: parameters_in_file, parameters_in_file_adj
-#endif
     !-----------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
