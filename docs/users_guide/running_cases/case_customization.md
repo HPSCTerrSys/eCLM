@@ -1,6 +1,9 @@
 # Case customization
 
-eCLM uses various namelist files that handle different settings and configurations for running a case. These namelists are similar to CLM5 (only the editing is different) so that you can refer to <a href="https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/users_guide/setting-up-and-running-a-case/customizing-the-clm-namelist.html#" target="_blank">Section 1.2.3 and 1.2.4 of the CLM5 User's Guide</a>  for more detailed information. 
+eCLM uses various **namelist files** that handle different settings and configurations for running a case.
+Namelist files are text files, where the user can provide values for various input fields, called **namelist items**.
+Namelist items are parsed by eCLM and connected internal variables are set according to their values.
+eCLM's namelist files are very similar to the namelist files used in CLM5 (only the editing is different) so that you can refer to <a href="https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/users_guide/setting-up-and-running-a-case/customizing-the-clm-namelist.html#" target="_blank">Section 1.2.3 and 1.2.4 of the CLM5 User's Guide</a>  for more detailed information. 
 
 The eCLM namelist files are:
 - Land model namelist `lnd_in` (see <a href="https://docs.cesm.ucar.edu/models/cesm2/settings/2.1.0/clm5_0_nml.html" target="_blank">here</a> for definitions of namelist items)
@@ -61,7 +64,12 @@ Important namelist parameter in the `drv_in` are:
 
 ## 3. Customizing case output
 
-To customize your simulation output, you can specify the history field options in the namelist file `lnd_in`. By default, there is one stream of monthly data files. The field options to customize are:
+To customize your simulation output, you can specify the history field
+options in the namelist file `lnd_in`.
+By default, there is one stream of monthly data files called history
+files.
+History files are in NetCDF format.
+The field options to customize are:
 
 - `hist_fincl1`: The list of history variables that you want to analyze
 - `hist_mfilt`: The number of records within one output file. Default is 1.

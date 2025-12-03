@@ -658,16 +658,26 @@ contains
     !   if (Global_comm /= MPI_COMM_NULL) then
 
     if (num_inst_driver > 1) then
+#ifdef USE_PDAF
+      call shr_sys_abort( subname//':: num_inst_driver > 1'// &
+        ' not supported for PDAF' )
+#else
        call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
        write(cpl_inst_tag,'("_",i4.4)') driver_id
-#ifdef USE_PDAF
-    else if (present(pdaf_id) .and. present(pdaf_max)) then
-       call seq_comm_init(global_comm, driver_comm, NLFileName, &
-                          pdaf_id=pdaf_id, pdaf_max=pdaf_max)
 #endif
     else
+#ifdef USE_PDAF
+      if (present(pdaf_id) .and. present(pdaf_max)) then
+        call seq_comm_init(global_comm, driver_comm, NLFileName, pdaf_id=pdaf_id, pdaf_max=pdaf_max)
+        write(cpl_inst_tag,'("_",i4.4)') pdaf_id
+      else
+        call shr_sys_abort( subname//':: pdaf_id and pdaf_max'// &
+          ' have to be present for PDAF' )
+      end if
+#else
        call seq_comm_init(global_comm, driver_comm, NLFileName)
        cpl_inst_tag = ''
+#endif
     end if
 
     !--- set task based threading counts ---
@@ -4049,7 +4059,7 @@ contains
                ice(ens1)%iamroot_compid .or. &
                glc(ens1)%iamroot_compid .or. &
                wav(ens1)%iamroot_compid) then
-             call shr_mem_getusage(msize,mrss,.true.)
+             call shr_mem_getusage(msize,mrss,.false.)
 
              write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
@@ -4109,12 +4119,12 @@ contains
        endif
 
 #ifdef USE_PDAF
-      ! TSMP specific stop condition:
+      ! TSMP-PDAF specific stop condition:
       counter = counter + 1
       if (present(ntsteps) .and. counter == ntsteps) then
         if (iamroot_CPLID) then
           write(logunit,*) ' '
-          write(logunit,103) subname,' NOTE: Stopping from TSMP-PDAF alarm ntsteps'
+          write(logunit,'(A, A, i10.8, i8)') subname,' NOTE: Stopping from TSMP-PDAF alarm ntsteps at model date = ',ymd,tod
           write(logunit,*) ' '
         endif
         stop_alarm = .true.
