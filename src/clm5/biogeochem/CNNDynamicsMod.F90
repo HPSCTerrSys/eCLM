@@ -304,7 +304,7 @@ contains
     !
     ! !USES:
     use pftconMod, only : ntmp_soybean, nirrig_tmp_soybean
-    use pftconMod, only : ntrp_soybean, nirrig_trp_soybean
+    !use pftconMod, only : ntrp_soybean, nirrig_trp_soybean
     !
     ! !ARGUMENTS:
     type(bounds_type)                       , intent(in)    :: bounds  
@@ -362,9 +362,9 @@ contains
 
          if (croplive(p) .and. &
               (patch%itype(p) == ntmp_soybean .or. &
-               patch%itype(p) == nirrig_tmp_soybean .or. &
-               patch%itype(p) == ntrp_soybean .or. &
-               patch%itype(p) == nirrig_trp_soybean) ) then
+               patch%itype(p) == nirrig_tmp_soybean)) then !.or. &
+               !patch%itype(p) == ntrp_soybean .or. &
+               !patch%itype(p) == nirrig_trp_soybean) ) then
 
             ! difference between supply and demand
 
