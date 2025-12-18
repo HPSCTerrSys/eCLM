@@ -175,10 +175,6 @@ contains
     real(r8) ,pointer  :: ks_adj (:,:)                      ! read in - soil parameter: xksat (needs to be a pointer for use in ncdio)
 ! SHP end
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: psis_sat (:,:)                ! read in - soil parameter: sucsat (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: shape_param (:,:)             ! read in - soil parameter: bsw (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: thetas (:,:)                  ! read in - soil parameter: watsat (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: ks (:,:)                      ! read in - soil parameter: xksat (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: ipedof  
     integer            :: begp, endp
