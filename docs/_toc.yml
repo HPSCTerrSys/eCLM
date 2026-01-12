@@ -28,7 +28,7 @@ parts:
   - file: users_guide/analyzing_model_output
     title: Analyzing model output
 
-  - file: users_guide/case_creation/README
+  - url: https://hpscterrsys.github.io/eCLM_static-file-generator/INDEX.html
     title: Creating a custom case
 
 - caption: Developer's Guide
