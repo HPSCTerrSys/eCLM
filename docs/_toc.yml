@@ -9,10 +9,6 @@ parts:
     title: Scientific Background
   - file: users_guide/introduction/first_tutorial.md
     title: First Tutorial
-  - file: users_guide/introduction/perturbation
-    title: Atmospheric forcing noise
-  - file: users_guide/introduction/soil_hydraulic_parameters
-    title: Soil hydraulic properties from surface file
 - caption: User's Guide
   chapters:
   - file: users_guide/case_examples/README
@@ -30,6 +26,14 @@ parts:
 
   - url: https://hpscterrsys.github.io/eCLM_static-file-generator/INDEX.html
     title: Creating a custom case
+
+  - file: users_guide/misc_tutorials/README
+    title: Miscellaneous tutorials
+    sections:
+    - file: users_guide/misc_tutorials/perturbation
+      title: Atmospheric forcing noise
+    - file: users_guide/misc_tutorials/soil_hydraulic_parameters
+      title: Soil hydraulic properties from surface file
 
 - caption: Developer's Guide
   chapters:
