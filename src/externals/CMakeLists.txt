@@ -57,7 +57,7 @@ if (BUILD_MCT)
                         MPIFC=${CMAKE_Fortran_COMPILER}
                         CFLAGS=${CMAKE_C_FLAGS}
                         FCFLAGS=${CMAKE_Fortran_FLAGS}
-                        OPT=O0
+                        OPT=-O0
         BUILD_COMMAND     make clean install
         BUILD_ALWAYS      YES
         BUILD_BYPRODUCTS  ${GPTL_BLD_DIR}/lib/libmct.a ${GPTL_BLD_DIR}/lib/libmpeu.a
