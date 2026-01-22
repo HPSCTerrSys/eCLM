@@ -34,14 +34,14 @@ elseif(COMPILER STREQUAL "Intel" OR COMPILER STREQUAL "IntelLLVM")
     set(CMAKE_C_FLAGS "-qno-opt-dynamic-align -std=gnu99 -fp-model precise -qopenmp")
     set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
     set(CMAKE_C_FLAGS_RELEASE "-O0 -debug minimal")
-    set(CMAKE_Fortran_FLAGS "-free -qno-opt-dynamic-align -ftz -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model source -qopenmp")
+    set(CMAKE_Fortran_FLAGS "-warn all -check all -standard-semantics -fpmodel=precise -qno-openmp-simd")
     if(USE_PDAF)
       # PDAF does not pass all checks from "-check all"
       # TODO: Resolve the PDAF/non-PDAF difference by either adapting
       # the compile options or debugging the source code
-      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0") #-check all
+      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -traceback -qno-openmp-simd") #-check all
     else()
-      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0 -check all")
+      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -traceback -qno-openmp-simd")
     endif()
     set(CMAKE_Fortran_FLAGS_RELEASE "-O0 -debug minimal")
 else()
