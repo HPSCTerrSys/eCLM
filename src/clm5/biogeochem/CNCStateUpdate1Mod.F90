@@ -556,8 +556,8 @@ contains
   
                  ! update xsmrpool loss state
                  cs_veg%xsmrpool_loss_patch(p) = cs_veg%xsmrpool_loss_patch(p) - cf_veg%xsmrpool_to_atm_patch(p) * dt
-                 
               end if
+
            end if
 
          

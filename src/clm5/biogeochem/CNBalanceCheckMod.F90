@@ -105,7 +105,6 @@ contains
        c = filter_soilc(fc)
        col_begcb(c) = totcolc(c)
        col_begnb(c) = totcoln(c)
-
     end do
 
     end associate
@@ -162,6 +161,7 @@ contains
 
          ! calculate the total column-level carbon storage, for mass conservation check
          col_endcb(c) = totcolc(c)
+
          ! calculate total column-level inputs
          col_cinputs = gpp(c)
 

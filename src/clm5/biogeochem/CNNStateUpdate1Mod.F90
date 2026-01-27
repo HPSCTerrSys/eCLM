@@ -266,7 +266,6 @@ contains
             ns_veg%deadcrootn_patch(p)         = ns_veg%deadcrootn_patch(p)         + nf_veg%npool_to_deadcrootn_patch(p)*dt
             ns_veg%npool_patch(p)              = ns_veg%npool_patch(p)              - nf_veg%npool_to_deadcrootn_storage_patch(p)*dt
             ns_veg%deadcrootn_storage_patch(p) = ns_veg%deadcrootn_storage_patch(p) + nf_veg%npool_to_deadcrootn_storage_patch(p)*dt
-            
          end if
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             if (perennial(ivt(p)) == 1._r8 .and. woody(ivt(p)) == 1.0_r8) then ! (added by O.Dombrowski)
