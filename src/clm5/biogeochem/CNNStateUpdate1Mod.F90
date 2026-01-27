@@ -164,7 +164,6 @@ contains
             ns_veg%livecrootn_xfer_patch(p) = ns_veg%livecrootn_xfer_patch(p) - nf_veg%livecrootn_xfer_to_livecrootn_patch(p)*dt
             ns_veg%deadcrootn_patch(p)      = ns_veg%deadcrootn_patch(p)      + nf_veg%deadcrootn_xfer_to_deadcrootn_patch(p)*dt
             ns_veg%deadcrootn_xfer_patch(p) = ns_veg%deadcrootn_xfer_patch(p) - nf_veg%deadcrootn_xfer_to_deadcrootn_patch(p)*dt
-            
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
@@ -198,7 +197,6 @@ contains
             ns_veg%deadcrootn_patch(p)   = ns_veg%deadcrootn_patch(p) + nf_veg%livecrootn_to_deadcrootn_patch(p)*dt
             ns_veg%livecrootn_patch(p)   = ns_veg%livecrootn_patch(p) - nf_veg%livecrootn_to_retransn_patch(p)*dt
             ns_veg%retransn_patch(p)     = ns_veg%retransn_patch(p)   + nf_veg%livecrootn_to_retransn_patch(p)*dt
-            
          end if
          if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
             if (perennial(ivt(p)) == 1._r8 .and. woody(ivt(p)) == 1.0_r8) then ! (added by O.Dombrowski)
@@ -270,7 +268,6 @@ contains
             ns_veg%deadcrootn_storage_patch(p) = ns_veg%deadcrootn_storage_patch(p) + nf_veg%npool_to_deadcrootn_storage_patch(p)*dt
             
          end if
-
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             if (perennial(ivt(p)) == 1._r8 .and. woody(ivt(p)) == 1.0_r8) then ! (added by O.Dombrowski)
                ns_veg%npool_patch(p)           = ns_veg%npool_patch(p)              - nf_veg%npool_to_grainn_patch(p)*dt
@@ -306,7 +303,6 @@ contains
             ns_veg%livecrootn_xfer_patch(p)    = ns_veg%livecrootn_xfer_patch(p)    + nf_veg%livecrootn_storage_to_xfer_patch(p)*dt
             ns_veg%deadcrootn_storage_patch(p) = ns_veg%deadcrootn_storage_patch(p) - nf_veg%deadcrootn_storage_to_xfer_patch(p)*dt
             ns_veg%deadcrootn_xfer_patch(p)    = ns_veg%deadcrootn_xfer_patch(p)    + nf_veg%deadcrootn_storage_to_xfer_patch(p)*dt
-            
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops

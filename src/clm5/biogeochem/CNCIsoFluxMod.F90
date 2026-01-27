@@ -135,7 +135,7 @@ contains
            iso_cnveg_cf%frootc_to_litter_patch              , cnveg_cf%frootc_to_litter_patch, &
            iso_cnveg_cs%frootc_patch                        , cnveg_cs%frootc_patch, &
            num_soilp                                        , filter_soilp, 1._r8, 0, isotope)
- 
+
       call CIsoFluxCalc(&
            iso_cnveg_cf%livestemc_to_deadstemc_patch        , cnveg_cf%livestemc_to_deadstemc_patch, &
            iso_cnveg_cs%livestemc_patch                     , cnveg_cs%livestemc_patch, &
@@ -1233,7 +1233,7 @@ contains
                           + frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
                      phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
                           + frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     
+
 !DML
                      if (ivt(p) >= npcropmin) then ! add livestemc to litter
                         ! stem litter carbon fluxes

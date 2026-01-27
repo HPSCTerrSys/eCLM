@@ -330,14 +330,13 @@ contains
             else
                m = 0._r8
             end if
-            
+
             ! patch-level harvest carbon fluxes
             ! displayed pools
             hrv_leafc_to_litter(p)               = leafc(p)               * m
             hrv_frootc_to_litter(p)              = frootc(p)              * m
             hrv_livestemc_to_litter(p)           = livestemc(p)           * m
             wood_harvestc(p)                     = deadstemc(p)           * m
-            
             hrv_livecrootc_to_litter(p)          = livecrootc(p)          * m
             hrv_deadcrootc_to_litter(p)          = deadcrootc(p)          * m
             hrv_xsmrpool_to_atm(p)               = xsmrpool(p)            * m
@@ -499,7 +498,7 @@ contains
                  p = col%patchi(c) + pi - 1
 
                  if (patch%active(p)) then
-                    
+
                     ! leaf harvest mortality carbon fluxes
                     harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
                          hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
@@ -630,7 +629,7 @@ contains
                  ! wood harvest mortality carbon fluxes to product pools
                  cwood_harvestc(c)  = cwood_harvestc(c)  + &
                       pwood_harvestc(p)  * wtcol(p)
-                 
+
                  ! wood harvest mortality nitrogen fluxes to product pools
                  cwood_harvestn(c)  = cwood_harvestn(c)  + &
                       pwood_harvestn(p)  * wtcol(p)

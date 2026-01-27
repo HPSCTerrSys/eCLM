@@ -214,7 +214,6 @@ respfact_livecroot_storage
             cpool_deadcroot_storage_gr(p) = cpool_to_deadcrootc_storage(p) * grperc(ivt(p)) * grpnow(ivt(p)) 
 
             transfer_deadcroot_gr(p) = deadcrootc_xfer_to_deadcrootc(p) * grperc(ivt(p)) * (1._r8 - grpnow(ivt(p))) 
-            
          end if
 
       end do

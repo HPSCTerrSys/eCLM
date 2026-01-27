@@ -97,6 +97,7 @@ contains
 
     allocate(this%actual_leafcn(bounds%begp:bounds%endp))         ; this%actual_leafcn(:)         = nan
     allocate(this%actual_storage_leafcn(bounds%begp:bounds%endp)) ; this%actual_storage_leafcn(:) = nan
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -403,12 +404,14 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
+
       ! patch loop to distribute the available N between the competing patches
       ! on the basis of relative demand, and allocate C and N to new growth and storage
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          c = patch%column(p)
+
          ! set some local allocation variables
          f1 = froot_leaf(ivt(p))
          f2 = croot_stem(ivt(p))
@@ -517,6 +520,7 @@ contains
          ! transfer pools
 
          nlc = plant_calloc(p) / c_allometry(p)
+
          cpool_to_leafc(p)          = nlc * fcur
          cpool_to_leafc_storage(p)  = nlc * (1._r8 - fcur)
          cpool_to_frootc(p)         = nlc * f1 * fcur
@@ -886,6 +890,8 @@ contains
                             + cpool_to_grainc_storage(p) 
          end if
          cpool_to_gresp_storage(p) = gresp_storage * g1 * (1._r8 - g2)
+
+
          ! computing 1.) fractional N demand and 2.) N allocation after uptake for different plant parts
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          if (downreg_opt .eqv. .false. .AND. CN_partition_opt == 1) then
@@ -1594,11 +1600,13 @@ contains
 
          ! no allocation when available c is negative
          availc(p) = max(availc(p),0.0_r8)
+
          ! test for an xsmrpool deficit
          if (xsmrpool(p) < 0.0_r8) then
             ! Running a deficit in the xsmrpool, so the first priority is to let
             ! some availc from this timestep accumulate in xsmrpool.
             ! Determine rate of recovery for xsmrpool deficit
+
             xsmrpool_recover(p) = -xsmrpool(p)/(dayscrecover*secspday)
             if (xsmrpool_recover(p) < availc(p)) then
                ! available carbon reduced by amount for xsmrpool recovery

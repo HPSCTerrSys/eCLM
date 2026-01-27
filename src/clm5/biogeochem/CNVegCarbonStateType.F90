@@ -2522,6 +2522,7 @@ contains
             this%deadstemc_patch(p)  + &
             this%livecrootc_patch(p) + &
             this%deadcrootc_patch(p)
+
        ! stored vegetation carbon, excluding cpool (STORVEGC)
        this%storvegc_patch(p) =                &
             this%cpool_patch(p)              + &
@@ -2550,16 +2551,18 @@ contains
                this%dispvegc_patch(p)       + &
                this%grainc_patch(p)
        end if
-       
+
        ! total vegetation carbon, excluding cpool (TOTVEGC)
        this%totvegc_patch(p) = &
             this%dispvegc_patch(p) + &
             this%storvegc_patch(p)
+
        ! total patch-level carbon, including xsmrpool, ctrunc
        this%totc_patch(p) = &
             this%totvegc_patch(p) + &
             this%xsmrpool_patch(p) + &
             this%ctrunc_patch(p)
+
        if (use_crop) then 
           this%totc_patch(p) = this%totc_patch(p) + this%cropseedc_deficit_patch(p) + &
                this%xsmrpool_loss_patch(p)
@@ -2602,6 +2605,7 @@ contains
             soilbiogeochem_totlitc_col(c)   + &
             soilbiogeochem_totsomc_col(c)   + &
             soilbiogeochem_ctrunc_col(c)
+
     end do
 
   end subroutine Summary_carbonstate

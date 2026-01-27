@@ -397,7 +397,6 @@ contains
               cs_veg%deadcrootc_patch(p)         = cs_veg%deadcrootc_patch(p)         + cf_veg%cpool_to_deadcrootc_patch(p)*dt
               cs_veg%cpool_patch(p)              = cs_veg%cpool_patch(p)              - cf_veg%cpool_to_deadcrootc_storage_patch(p)*dt
               cs_veg%deadcrootc_storage_patch(p) = cs_veg%deadcrootc_storage_patch(p) + cf_veg%cpool_to_deadcrootc_storage_patch(p)*dt
-              
            end if
            if (ivt(p) >= npcropmin) then ! skip 2 generic crops
               if (carbon_resp_opt == 1 .and. perennial(ivt(p)) == 0._r8) then !(perennial flag added by O.Dombrowski)
@@ -548,7 +547,6 @@ contains
                  cs_veg%xsmrpool_patch(p)        = 0._r8
                  cs_veg%cpool_patch(p)           = 0._r8
                  cs_veg%frootc_patch(p)          = 0._r8
-                 
               end if
 
               ! Slowly release xsmrpool to atmosphere
@@ -560,7 +558,6 @@ contains
                  cs_veg%xsmrpool_loss_patch(p) = cs_veg%xsmrpool_loss_patch(p) - cf_veg%xsmrpool_to_atm_patch(p) * dt
                  
               end if
-  
            end if
 
          

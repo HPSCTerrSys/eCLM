@@ -458,7 +458,6 @@ contains
     else
        active = "inactive"
     end if
-
     this%t_a10_patch(begp:endp) = spval
     call hist_addfld1d (fname='T10', units='K',  &
          avgflag='A', long_name='10-day running mean of 2-m temperature', &
@@ -1268,7 +1267,6 @@ contains
     this%t_a10_patch(begp:endp) = rbufslp(begp:endp)
 
     if (use_crop) then
-
        call extract_accum_field ('TDM10', rbufslp, nstep)
        this%t_a10min_patch(begp:endp)= rbufslp(begp:endp)
 
@@ -1363,7 +1361,6 @@ contains
     call extract_accum_field ('T_VEG24' , this%t_veg24_patch  , nstep)
     call update_accum_field  ('T_VEG240', rbufslp             , nstep)
     call extract_accum_field ('T_VEG240', this%t_veg240_patch , nstep)
-
 
     ! Accumulate and extract TREFAV - hourly average 2m air temperature
     ! Used to compute maximum and minimum of hourly averaged 2m reference
