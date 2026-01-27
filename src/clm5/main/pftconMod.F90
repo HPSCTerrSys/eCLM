@@ -768,11 +768,22 @@ contains
     call ncd_io('season_decid', this%season_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
+
+    !!
+    !! TODO: Can we make perennial and mulch_pruning optional?
+    !!
     call ncd_io('perennial', this%perennial, 'read', ncid, readvar=readv, posNOTonfile=.true.) 
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    if ( .not. readv ) then
+      write(iulog,*) 'WARNING: perennial not present in pft file'
+      !call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    endif
 
     call ncd_io('mulch_pruning', this%mulch_pruning, 'read', ncid, readvar=readv, posNOTonfile=.true.) 
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    if ( .not. readv ) then
+      write(iulog,*) 'WARNING: mulch_pruning is not present in pft file'
+      !call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    endif
+    !! ENDTODO
 
     call ncd_io('pftpar20', this%pftpar20, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
