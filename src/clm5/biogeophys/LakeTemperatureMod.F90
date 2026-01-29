@@ -9,6 +9,7 @@ module LakeTemperatureMod
   !
   ! !USES
   use shr_kind_mod      , only : r8 => shr_kind_r8
+  use abortutils        , only : endrun
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use ch4Mod            , only : ch4_type
@@ -19,6 +20,7 @@ module LakeTemperatureMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
+  use clm_varctl        , only : iulog
   use ColumnType        , only : col                
   use PatchType         , only : patch                
   !    
@@ -117,7 +119,7 @@ contains
     use clm_time_manager   , only : get_step_size
     use clm_varcon         , only : hfus, cpliq, cpice, tkwat, tkice, denice
     use clm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
-    use clm_varctl         , only : iulog, use_lch4
+    use clm_varctl         , only : use_lch4
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds	  
