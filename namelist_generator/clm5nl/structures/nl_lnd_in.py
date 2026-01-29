@@ -661,6 +661,30 @@ class lnd_in(Namelist):
             """
             pass
 
+        #
+        # TODO: snow_thermal_cond_* are specific to eCLM PR#101. Check before merging!
+        #
+        @namelist_item
+        def snow_thermal_cond_method(self) -> str:
+            """
+            Snow thermal conductivity method for vegetated/crop land units. Valid values are 'Sturm1997' and 'Jordan1991'.
+            """
+            pass
+
+        @namelist_item
+        def snow_thermal_cond_glc_method(self) -> str:
+            """
+            Snow thermal conductivity method for glacier land units. Valid values are 'Sturm1997' and 'Jordan1991'.
+            """
+            pass
+
+        @namelist_item
+        def snow_thermal_cond_lake_method(self) -> str:
+            """
+            Snow thermal conductivity method for lake land units. Valid values are 'Sturm1997' and 'Jordan1991'.
+            """
+            pass
+
         @namelist_item
         def soil_layerstruct(self) -> str:
             """
