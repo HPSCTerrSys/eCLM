@@ -719,7 +719,7 @@ contains
                l = col%landunit(c)
 
                ! Select method over glacier land unit 
-               if (lun%itype(l) == istice) then
+               if (lun%itype(l) == istice_mec) then
                   select case (snow_thermal_cond_glc_method)
                   ! TODO, this code duplication isn't ideal and should likely be in it's own subroutine
                   case('Jordan1991')
