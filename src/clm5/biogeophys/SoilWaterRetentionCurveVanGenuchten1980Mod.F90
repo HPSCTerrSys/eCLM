@@ -102,21 +102,36 @@ contains
     real(r8), optional, intent(out)  :: dsmpds   !d[smp]/ds, [mm]
     !
     ! !LOCAL VARIABLES:
+    ! Local variables
+    real(r8) :: alpha, n, m, Se
+
     
     character(len=*), parameter :: subname = 'soil_suction'
     !-----------------------------------------------------------------------
     
-    associate(& 
-         bsw               =>    soilstate_inst%bsw_col(c,j)            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                       
-         sucsat            =>    soilstate_inst%sucsat_col(c,j)           & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+!    associate(& 
+!         bsw               =>    soilstate_inst%bsw_col(c,j)            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                       
+!         sucsat            =>    soilstate_inst%sucsat_col(c,j)           & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+!         )
+
+    associate(&
+         alpha => soilstate_inst%alphasw_col(c,j), & ! van Genuchten parameter [1/mm]
+         n     => soilstate_inst%nsw_col(c,j)      & ! van Genuchten shape parameter
          )
+    m = 1._r8 - 1._r8/n
 
-    !compute soil suction potential, negative
-    smp = -sucsat*s**(-bsw)
+    ! Effective saturation
+    Se = s
+    if (Se < 1.0e-12_r8) Se = 1.0e-12_r8   ! avoid division by zero
+    if (Se > 1._r8) Se = 1._r8
 
-    !compute derivative
-    if(present(dsmpds))then
-       dsmpds=-bsw*smp/s
+    ! Compute soil suction (negative)
+    smp = - ( (Se**(-1._r8/m) - 1._r8)**(1._r8/n) ) / alpha
+
+    ! Optional derivative d[smp]/ds
+    if (present(dsmpds)) then
+        dsmpds = - (1._r8 / (alpha * n * m)) * Se**(-1._r8/m - 1._r8) * &
+                 (Se**(-1._r8/m) - 1._r8)**(1._r8/n - 1._r8)
     endif
 
     end associate 
@@ -142,16 +157,32 @@ contains
     real(r8) , intent(out) :: s_target   ! relative saturation at which smp = smp_target [0,1]
     !
     ! !LOCAL VARIABLES:
+    real(r8) :: alpha, n, m
+    real(r8) :: psi_abs
     
     character(len=*), parameter :: subname = 'soil_suction_inverse'
     !-----------------------------------------------------------------------
     
-    associate(& 
-         bsw               =>    soilstate_inst%bsw_col(c,j)            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
-         sucsat            =>    soilstate_inst%sucsat_col(c,j)           & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
-         )
+!    associate(& 
+!         bsw               =>    soilstate_inst%bsw_col(c,j)            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
+!         sucsat            =>    soilstate_inst%sucsat_col(c,j)           & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+!         )
 
-    s_target = (-smp_target/sucsat)**(-1._r8/bsw)
+      associate(&
+          alpha => soilstate_inst%alphasw_col(c,j), &
+          n     => soilstate_inst%nsw_col(c,j)      &
+      )
+      m = 1._r8 - 1._r8/n
+
+      ! Use absolute value of smp_target since smp is negative
+      psi_abs = abs(smp_target)
+
+      ! Compute relative saturation by inverting van Genuchten
+      s_target = (1._r8 + (alpha * psi_abs)**n)**(-m)
+
+      ! Clip to valid range [0,1]
+      if (s_target < 0._r8) s_target = 0._r8
+      if (s_target > 1._r8) s_target = 1._r8
 
     end associate 
 

@@ -48,7 +48,8 @@ contains
     character(len=*), parameter :: subname = 'create_soil_water_retention_curve'
     !-----------------------------------------------------------------------
     
-    method = "clapphornberg_1978" !scs: placeholder until bld scripts changed
+!    method = "clapphornberg_1978" !scs: placeholder until bld scripts changed
+    method = "vangenuchten_1980"
 
     select case (trim(method))
        
