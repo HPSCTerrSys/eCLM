@@ -420,8 +420,10 @@ contains
        g = col%gridcell(c)
        l = col%landunit(c)
 
-       soilstate_inst%nsw_col(c, lev)     = 1.41_r8 !spval
-       soilstate_inst%alphasw_col(c, lev) = 2.69_r8 !spval
+       do lev = 1,nlevgrnd
+           soilstate_inst%nsw_col(c, lev)     = 1.41_r8 !spval
+           soilstate_inst%alphasw_col(c, lev) = 2.69_r8 !spval
+       end do
 
        if (lun%itype(l)==istwet .or. lun%itype(l)==istice_mec) then
 

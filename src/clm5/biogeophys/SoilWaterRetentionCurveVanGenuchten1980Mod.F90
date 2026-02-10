@@ -103,7 +103,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     ! Local variables
-    real(r8) :: alpha, n, m, Se
+    real(r8) :: alpha, n, m, Se, ssat, sres
 
     
     character(len=*), parameter :: subname = 'soil_suction'
@@ -119,11 +119,11 @@ contains
          n     => soilstate_inst%nsw_col(c,j)      & ! van Genuchten shape parameter
          )
     m = 1._r8 - 1._r8/n
+    sres = 0.08_r8
+    ssat = 1.0_r8
 
     ! Effective saturation
-    Se = s
-    if (Se < 1.0e-12_r8) Se = 1.0e-12_r8   ! avoid division by zero
-    if (Se > 1._r8) Se = 1._r8
+    Se = max(sres, min(ssat, s))
 
     ! Compute soil suction (negative)
     smp = - ( (Se**(-1._r8/m) - 1._r8)**(1._r8/n) ) / alpha
@@ -157,7 +157,7 @@ contains
     real(r8) , intent(out) :: s_target   ! relative saturation at which smp = smp_target [0,1]
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: alpha, n, m
+    real(r8) :: alpha, n, m, ssat, sres
     real(r8) :: psi_abs
     
     character(len=*), parameter :: subname = 'soil_suction_inverse'
@@ -173,6 +173,9 @@ contains
           n     => soilstate_inst%nsw_col(c,j)      &
       )
       m = 1._r8 - 1._r8/n
+      sres = 0.08_r8
+      ssat = 1.0_r8
+
 
       ! Use absolute value of smp_target since smp is negative
       psi_abs = abs(smp_target)
@@ -180,9 +183,8 @@ contains
       ! Compute relative saturation by inverting van Genuchten
       s_target = (1._r8 + (alpha * psi_abs)**n)**(-m)
 
-      ! Clip to valid range [0,1]
-      if (s_target < 0._r8) s_target = 0._r8
-      if (s_target > 1._r8) s_target = 1._r8
+      ! Clip to valid range
+      s_target = max(sres, min(ssat, s_target))
 
     end associate 
 
