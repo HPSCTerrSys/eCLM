@@ -7,8 +7,8 @@ parts:
   chapters:
   - file: users_guide/introduction/introduction
     title: Scientific Background
-  - file: users_guide/introduction/first_tutorial.md
-    title: First Tutorial
+  - file: users_guide/introduction/quick_start
+    title: Quick Start
 - caption: User's Guide
   chapters:
   - file: users_guide/case_examples/README
