@@ -1,5 +1,6 @@
 `dev-snow-params`: Contains
 - `dev-add-snow-params`
+- `dev-snow-thermal-cond` (#101)
 
 # eCLM
 
