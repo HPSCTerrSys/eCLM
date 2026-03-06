@@ -1,5 +1,4 @@
 `dev-snow-params`: Contains
-- `dev-check-all`
 - `dev-add-snow-params`
 
 # eCLM
