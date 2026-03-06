@@ -12,12 +12,12 @@ endif()
 
 # Check if MPI is present. This should succeed if
 # the compilers were set to mpifort and mpicc.
-find_package(MPI REQUIRED)
 
 # Set default compiler = GNU if none was specified. 
 if(NOT COMPILER)
     set(COMPILER "${CMAKE_Fortran_COMPILER_ID}" CACHE STRING "Choose compiler toolchain." FORCE)
     set_property(CACHE COMPILER PROPERTY STRINGS "GNU" "Intel")
+    set_property(CACHE COMPILER PROPERTY STRINGS "GNU" "Intel" "LFortran")
 endif()
 
 # Set compiler specific flags.
@@ -35,8 +35,29 @@ elseif(COMPILER STREQUAL "Intel" OR COMPILER STREQUAL "IntelLLVM")
     set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
     set(CMAKE_C_FLAGS_RELEASE "-O2 -debug minimal")
     set(CMAKE_Fortran_FLAGS "-free -qno-opt-dynamic-align -ftz -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model source -qopenmp")
-    set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0 -check all")
+    if(USE_PDAF)
+      # PDAF does not pass all checks from "-check all"
+      # TODO: Resolve the PDAF/non-PDAF difference by either adapting
+      # the compile options or debugging the source code
+      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0") #-check all
+    else()
+      set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -fpe0 -check all")
+    endif()
     set(CMAKE_Fortran_FLAGS_RELEASE "-O2 -debug minimal")
+elseif(COMPILER STREQUAL "NVHPC")
+    add_compile_definitions(CPRNVHPC)
+    set(CMAKE_C_FLAGS "-fPIC")
+    set(CMAKE_C_FLAGS_DEBUG "-g -O0")
+    set(CMAKE_C_FLAGS_RELEASE "-Ofast")
+    set(CMAKE_Fortran_FLAGS "-fPIC")
+    set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0")
+    set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast") 
+elseif(COMPILER STREQUAL "LFortran")
+    add_compile_definitions(CPRLFORTRAN)
+    # There is an issue, some modules require --cpp as a flag in their compilation
+    # some flat out break, if we put --cpp
+    # For more information see https://github.com/HPSCTerrSys/eCLM/issues/98.
+    # set(CMAKE_Fortran_FLAGS "--cpp")
 else()
     message(FATAL_ERROR "COMPILER='${COMPILER}' is not supported.")
 endif()

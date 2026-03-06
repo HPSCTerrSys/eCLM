@@ -2366,9 +2366,13 @@ contains
      ! !LOCAL VARIABLES:
      character(len=32) :: subname = 'ParFlowDrainage'   ! subroutine name
      integer  :: c,j,fc                                   ! indices
+     real(r8), parameter :: m_per_mm = 1.e-3_r8          ! 0.001 meters per mm
+     real(r8), parameter :: sec_per_hr = 3600._r8        ! 3600 s in 1 hour
+
      !-----------------------------------------------------------------------
 
-     associate(                                                            & 
+     associate(                                                            &
+          dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)
           qflx_snwcp_liq     =>    waterflux_inst%qflx_snwcp_liq_col     , & ! excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_drain         =>    waterflux_inst%qflx_drain_col         , & ! sub-surface runoff (mm H2O /s)
           qflx_drain_perched =>    waterflux_inst%qflx_drain_perched_col , & ! perched wt sub-surface runoff (mm H2O /s)         
@@ -2381,25 +2385,25 @@ contains
 
          ! COUP_OAS_PFL
          ! Calculate here the source/sink term for ParFlow
-         do j = 1, nlevsoi
-            do fc = 1, num_hydrologyc
-               c = filter_hydrologyc(fc)
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            do j = 1, nlevsoi
                if (j == 1) then
                   ! From SoilWaterPlantSinkMod:
                   ! qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
-                  qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) !* 3.6_r8 / dz(c,j)
+                   qflx_parflow(c,j) = (qflx_infl(c) - qflx_rootsoi(c,j)) !mm/s
                else 
-                  qflx_parflow(c,j) = -qflx_rootsoi(c,j) !* 3.6_r8 / dz(c,j)
+                   qflx_parflow(c,j) = -qflx_rootsoi(c,j) !mm/s
                end if
             end do
-         end do
-
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            qflx_drain(c)         = -sum(qflx_parflow(c,:)) !0._r8
+            ! Compute subsurface run-off (mm/s)
+            qflx_drain(c) = -sum(qflx_parflow(c,:))
             qflx_drain_perched(c) = 0._r8  
             qflx_rsub_sat(c)      = 0._r8
             qflx_qrgwl(c)         = qflx_snwcp_liq(c)   ! Set imbalance for snow capping
+            ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr):
+            !         1/hr            =           [mm/s]          *   [s/hr]   *  [m/mm]  *         [1/m]
+            qflx_parflow(c,1:nlevsoi) = qflx_parflow(c,1:nlevsoi) * sec_per_hr * m_per_mm * (1._r8/dz(c,1:nlevsoi))
          end do
 
          ! No drainage for urban columns (necessary to account for water balance errors)
