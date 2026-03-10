@@ -13,8 +13,6 @@ parts:
     title: Running example cases
     sections:
     - file: users_guide/case_examples/Wuestebach
-    - file: users_guide/case_examples/NRW
-    - file: users_guide/case_examples/EURO-CORDEX
 
   - url: https://hpscterrsys.github.io/eCLM_static-file-generator/INDEX.html
     title: Creating a custom case
