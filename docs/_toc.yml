@@ -16,12 +16,6 @@ parts:
     - file: users_guide/case_examples/NRW
     - file: users_guide/case_examples/EURO-CORDEX
 
-  - file: users_guide/running_cases/case_customization
-    title:  Customizing eCLM namelists
-
-  - file: users_guide/analyzing_model_output
-    title: Analyzing model output
-
   - url: https://hpscterrsys.github.io/eCLM_static-file-generator/INDEX.html
     title: Creating a custom case
 
