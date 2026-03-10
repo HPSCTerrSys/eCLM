@@ -5,8 +5,6 @@ root: INDEX
 parts:
 - caption: Introduction
   chapters:
-  - file: users_guide/introduction/introduction
-    title: Scientific Background
   - file: users_guide/introduction/quick_start
     title: Quick Start
 - caption: User's Guide
