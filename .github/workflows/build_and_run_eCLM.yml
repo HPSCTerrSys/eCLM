@@ -71,7 +71,7 @@ jobs:
       INSTALL_DIR: ${{ github.workspace }}/install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
       WTB_REPO_NAME: extpar_eclm_wuestebach_sp
-      WTB_REPO_TAG: 0.3
+      WTB_REPO_TAG: dev-snow-thermal-cond  # TODO: temporary change--must be reverted before merging to master!
 
     steps:
       - uses: actions/checkout@v4
