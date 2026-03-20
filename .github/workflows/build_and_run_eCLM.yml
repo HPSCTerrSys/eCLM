@@ -147,7 +147,6 @@ jobs:
           git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
           du -ch ${WTB_REPO_NAME}
           git lfs fsck
-          tree $(pwd)
 
       - if: matrix.config.name == 'eCLM-Standalone_DEBUG' && steps.cache-wtb-restore.outputs.cache-hit != 'true'
         name: Save Wuestebach static files
@@ -161,7 +160,7 @@ jobs:
         name: Run 1x1 Wuestebach test case
         working-directory: ${{ github.workspace }}
         run: |
-          ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
+          yes | ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
           cd 1x1_wuestebach
           mpirun -np 1 ${INSTALL_DIR}/bin/eclm.exe
 
