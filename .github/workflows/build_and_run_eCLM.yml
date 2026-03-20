@@ -129,10 +129,6 @@ jobs:
           cmake --install $BUILD_DIR
           tree ${INSTALL_DIR}
 
-      - name: Install eCLM namelist generator
-        run: |
-          pip3 install --user ./namelist_generator
-
       #
       # TODO: Wuestebach test should also run for eCLM-Standalone_RELEASE configuration.
       #
