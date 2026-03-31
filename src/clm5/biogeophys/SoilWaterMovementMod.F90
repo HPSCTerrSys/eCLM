@@ -1489,6 +1489,7 @@ contains
       associate(&
          smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]         
          h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         smpmin            =>    soilstate_inst%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
          pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
          pfl_psi           =>    waterstate_inst%pfl_psi_col          & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
          )  ! end associate statement
@@ -1502,7 +1503,9 @@ contains
             do j = 1, nlevgrnd
                h2osoi_liq(c,j) = pfl_h2osoi_liq(c,j)
                if (pfl_psi(c,j) <= 0) then
-                  smp_l(c,j) = pfl_psi(c,j)
+!                  smp_l(c,j) = max(-10._r8, pfl_psi(c,j))
+                   smp_l(c,j) = max(smpmin(c), pfl_psi(c,j))
+!                   smp_l(c,j) = pfl_psi(c,j)
                end if
             end do
          end do
