@@ -295,6 +295,12 @@ contains
     call hist_addfld2d (fname='H2OSOI',  units='mm3/mm3', type2d='levsoi', &
          avgflag='A', long_name='volumetric soil water (vegetated landunits only)', &
          ptr_col=this%h2osoi_vol_col, l2g_scale_type='veg')
+
+!   this%qg_soil_col(begc:endc) = spval
+   call hist_addfld1d (fname='QG_SOIL',  units='kg/kg', &
+        avgflag='A', long_name='Specific humidify at ground', &
+        ptr_col=this%qg_soil_col, l2g_scale_type='veg')
+
 #ifdef COUP_OAS_PFL
    data2dptr => this%pfl_psi_col(begc:endc,1:nlevgrnd)
    call hist_addfld2d (fname='PFL_PSI',  units='mm', type2d='levgrnd', &
