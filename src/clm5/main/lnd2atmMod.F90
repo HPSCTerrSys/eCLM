@@ -227,6 +227,16 @@ contains
          lnd2atm_inst%ram1_grc       (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
+    call p2g(bounds, &
+         frictionvel_inst%rah1_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%rah1_grc       (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    call p2g(bounds, &
+         frictionvel_inst%raw1_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%raw1_grc       (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
     call p2g( bounds, &
          energyflux_inst%eflx_sh_tot_patch (bounds%begp:bounds%endp), &
          lnd2atm_inst%eflx_sh_tot_grc      (bounds%begg:bounds%endg), &

@@ -210,6 +210,8 @@ contains
          z0hg_col               => frictionvel_inst%z0hg_col                    , & ! Output: [real(r8) (:)   ]  roughness length, sensible heat [m]                                   
          z0qg_col               => frictionvel_inst%z0qg_col                    , & ! Output: [real(r8) (:)   ]  roughness length, latent heat [m]                                     
          ram1                   => frictionvel_inst%ram1_patch                  , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                                        
+         rah1                   => frictionvel_inst%rah1_patch                  , & ! Output: [real(r8) (:)   ]  buoyancy resistance (s/m)
+         raw1                   => frictionvel_inst%raw1_patch                  , & ! Output: [real(r8) (:)   ]  water resistance (s/m)
 
          htvp                   => energyflux_inst%htvp_col                     , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg]                      
          qflx_ev_snow           => waterflux_inst%qflx_ev_snow_patch            , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (mm H2O/s) [+ to atm]                        
@@ -326,6 +328,9 @@ contains
          if (use_lch4) then
             grnd_ch4_cond(p) = 1._r8/raw
          end if
+
+         rah1(p) = rah  !pass value to global variable
+         raw1(p) = raw  !pass value to global variable
 
          ! Soil evaporation resistance
          www = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/dz(c,1)/watsat(c,1)
