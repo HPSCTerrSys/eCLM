@@ -47,6 +47,7 @@ module FrictionVelocityMod
      real(r8), pointer, public :: ram1_patch       (:)   ! patch aerodynamical resistance (s/m)
      real(r8), pointer, public :: rah1_patch       (:)   ! patch buoyancy resistance (s/m)
      real(r8), pointer, public :: raw1_patch       (:)   ! patch water resistance (s/m)
+     real(r8), pointer, public :: raiw1_patch      (:)   ! patch bare ground water resistance (s/m)
      real(r8), pointer, public :: z0m_patch        (:)   ! patch momentum roughness length (m)
      real(r8), pointer, public :: z0mv_patch       (:)   ! patch roughness length over vegetation, momentum [m]
      real(r8), pointer, public :: z0hv_patch       (:)   ! patch roughness length over vegetation, sensible heat [m]
@@ -126,6 +127,7 @@ contains
     allocate(this%ram1_patch       (begp:endp)) ; this%ram1_patch       (:)   = nan
     allocate(this%rah1_patch       (begp:endp)) ; this%rah1_patch       (:)   = nan
     allocate(this%raw1_patch       (begp:endp)) ; this%raw1_patch       (:)   = nan
+    allocate(this%raiw1_patch      (begp:endp)) ; this%raiw1_patch      (:)   = nan
     allocate(this%z0m_patch        (begp:endp)) ; this%z0m_patch        (:)   = nan
     allocate(this%z0mv_patch       (begp:endp)) ; this%z0mv_patch       (:)   = nan
     allocate(this%z0hv_patch       (begp:endp)) ; this%z0hv_patch       (:)   = nan
@@ -207,6 +209,11 @@ contains
     call hist_addfld1d (fname='RAW1', units='s/m', &
          avgflag='A', long_name='water resistance ', &
          ptr_patch=this%raw1_patch, default='inactive')
+
+    this%raiw1_patch(begp:endp) = spval
+    call hist_addfld1d (fname='RAIW1', units='s/m', &
+         avgflag='A', long_name='bare ground water resistance ', &
+         ptr_patch=this%raiw1_patch, default='inactive')
 
     if (use_cn) then
        this%fv_patch(begp:endp) = spval

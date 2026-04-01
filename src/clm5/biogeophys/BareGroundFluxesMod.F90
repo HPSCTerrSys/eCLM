@@ -212,6 +212,7 @@ contains
          ram1                   => frictionvel_inst%ram1_patch                  , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                                        
          rah1                   => frictionvel_inst%rah1_patch                  , & ! Output: [real(r8) (:)   ]  buoyancy resistance (s/m)
          raw1                   => frictionvel_inst%raw1_patch                  , & ! Output: [real(r8) (:)   ]  water resistance (s/m)
+         raiw1                  => frictionvel_inst%raiw1_patch                 , & ! Output: [real(r8) (:)   ]  bare ground water resistance (s/m)
 
          htvp                   => energyflux_inst%htvp_col                     , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg]                      
          qflx_ev_snow           => waterflux_inst%qflx_ev_snow_patch            , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (mm H2O/s) [+ to atm]                        
@@ -351,6 +352,7 @@ contains
          end if
 
          ram1(p) = ram  !pass value to global variable
+         raiw1(p) = raiw
 
          ! Output to patch-level data structures
          ! Derivative of fluxes with respect to ground temperature

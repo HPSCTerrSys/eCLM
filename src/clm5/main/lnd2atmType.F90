@@ -56,6 +56,7 @@ module lnd2atmType
      real(r8), pointer :: ram1_grc           (:)   => null() ! aerodynamical resistance (s/m)
      real(r8), pointer :: rah1_grc           (:)   => null() ! aerodynamical resistance (s/m)
      real(r8), pointer :: raw1_grc           (:)   => null() ! aerodynamical resistance (s/m)
+     real(r8), pointer :: raiw1_grc          (:)   => null() ! aerodynamical resistance (s/m)
      real(r8), pointer :: fv_grc             (:)   => null() ! friction velocity (m/s) (for dust model)
      real(r8), pointer :: flxdst_grc         (:,:) => null() ! dust flux (size bins)
      real(r8), pointer :: ddvel_grc          (:,:) => null() ! dry deposition velocities
@@ -177,6 +178,7 @@ contains
     allocate(this%ram1_grc           (begg:endg))            ; this%ram1_grc           (:)   =ival
     allocate(this%rah1_grc           (begg:endg))            ; this%rah1_grc           (:)   =ival
     allocate(this%raw1_grc           (begg:endg))            ; this%raw1_grc           (:)   =ival
+    allocate(this%raiw1_grc           (begg:endg))            ; this%raiw1_grc           (:)   =ival
     allocate(this%fv_grc             (begg:endg))            ; this%fv_grc             (:)   =ival
     allocate(this%flxdst_grc         (begg:endg,1:ndst))     ; this%flxdst_grc         (:,:) =ival
     allocate(this%flux_ch4_grc       (begg:endg))            ; this%flux_ch4_grc       (:)   =ival
