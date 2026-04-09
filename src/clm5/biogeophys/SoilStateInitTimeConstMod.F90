@@ -163,7 +163,11 @@ contains
     begg = bounds%begg; endg= bounds%endg
 
     do c = begc,endc
+#ifdef COUP_OAS_PFL
+       soilstate_inst%smpmin_col(c) = -1.e6_r8
+#else
        soilstate_inst%smpmin_col(c) = -1.e8_r8
+#endif
     end do
 
     ! --------------------------------------------------------------------

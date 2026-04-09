@@ -489,7 +489,7 @@ contains
 
                smp_l(c,j) = -sucsat(c,j)*s_node**(-bsw(c,j))
                smp_l(c,j) = max(smpmin(c), smp_l(c,j))
-!               smp_l(c,j) = max(-10._r8, smp_l(c,j))
+!               smp_l(c,j) = max(-10.0_r8, smp_l(c,j))
             end do
          end do
       endif
