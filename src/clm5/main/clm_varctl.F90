@@ -176,6 +176,11 @@ module clm_varctl
   ! use subgrid fluxes
   integer,  public :: subgridflag = 1                   
 
+  ! which snow thermal conductivity parameterization to use
+  character(len=25), public :: snow_thermal_cond_method
+  character(len=25), public :: snow_thermal_cond_glc_method
+  character(len=25), public :: snow_thermal_cond_lake_method
+
   ! true => write global average diagnostics to std out
   logical,  public :: wrtdia       = .false.            
 

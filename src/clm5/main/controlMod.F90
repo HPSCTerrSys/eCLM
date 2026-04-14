@@ -204,6 +204,12 @@ contains
          albice, soil_layerstruct, subgridflag, &
          irrigate, run_zero_weight_urban, all_active
 
+    ! Snow thermal conductivity
+    namelist /clm_inparm/  &
+         snow_thermal_cond_method, &
+         snow_thermal_cond_glc_method, &
+         snow_thermal_cond_lake_method
+
     ! vertical soil mixing variables
     namelist /clm_inparm/  &
          som_adv_flux, max_depth_cryoturb
@@ -718,6 +724,9 @@ contains
     call mpi_bcast (co2_ppmv, 1, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (soil_layerstruct,len(soil_layerstruct), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (snow_thermal_cond_method, len(snow_thermal_cond_method), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (snow_thermal_cond_glc_method, len(snow_thermal_cond_glc_method), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (snow_thermal_cond_lake_method, len(snow_thermal_cond_lake_method), MPI_CHARACTER, 0, mpicom, ier)
 
     ! snow pack variables
     call mpi_bcast (nlevsno, 1, MPI_INTEGER, 0, mpicom, ier)
