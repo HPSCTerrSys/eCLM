@@ -33,7 +33,7 @@ module dynHarvestMod
   public :: CNHarvest          ! harvest mortality routine for CN code
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: CNHarvestPftToColumn   ! gather patch-level harvest fluxes to the column level
+  public :: CNHarvestPftToColumn   ! gather patch-level harvest fluxes to the column level
   !
   ! !PRIVATE TYPES:
 
@@ -184,7 +184,7 @@ contains
     ! !USES:
     use pftconMod       , only : noveg, nbrdlf_evr_shrub
     use clm_varcon      , only : secspday
-    use clm_time_manager, only : get_step_size_real, is_beg_curr_year
+    use clm_time_manager, only : get_step_size_real, is_beg_curr_year   
     !
     ! !ARGUMENTS:
     integer                         , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -522,7 +522,6 @@ contains
                          hrv_livecrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
                     harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
                          hrv_deadcrootc_to_litter(p) * wtcol(p) * croot_prof(p,j) 
-
                     ! storage harvest mortality carbon fluxes
                     harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
                          hrv_leafc_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)

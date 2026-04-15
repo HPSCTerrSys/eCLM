@@ -415,6 +415,17 @@ contains
               num_soilp                                        , filter_soilp, 1._r8, 0, isotope)
 
          call CIsoFluxCalc(&
+              iso_cnveg_cf%crop_seedc_to_froot_patch            , cnveg_cf%crop_seedc_to_froot_patch, &
+              iso_cnveg_cs%totvegc_patch                       , cnveg_cs%totvegc_patch, &
+              num_soilp                                        , filter_soilp, 1._r8, 0, isotope)
+
+         call CIsoFluxCalc(&
+              iso_cnveg_cf%crop_seedc_to_deadstem_patch        , cnveg_cf%crop_seedc_to_deadstem_patch, &
+              iso_cnveg_cs%totvegc_patch                       , cnveg_cs%totvegc_patch, &
+              num_soilp                                        , filter_soilp, 1._r8, 0, isotope)
+
+
+         call CIsoFluxCalc(&
               iso_cnveg_cf%grain_curmr_patch                   , cnveg_cf%grain_curmr_patch, &
               iso_cnveg_cs%cpool_patch                         , cnveg_cs%cpool_patch, &
               num_soilp                                        , filter_soilp, 1._r8, 0, isotope)
