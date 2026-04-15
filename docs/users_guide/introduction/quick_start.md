@@ -9,37 +9,39 @@ Download [Podman].
 1. Fetch the eCLM container image. On your terminal, run the ff.:
 
 ```sh
-mkdir $HOME/eclm_share
-podman run --name eclm -it --mount type=bind,src=$HOME/eclm_share,target=/share hpscterrsys/eclm:latest
-```
-
-Change permissions.
-
-```sh
-sudo chown -R user /share
-sudo chgrp -R hpscterrsys /share
+WORKDIR=$HOME/eclm_container
+mkdir $WORKDIR
+podman run --name eclm-dev -it -v ${WORKDIR}:/root/$(basename ${WORKDIR}) hpscterrsys/eclm:latest-dev
 ```
 
 2. Build eCLM.
 
 ```sh
-cd /share
-build_eclm.sh
+cd /root/eclm_container
+
+# Download eCLM
+git clone https://github.com/HPSCTerrSys/eCLM.git
+
+# Build eCLM
+cmake -S src -B bld -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE="DEBUG"
+cmake --build bld --parallel 4
+cmake --install bld
 ```
 
 3. Set up a simulation experiment.
 
 ```sh
-cd /share
-git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
-cd extpar_eclm_wuestebach_sp/static.resources
-generate_wtb_namelists.sh 1x1_wuestebach
+cd /root/eclm_container
+
+# Generate namelists files.
+git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git wtb_data
+cd wtb_data/static.resources/generate_wtb_namelists.sh /root/1x1_wuestebach
 ```
 
 4. Run eCLM.
 
 ```sh
-cd 1x1_wuestebach
+cd /root/1x1_wuestebach
 mpirun -np 1 eclm.exe
 ```
 
