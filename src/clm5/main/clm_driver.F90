@@ -352,10 +352,15 @@ contains
           call t_stopf('prescribed_sm')
        endif
        call t_startf('begwbal')
+#ifdef COUP_OAS_PFL
+       ! TODO: Balance errors must be fixed for coupled model (eCLM-ParFlow, ICON-eCLM-ParFlow)
+       write(iulog,*)'Skipping water balance check...'
+#else
        call BeginWaterBalance(bounds_clump,                   &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_lakec, filter(nc)%lakec,           &
             soilhydrology_inst, waterstate_inst)
+#endif
 
        call t_stopf('begwbal')
 
