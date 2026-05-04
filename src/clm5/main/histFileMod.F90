@@ -5552,9 +5552,9 @@ contains
     ! Format: ./caseid.clm2{inst_suffix}.da_{phase}.YYYY-MM-DD-SSSSS.nc
     ! The date reflects the time of the first DA sample written to the file.
     !
-    character(len=3), intent(in) :: phase   ! 'bef' or 'aft'
     use clm_varctl,      only : caseid, inst_suffix
     use clm_time_manager, only : get_curr_date
+    character(len=3), intent(in) :: phase   ! 'bef' or 'aft'
     !
     character(len=max_chars) :: cdate
     integer :: yr, mon, day, sec
