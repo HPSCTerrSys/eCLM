@@ -151,7 +151,7 @@ module histFileMod
 #if defined USE_PDAF
   public :: hist_init_da_tape      ! Initialize dedicated PDAF DA output tape
   public :: hist_update_hbuf_da    ! Update history buffers for DA tape only
-  public :: hist_set_da_tape_phase ! Set DA tape phase string ('before' or 'after')
+  public :: hist_set_da_tape_phase ! Set DA tape phase string ('bef' or 'aft')
 #endif
   !
   ! !PRIVATE MEMBER FUNCTIONS:
@@ -3603,6 +3603,16 @@ contains
 
     call hist_do_disp (ntapes, tape(:)%ntimes, tape(:)%mfilt, if_stop, if_disphist, rstwr, nlend)
 
+#if defined USE_PDAF
+    ! DA tapes roll over together with tape 1 during normal CLM calls.
+    ! Propagate tape-1 dispatch flag so the standard close and reset loops below
+    ! handle DA tapes without a separate rollover block.
+    if (.not. present(da_call) .or. .not. da_call) then
+       if (da_tape_bef_idx > 0) if_disphist(da_tape_bef_idx) = if_disphist(1)
+       if (da_tape_aft_idx > 0) if_disphist(da_tape_aft_idx) = if_disphist(1)
+    end if
+#endif
+
     ! Close open history file
     ! Auxilary files may have been closed and saved off without being full,
     ! must reopen the files
@@ -3623,7 +3633,12 @@ contains
 
             call ncd_pio_closefile(nfid(t))
 
+#if defined USE_PDAF
+             if (.not.if_stop .and. (tape(t)%ntimes/=tape(t)%mfilt) .and. &
+                  t /= da_tape_bef_idx .and. t /= da_tape_aft_idx) then
+#else
              if (.not.if_stop .and. (tape(t)%ntimes/=tape(t)%mfilt)) then
+#endif
                 call ncd_pio_openfile (nfid(t), trim(locfnh(t)), ncd_write)
              end if
           else
@@ -3641,37 +3656,16 @@ contains
           cycle
        end if
 
+#if defined USE_PDAF
+       ! DA tapes never fill by sample count; reset whenever they are dispatched
+       if (if_disphist(t) .and. (tape(t)%ntimes==tape(t)%mfilt .or. &
+           t==da_tape_bef_idx .or. t==da_tape_aft_idx)) then
+#else
        if (if_disphist(t) .and. tape(t)%ntimes==tape(t)%mfilt) then
+#endif
           tape(t)%ntimes = 0
        end if
     end do
-
-#if defined USE_PDAF
-    ! Roll DA tapes over together with tape 1 during normal CLM calls.
-    ! DA tapes accumulate samples across DA updates within each tape-1 file period.
-    ! When tape 1 closes its file, close any open DA tape files too and reset their
-    ! sample counters so the next DA write starts a fresh file.
-    if ((.not. present(da_call) .or. .not. da_call) .and. if_disphist(1)) then
-       block
-          integer :: da_tidx, i_da
-          integer :: da_tape_idxs(2)
-          da_tape_idxs = [da_tape_bef_idx, da_tape_aft_idx]
-          do i_da = 1, 2
-             da_tidx = da_tape_idxs(i_da)
-             if (da_tidx == 0) cycle
-             if (tape(da_tidx)%ntimes /= 0) then
-                if (masterproc) then
-                   write(iulog,*) trim(subname),' : Closing DA history tape ',da_tidx, &
-                        ' (tape-1 rollover) at nstep = ',get_nstep()
-                end if
-                call ncd_pio_closefile(nfid(da_tidx))
-                tape(da_tidx)%ntimes = 0
-                tape(da_tidx)%begtime = time
-             end if
-          end do
-       end block
-    end if
-#endif
 
   end subroutine hist_htapes_wrapup
 
