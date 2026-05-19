@@ -99,6 +99,12 @@ module clm_varctl
   
   logical, public :: ndep_from_cpl = .false.
 
+#ifdef COUP_OAS_ICON
+  !----------------------------------------------------------
+  ! Logical flag to enable exchange-coefficient coupling scheme
+  logical, public :: loascplscheme_exchcoef = .false.
+#endif
+
   !----------------------------------------------------------
   ! Interpolation of finidat if requested
   !----------------------------------------------------------

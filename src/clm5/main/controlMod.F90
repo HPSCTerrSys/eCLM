@@ -259,6 +259,11 @@ contains
     ! max number of plant functional types in naturally vegetated landunit
     namelist /clm_inparm/ maxpatch_pft
 
+#ifdef COUP_OAS_ICON
+    ! Enable exchange-coefficient coupling scheme when using OASIS ECLM coupling
+    namelist /clm_inparm/ loascplscheme_exchcoef
+#endif
+
     ! flag for SSRE diagnostic
     namelist /clm_inparm/ use_SSRE
 
