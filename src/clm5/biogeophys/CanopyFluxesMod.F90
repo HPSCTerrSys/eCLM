@@ -455,7 +455,7 @@ contains
          t_skin_patch           => temperature_inst%t_skin_patch                , & ! Output: [real(r8) (:)   ]  patch skin temperature (K)  
 #ifdef COUP_OAS_ICON
          t_sf_patch             => temperature_inst%t_sf_patch                  , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
-!         q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
 #endif
 
          frac_h2osfc            => waterstate_inst%frac_h2osfc_col              , & ! Input:  [real(r8) (:)   ]  fraction of surface water                                             
@@ -1183,7 +1183,7 @@ contains
 
 #ifdef COUP_OAS_ICON
          t_sf_patch(p)  = taf(p)
-!         q_sf(p)  = qaf(p)
+         q_sf_patch(p)  = qaf(p)
 #endif
          ! 2 m height air temperature
 

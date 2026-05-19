@@ -121,6 +121,9 @@ module WaterstateType
      real(r8), pointer :: sno_liq_top_col        (:)   ! col snow liquid water fraction (mass), top layer  [fraction]
 
      real(r8), pointer :: q_ref2m_patch          (:)   ! patch 2 m height surface specific humidity (kg/kg)
+#ifdef COUP_OAS_ICON
+     real(r8), pointer :: q_sf_patch             (:)   ! patch surface humidity (kg/kg)
+#endif
      real(r8), pointer :: rh_ref2m_patch         (:)   ! patch 2 m height surface relative humidity (%)
      real(r8), pointer :: rh_ref2m_r_patch       (:)   ! patch 2 m height surface relative humidity - rural (%)
      real(r8), pointer :: rh_ref2m_u_patch       (:)   ! patch 2 m height surface relative humidity - urban (%)
@@ -312,6 +315,9 @@ contains
     allocate(this%dqgdT_col              (begc:endc))                     ; this%dqgdT_col              (:)   = nan   
     allocate(this%qaf_lun                (begl:endl))                     ; this%qaf_lun                (:)   = nan
     allocate(this%q_ref2m_patch          (begp:endp))                     ; this%q_ref2m_patch          (:)   = nan
+#ifdef COUP_OAS_ICON
+    allocate(this%q_sf_patch             (begp:endp))                     ; this%q_sf_patch             (:)   = nan
+#endif
     allocate(this%rh_ref2m_patch         (begp:endp))                     ; this%rh_ref2m_patch         (:)   = nan
     allocate(this%rh_ref2m_u_patch       (begp:endp))                     ; this%rh_ref2m_u_patch       (:)   = nan
     allocate(this%rh_ref2m_r_patch       (begp:endp))                     ; this%rh_ref2m_r_patch       (:)   = nan
@@ -510,6 +516,13 @@ contains
     call hist_addfld1d (fname='Q2M', units='kg/kg',  &
          avgflag='A', long_name='2m specific humidity', &
          ptr_patch=this%q_ref2m_patch)
+
+#ifdef COUP_OAS_ICON
+    this%q_sf_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QSF', units='kg/kg',  &
+         avgflag='A', long_name='surface specific humidity', &
+         ptr_patch=this%q_sf_patch)
+#endif
 
     this%rh_ref2m_patch(begp:endp) = spval
     call hist_addfld1d (fname='RH2M', units='%',  &

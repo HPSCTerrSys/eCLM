@@ -63,7 +63,7 @@ module lnd2atmType
      real(r8), pointer :: flux_ch4_grc       (:)   => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
 #ifdef COUP_OAS_ICON
      real(r8), pointer :: t_sf_grc           (:)   => null() ! surface temperature (Kelvin)
-!     real(r8), pointer :: q_sf_grc           (:)   => null() ! surface humidity (kg/kg)
+     real(r8), pointer :: q_sf_grc           (:)   => null() ! surface humidity (kg/kg)
 !     real(r8), pointer :: rah1_grc           (:)   => null() ! aerodynamical resistance for heat (s/m)
 #endif
      ! lnd->rof
