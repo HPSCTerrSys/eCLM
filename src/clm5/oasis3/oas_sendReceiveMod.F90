@@ -3,7 +3,7 @@ module oas_sendReceiveMod
   use clm_time_manager , only: get_nstep, get_step_size
   use decompMod        , only: bounds_type
   use clm_varpar       , only: nlevgrnd
-  use clm_varctl       , only: iulog
+  use clm_varctl       , only: iulog, loascplscheme_exchcoef
   use oas_vardefMod
   use mod_oasis
   implicit none
@@ -109,14 +109,21 @@ contains
     num_grid_points = (bounds%endg - bounds%begg) + 1
     allocate(aux_buffer(num_grid_points, 1))
 
-     call oasis_put(oas_id_it, seconds_elapsed,lnd2atm_inst%t_rad_grc, info)         ! "CLM_INFRA"
-     call oasis_put(oas_id_ad, seconds_elapsed,lnd2atm_inst%albd_grc(:,1), info)     ! "CLM_ALBED"
-     call oasis_put(oas_id_ai, seconds_elapsed,lnd2atm_inst%albi_grc(:,1), info)     ! "CLM_ALBEI"
-     call oasis_put(oas_id_tx, seconds_elapsed,lnd2atm_inst%taux_grc, info)          ! "CLM_TAUX"
-     call oasis_put(oas_id_ty, seconds_elapsed,lnd2atm_inst%tauy_grc, info)          ! "CLM_TAUY"
-     call oasis_put(oas_id_sh, seconds_elapsed,lnd2atm_inst%eflx_sh_tot_grc, info)   ! "CLM_SHFLX"
-     call oasis_put(oas_id_lh, seconds_elapsed,lnd2atm_inst%eflx_lh_tot_grc, info)   ! "CLM_LHFLX"
-     call oasis_put(oas_id_st, seconds_elapsed,lnd2atm_inst%t_sf_grc, info)          ! "CLM_TGRND"
+    call oasis_put(oas_id_it, seconds_elapsed,lnd2atm_inst%t_rad_grc, info)         ! "CLM_INFRA"
+    call oasis_put(oas_id_ad, seconds_elapsed,lnd2atm_inst%albd_grc(:,1), info)     ! "CLM_ALBED"
+    call oasis_put(oas_id_ai, seconds_elapsed,lnd2atm_inst%albi_grc(:,1), info)     ! "CLM_ALBEI"
+    if ( loascplscheme_exchcoef ) then
+       call oasis_put(oas_id_rm, seconds_elapsed,lnd2atm_inst%ram1_grc, info)       ! "CLM_RAM1"
+       call oasis_put(oas_id_rh, seconds_elapsed,lnd2atm_inst%rah1_grc, info)       ! "CLM_RAH1"
+       call oasis_put(oas_id_rw, seconds_elapsed,lnd2atm_inst%raw1_grc, info)       ! "CLM_RAW1"
+       call oasis_put(oas_id_qs, seconds_elapsed,lnd2atm_inst%q_sf_grc, info)       ! "CLMQVSFC"
+    else
+       call oasis_put(oas_id_tx, seconds_elapsed,lnd2atm_inst%taux_grc, info)          ! "CLM_TAUX"
+       call oasis_put(oas_id_ty, seconds_elapsed,lnd2atm_inst%tauy_grc, info)          ! "CLM_TAUY"
+       call oasis_put(oas_id_sh, seconds_elapsed,lnd2atm_inst%eflx_sh_tot_grc, info)   ! "CLM_SHFLX"
+       call oasis_put(oas_id_lh, seconds_elapsed,lnd2atm_inst%eflx_lh_tot_grc, info)   ! "CLM_LHFLX"
+    end if
+    call oasis_put(oas_id_st, seconds_elapsed,lnd2atm_inst%t_sf_grc, info)          ! "CLM_TGRND"
 
   end subroutine oas_send_icon
 #endif
