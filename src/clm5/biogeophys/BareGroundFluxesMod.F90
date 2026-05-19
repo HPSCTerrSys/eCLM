@@ -198,6 +198,8 @@ contains
 #ifdef COUP_OAS_ICON
          t_sf_patch             => temperature_inst%t_sf_patch                  , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
          q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         rah1                   => frictionvel_inst%rah1_patch                  , & ! Output: [real(r8) (:)   ]  heat resistance (s/m)
+         raw1                   => frictionvel_inst%raw1_patch                  , & ! Output: [real(r8) (:)   ]  moisture resistance (s/m)
 #endif
          q_ref2m                => waterstate_inst%q_ref2m_patch                , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)                          
          rh_ref2m_r             => waterstate_inst%rh_ref2m_r_patch             , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)                        
@@ -378,8 +380,11 @@ contains
          qflx_ev_h2osfc(p) = -raiw*(forc_q(c) - qg_h2osfc(c))
 
 #ifdef COUP_OAS_ICON
+         !pass value to global variable
          t_sf_patch(p)     = t_grnd(c)
-         q_sf_patch(p)     = qg(c) ! for cplscheme_exchcoef
+         q_sf_patch(p)     = qg(c) ! sfc specific humidity for cplscheme_exchcoef
+         rah1(p) = rah  ! heat resistance for cplscheme_exchcoef
+         raw1(p) = raiw/forc_rho(c)  ! moisture resistance for cplscheme_exchcoef
 #endif
 
          ! 2 m height air temperature

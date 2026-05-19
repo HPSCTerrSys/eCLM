@@ -221,7 +221,9 @@ contains
          taf                 =>   temperature_inst%taf_lun                  , & ! Output: [real(r8) (:)   ]  urban canopy air temperature (K)                  
 #ifdef COUP_OAS_ICON
          t_sf_patch          =>   temperature_inst%t_sf_patch               , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
-         q_sf_patch             => waterstate_inst%q_sf_patch               , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         q_sf_patch          =>    waterstate_inst%q_sf_patch               , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         rah1                =>   frictionvel_inst%rah1_patch               , & ! Output: [real(r8) (:)   ]  heat resistance (s/m)
+         raw1                =>   frictionvel_inst%raw1_patch               , & ! Output: [real(r8) (:)   ]  moisture resistance (s/m)
 #endif
 
          tc_ref2m            => humanindex_inst%tc_ref2m_patch              , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (C)
@@ -771,6 +773,8 @@ contains
 #ifdef COUP_OAS_ICON
          t_sf_patch(p)  = taf(l)
          q_sf_patch(p)  = qaf(l)
+         rah1(p) = rahu(l) !forc_rho(g) * cpair / cgrnds(p)
+         raw1(p) = rawu(l) !forc_rho(g) / qflx_evap_soi(p)
 #endif
       end do
 

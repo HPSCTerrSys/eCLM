@@ -456,6 +456,8 @@ contains
 #ifdef COUP_OAS_ICON
          t_sf_patch             => temperature_inst%t_sf_patch                  , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
          q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         rah1                   => frictionvel_inst%rah1_patch                  , & ! Output: [real(r8) (:)   ]  heat resistance (s/m)
+         raw1                   => frictionvel_inst%raw1_patch                  , & ! Output: [real(r8) (:)   ]  moisture resistance (s/m)
 #endif
 
          frac_h2osfc            => waterstate_inst%frac_h2osfc_col              , & ! Input:  [real(r8) (:)   ]  fraction of surface water                                             
@@ -784,7 +786,6 @@ contains
             ram1(p)  = 1._r8/(ustar(p)*ustar(p)/um(p))
             rah(p,1) = 1._r8/(temp1(p)*ustar(p))
             raw(p,1) = 1._r8/(temp2(p)*ustar(p))
-
             ! Bulk boundary layer resistance of leaves
 
             uaf(p) = um(p)*sqrt( 1._r8/(ram1(p)*um(p)) )
@@ -1184,6 +1185,8 @@ contains
 #ifdef COUP_OAS_ICON
          t_sf_patch(p)  = taf(p)
          q_sf_patch(p)  = qaf(p)
+         rah1(p) = rah(p,1)
+         raw1(p) = raw(p,1)
 #endif
          ! 2 m height air temperature
 
