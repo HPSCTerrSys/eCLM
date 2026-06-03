@@ -376,7 +376,7 @@ contains
                col%itype(indexc) == icol_road_perv) .and. &
                abs(errh2o(indexc)) > 1.e-4_r8 .and. (DAnstep > skip_steps) ) then
 
-             write(iulog,*)'clm urban model is stopping - error is greater than 1e-5 (mm)'
+             write(iulog,*)'clm urban model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'nstep                 = ',nstep
              write(iulog,*)'errh2o                = ',errh2o(indexc)
              write(iulog,*)'forc_rain             = ',forc_rain_col(indexc)*dtime
@@ -411,7 +411,7 @@ contains
 #endif
           else if (abs(errh2o(indexc)) > 1.e-4_r8 .and. (DAnstep > skip_steps) ) then
 
-             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
+             write(iulog,*)'clm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'nstep                 = ',nstep
              write(iulog,*)'errh2o                = ',errh2o(indexc)
              write(iulog,*)'forc_rain             = ',forc_rain_col(indexc)*dtime
