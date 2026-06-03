@@ -77,6 +77,12 @@ module datm_comp_mod
   integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
+#ifdef USE_PDAF
+  integer(IN) :: stbot_noise    ! temperature noise
+  integer(IN) :: sprecn_noise   ! precipitation noise
+  integer(IN) :: sswdn_noise    ! shortwave radiation noise
+  integer(IN) :: slwdn_noise    ! longwave radiation noise
+#endif
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
 
   ! water isotopes / tracer input
@@ -161,7 +167,11 @@ module datm_comp_mod
   ! other fields used in calculations. Fields that are simply read and passed directly to
   ! the coupler do not need to be in these lists.
 
+#ifdef USE_PDAF
+  integer(IN),parameter :: ktranss = 37
+#else
   integer(IN),parameter :: ktranss = 33
+#endif
 
   character(16),parameter  :: stofld(1:ktranss) = &
        (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
@@ -175,6 +185,10 @@ module datm_comp_mod
        "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    ", &
        "strm_rh_18O     ","strm_rh_HDO     ", &
        "strm_precn_16O  ","strm_precn_18O  ","strm_precn_HDO  "  &
+#ifdef USE_PDAF
+       ! add DATM-internal stream variable names for noise fields (Yorck)
+       ,"strm_tbot_noise ","strm_precn_noise","strm_swdn_noise ","strm_lwdn_noise " &
+#endif
        /)
 
   character(16),parameter  :: stifld(1:ktranss) = &
@@ -190,6 +204,10 @@ module datm_comp_mod
                                 ! isotopic forcing
        "rh_18O          ","rh_HDO          ", &
        "precn_16O       ","precn_18O       ","precn_HDO       "  &
+#ifdef USE_PDAF
+       ! add NetCDF input file variable names for noise fields (Yorck)
+       ,"tbot_noise      ","precn_noise     ","swdn_noise      ","lwdn_noise      " &
+#endif
        /)
 
   character(CL), pointer :: ilist_av(:)     ! input list for translation
@@ -443,6 +461,14 @@ CONTAINS
        sswup  = mct_aVect_indexRA(avstrm,'strm_swup'   ,perrWith='quiet')
        sprec  = mct_aVect_indexRA(avstrm,'strm_prec'   ,perrWith='quiet')
        starcf = mct_aVect_indexRA(avstrm,'strm_tarcf'  ,perrWith='quiet')
+
+#ifdef USE_PDAF
+       ! Get Noise Field Indices from Stream (noise streams are optional)
+       stbot_noise = mct_aVect_indexRA(avstrm,'strm_tbot_noise'    ,perrWith='quiet')
+       sprecn_noise = mct_aVect_indexRA(avstrm,'strm_precn_noise'  ,perrWith='quiet')
+       sswdn_noise  = mct_aVect_indexRA(avstrm,'strm_swdn_noise'   ,perrWith='quiet')
+       slwdn_noise  = mct_aVect_indexRA(avstrm,'strm_lwdn_noise'   ,perrWith='quiet')
+#endif
 
        ! anomaly forcing
        sprecsf  = mct_aVect_indexRA(avstrm,'strm_precsf'  ,perrWith='quiet')
@@ -902,6 +928,14 @@ CONTAINS
           endif
           if (my_task == master_task) &
                write(logunit,*) trim(subname),' max values = ',tbotmax,tdewmax,anidrmax
+#ifdef USE_PDAF
+          ! Log if temperature noise read from  stream file
+          if (my_task == master_task) then
+              if (stbot_noise > 1 ) then
+                write(logunit,*) trim(subname),' Using noise from files '
+              end if
+         end if
+#endif
        endif
        lsize = mct_avect_lsize(a2x)
        do n = 1,lsize
@@ -910,6 +944,40 @@ CONTAINS
 
           !--- temperature ---
           if (tbotmax < 50.0_R8) a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tkFrz
+#ifdef USE_PDAF
+          !!! begin perturbation block (Yorck) --> perturb
+          !!! temperature, long wave radiation, short wave radiation
+          !!! and precipitation
+          ! --> further variables can be introduced (changes also have
+          ! to be made in reading in routines of streams for this, for
+          ! now only these variables are included)
+
+          ! tbot
+          if (stbot_noise > 0) then
+            ! Additive noise
+            a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + avstrm%rAttr(stbot_noise,n)
+          end if
+
+          ! lwdn
+          if (slwdn_noise > 0) then
+            ! Additive noise
+            avstrm%rAttr(slwdn,n) = avstrm%rAttr(slwdn,n) + avstrm%rAttr(slwdn_noise,n)
+          end if
+
+          ! swdn
+          if (sswdn_noise>0) then
+            ! Multiplicative noise
+            avstrm%rAttr(sswdn,n) = avstrm%rAttr(sswdn,n) * avstrm%rAttr(sswdn_noise,n)
+          end if
+
+          ! sprecn
+          if (sprecn_noise > 0) then
+            ! Multiplicative noise
+            avstrm%rAttr(sprecn,n) = avstrm%rAttr(sprecn,n)*avstrm%rAttr(sprecn_noise,n)
+          end if
+
+          !!! end perturbation block
+#endif
           ! Limit very cold forcing to 180K
           a2x%rAttr(ktbot,n) = max(180._r8, a2x%rAttr(ktbot,n))
           a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)

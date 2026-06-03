@@ -9,6 +9,10 @@ parts:
     title: Installing eCLM
   - file: users_guide/introduction/introduction
     title: Scientific Background
+  - file: users_guide/introduction/perturbation
+    title: Atmospheric forcing noise
+  - file: users_guide/introduction/soil_hydraulic_parameters
+    title: Soil hydraulic properties from surface file
 
 - caption: User's Guide
   chapters:
