@@ -260,8 +260,9 @@ contains
                fac  = max( fac, 0.01_r8 )
 #ifdef COUP_OAS_PFL
                ! clm3.5/bld/usr.src/Biogeophysics1Mod.F90
-               if (pfl_psi(c,1)>= 0.0_r8)  psit = 0._r8
-               if (pfl_psi(c,1) < 0.0_r8)  psit = pfl_psi(c,1)
+!               if (pfl_psi(c,1)>= 0.0_r8)  psit = 0._r8
+!               if (pfl_psi(c,1) < 0.0_r8)  psit = max(smpmin(c), pfl_psi(c,1))
+               psit = max(smpmin(c), min(0._r8, pfl_psi(c,1)))
 #else
                psit = -sucsat(c,1) * fac ** (-bsw(c,1))
                psit = max(smpmin(c), psit)
