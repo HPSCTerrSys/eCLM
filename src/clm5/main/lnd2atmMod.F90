@@ -472,7 +472,7 @@ contains
      do j = 1, nlevsoi
       if (lnd2atm_inst%qflx_parflow_grc(g,j) == spval) then
        lnd2atm_inst%qflx_parflow_grc(g,j) = 0._r8
-       write(iulog,*)'WARNING: qflx_parflow_grc is nan at grid point ',g,' level',j,' replaced with 0.'
+!       write(iulog,*)'WARNING: qflx_parflow_grc is nan at grid point ',g,' level',j,' replaced with 0.'
       end if
      end do
     enddo
