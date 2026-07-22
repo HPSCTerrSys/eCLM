@@ -15,4 +15,3 @@ jobs:
         uses: EVERSE-ResearchSoftware/resqui-github-action@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          config: "configurations/basic.json"
