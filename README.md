@@ -13,12 +13,12 @@ Head over to https://hpscterrsys.github.io/eCLM
 
 ## Contributing
 
-Feel free to post your questions and problems via the [issue tracker]. [Pull requests] are also welcome. Before opening an issue or submit a pull request, please take the time to view our [contributing guidelines].
+Feel free to post your questions and problems via the [issue tracker]. We also welcome [pull requests]. Before opening an issue or a pull request, please review our **[contribution guidelines]**.
 
 For general inquiries, you can leave us a message on our [eCLM Matrix channel].
 
 [Community Land Model 5.0 (CLM5.0)]: https://github.com/ESCOMP/CTSM/tree/release-clm5.0
 [issue tracker]: https://github.com/HPSCTerrSys/eCLM/issues
 [pull requests]: https://github.com/HPSCTerrSys/eCLM/pulls
-[contributing guidelines]: CONTRIBUTING.md
+[contribution guidelines]: CONTRIBUTING.md
 [eCLM Matrix channel]: https://matrix.to/#/!UooUiDWmcOwQXoktJt:fz-juelich.de?via=fz-juelich.de&via=matrix.org
