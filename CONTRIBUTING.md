@@ -9,8 +9,8 @@ Contributions are welcome! There are two main ways to contribute:
 2. **Modify the documentation or code**. Proposed changes must be linked to an open issue (see previous item) and go through the standard [Github pull request] process, which is explained below in brief:
     1. [Fork] this repo and then [clone] it to your local PC.
     2. [Create a branch]. This branch will contain your proposed fixes/features.
-    3. Make changes on your branch, [commit], and then [`git push`] your changes. Keep doing this until you're satisfied and ready to share your ideas/results.
-    4. [Create a pull request (PR)]. Mark it as a [draft] if you intend to keep working on it; a draft PR is also a good time to get early feedback from your work.  
+    3. Make changes on your branch, and then regularly [commit] and [push] changes. Also, write good `git commit` messages: a good one answers the question "what is the most interesting aspect of this commit?" in as few words as possible.
+    4. When you're ready to share your fixes/new feature, [create a pull request (PR)]. Mark it as a [draft] if you intend to keep working on it; a draft PR is also a good time to get early feedback from your work.
     5. Mark your PR as _Ready_ to start the review process. Wait for the maintainers to provide comments, and then address their review comments as they come.
     6. Changes will be accepted if it **(1)** passes all automated tests and **(2)** at least one maintainer approved the PR.
     7. **Optional**: Attach experimental results in the PR discussion (see [example here]). Well-documented PRs are highly appreciated and are more likely to get accepted.
@@ -21,8 +21,8 @@ Contributions are welcome! There are two main ways to contribute:
 [Fork]: https://docs.github.com/en/pull-requests/how-tos/work-with-forks/fork-a-repo?versionId=free-pro-team%40latest&productId=pull-requests&restPage=reference%2Cpull-requests&search-overlay-input=branch&search-overlay-ask-ai=true#forking-a-repository
 [clone]: https://docs.github.com/en/pull-requests/how-tos/work-with-forks/fork-a-repo?versionId=free-pro-team%40latest&productId=pull-requests&restPage=reference%2Cpull-requests&search-overlay-input=branch&search-overlay-ask-ai=true#cloning-your-forked-repository
 [Create a branch]: https://docs.github.com/en/pull-requests/how-tos/commit-changes/managing-branches-within-your-repository#creating-a-branch
-[commit]: https://github.com/git-guides/git-commit 
-[`git push`]: https://github.com/git-guides/git-push
+[commit]: https://github.com/git-guides/git-commit
+[push]: https://github.com/git-guides/git-push
 [Create a pull request (PR)]: https://docs.github.com/en/pull-requests/how-tos/create-pull-requests/creating-a-pull-request-from-a-fork
 [draft]: https://docs.github.com/en/pull-requests/reference/pull-requests#draft-pull-requests
 [example here]: https://github.com/HPSCTerrSys/eCLM/pull/101
