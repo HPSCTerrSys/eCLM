@@ -2,11 +2,11 @@ This repository contains open source software developed and maintained by [HPSC 
 
 Contributions are welcome! There are two main ways to contribute:
 
-- **Asking questions or reporting problems via the [issue tracker]**. Browse through open issues to get ideas on how we typically document our issues. We appreciate well-written issues that follow this guidelines:
+1. **Asking questions or reporting problems via the [issue tracker]**. Browse through open issues to get ideas on how they are typically written up. We appreciate well-written issues that follow this guidelines:
     - [How to Report Bugs Effectively](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html)
     - [How to Ask Questions the Smart Way](https://www.catb.org/esr/faqs/smart-questions.html#beprecise)
 
-- **Modify the documentation or code**. Proposed changes must be linked to an open issue (see previous item) and go through the standard [Github pull request] process, which is explained below in brief:
+2. **Modify the documentation or code**. Proposed changes must be linked to an open issue (see previous item) and go through the standard [Github pull request] process, which is explained below in brief:
     1. [Fork] this repo and then [clone] it to your local PC.
     2. [Create a branch]. This branch will contain your proposed fixes/features.
     3. Make changes on your branch, [commit], and then [`git push`] your changes. Keep doing this until you're satisfied and ready to share your ideas/results.

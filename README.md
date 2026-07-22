@@ -9,13 +9,13 @@ Unlike CLM5, there are no built-in batch scripts in eCLM. It is up to system mai
 
 ## Documentation
 
-Head over to https://hpscterrsys.github.io/eCLM
+Check our online docs at https://hpscterrsys.github.io/eCLM
 
 ## Contributing
 
 Feel free to post your questions and problems via the [issue tracker]. We also welcome [pull requests]. Before opening an issue or a pull request, please review our **[contribution guidelines]**.
 
-For general inquiries, you can leave us a message on our [eCLM Matrix channel].
+For general inquiries, leave us a message on our [eCLM Matrix channel].
 
 [Community Land Model 5.0 (CLM5.0)]: https://github.com/ESCOMP/CTSM/tree/release-clm5.0
 [issue tracker]: https://github.com/HPSCTerrSys/eCLM/issues
