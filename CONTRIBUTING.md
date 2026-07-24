@@ -2,7 +2,7 @@ This repository contains open source software developed and maintained by [HPSC 
 
 Contributions are welcome! First and foremost, contributions are subject to the [Contributor Code of Conduct] and we do our best to adhere to them. If that sounds reasonable to you, you can start contributing in two ways:
 
-1. **Asking questions or reporting problems via the [issue tracker]**. Browse through open issues to get ideas on how they are typically written up. We appreciate well-written issues that follow this guidelines:
+1. **Asking questions or reporting problems via the [issue tracker]**. Browse through open issues to get ideas on how they are typically written up. We appreciate well-written issues that follow these guidelines:
     - [How to Report Bugs Effectively](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html)
     - [How to Ask Questions the Smart Way](https://www.catb.org/esr/faqs/smart-questions.html#beprecise)
 
