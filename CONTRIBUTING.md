@@ -1,6 +1,6 @@
 This repository contains open source software developed and maintained by [HPSC TerrSys].
 
-Contributions are welcome! There are two main ways to contribute:
+Contributions are welcome! First and foremost, contributions are subject to the [Contributor Code of Conduct] and we do our best to adhere to them. If that sounds reasonable to you, you can start contributing in two ways:
 
 1. **Asking questions or reporting problems via the [issue tracker]**. Browse through open issues to get ideas on how they are typically written up. We appreciate well-written issues that follow this guidelines:
     - [How to Report Bugs Effectively](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html)
@@ -16,6 +16,7 @@ Contributions are welcome! There are two main ways to contribute:
     7. **Optional**: Attach experimental results in the PR discussion (see [example here]). Well-documented PRs are highly appreciated and are more likely to get accepted.
 
 [HPSC TerrSys]: https://github.com/HPSCTerrSys?view_as=public
+[Contributor Code of Conduct]: https://www.contributor-covenant.org/version/3/0/code_of_conduct
 [issue tracker]: https://github.com/HPSCTerrSys/eCLM/issues
 [Github pull request]: https://docs.github.com/en/pull-requests/reference/pull-requests
 [Fork]: https://docs.github.com/en/pull-requests/how-tos/work-with-forks/fork-a-repo?versionId=free-pro-team%40latest&productId=pull-requests&restPage=reference%2Cpull-requests&search-overlay-input=branch&search-overlay-ask-ai=true#forking-a-repository
