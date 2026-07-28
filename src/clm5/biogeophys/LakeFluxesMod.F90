@@ -201,7 +201,14 @@ contains
          zetamax          =>    frictionvel_parms_inst%zetamaxstable   , & ! Input:  [real(r8)       ]  max zeta value under stable conditions
          ram1             =>    frictionvel_inst%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
 
-         q_ref2m          =>    waterstate_inst%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
+#ifdef COUP_OAS_ICON
+         t_sf_patch       =>    temperature_inst%t_sf_patch            , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
+         q_sf_patch       =>    waterstate_inst%q_sf_patch             , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         rah1             =>    frictionvel_inst%rah1_patch            , & ! Output: [real(r8) (:)   ]  heat resistance (s/m)
+         raw1             =>    frictionvel_inst%raw1_patch            , & ! Output: [real(r8) (:)   ]  moisture resistance (s/m)
+#endif
+
+         q_ref2m          =>    waterstate_inst%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
          rh_ref2m         =>    waterstate_inst%rh_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
 
          tc_ref2m         =>    humanindex_inst%tc_ref2m_patch         , & ! Output: [real(r8) (:)]  2 m height surface air temperature (C)
@@ -614,6 +621,14 @@ contains
          qflx_evap_tot(p) = qflx_evap_soi(p)
          eflx_lh_tot(p)   = htvp(c)*qflx_evap_soi(p)
          eflx_lh_grnd(p)  = htvp(c)*qflx_evap_soi(p)
+
+#ifdef COUP_OAS_ICON
+         t_sf_patch(p) = t_grnd(c)
+         ! invert the actual flux formula used above
+         q_sf_patch(p) = forc_q(c) + qflx_evap_soi(p)*raw(p)/forc_rho(c)
+         rah1(p) = rah(p)
+         raw1(p) = raw(p)
+#endif
 
          ! 2 m height air temperature
          t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
