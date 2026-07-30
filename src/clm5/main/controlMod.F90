@@ -605,6 +605,9 @@ contains
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_SSRE, 1, MPI_LOGICAL, 0, mpicom, ier)
+#ifdef COUP_OAS_ICON
+    call mpi_bcast (loascplscheme_exchcoef, 1, MPI_LOGICAL, 0, mpicom, ier)
+#endif
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
