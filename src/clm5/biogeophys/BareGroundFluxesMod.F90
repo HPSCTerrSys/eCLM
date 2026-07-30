@@ -384,7 +384,12 @@ contains
          t_sf_patch(p)     = t_grnd(c)
          q_sf_patch(p)     = qg(c) ! sfc specific humidity for cplscheme_exchcoef
          rah1(p) = rah  ! heat resistance for cplscheme_exchcoef
-         raw1(p) = raiw/forc_rho(c)  ! moisture resistance for cplscheme_exchcoef
+         ! effective moisture resistance
+         if (raiw > 0._r8) then
+            raw1(p) = forc_rho(c)/raiw
+         else
+            raw1(p) = 1.e6_r8 ! soilresis imprevious ground
+         end if
 #endif
 
          ! 2 m height air temperature
