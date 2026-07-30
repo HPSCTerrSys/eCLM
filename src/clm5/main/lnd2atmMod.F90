@@ -200,6 +200,14 @@ contains
     logical, allocatable :: found(:)
     logical, allocatable :: found_patch(:)
 #endif
+#ifdef COUP_OAS_ICON
+    ! patch-level aerodynamic conductances (1/resistance) for rah1/raw1/ram1: 
+    ! combine parallel resistances by area-weighting their conductances
+    integer  :: pp
+    real(r8) :: rah1_cond_patch(bounds%begp:bounds%endp)
+    real(r8) :: raw1_cond_patch(bounds%begp:bounds%endp)
+    real(r8) :: ram1_cond_patch(bounds%begp:bounds%endp)
+#endif
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(net_carbon_exchange_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
@@ -362,15 +370,33 @@ contains
          lnd2atm_inst%q_sf_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
+    ! combine parallel resistances by area-weighting conductances (1/R)
+    do pp = bounds%begp, bounds%endp
+       rah1_cond_patch(pp) = 1._r8 / frictionvel_inst%rah1_patch(pp)
+       raw1_cond_patch(pp) = 1._r8 / frictionvel_inst%raw1_patch(pp)
+       ram1_cond_patch(pp) = 1._r8 / frictionvel_inst%ram1_patch(pp)
+    end do
+
     call p2g(bounds, &
-         frictionvel_inst%rah1_patch (bounds%begp:bounds%endp), &
-         lnd2atm_inst%rah1_grc       (bounds%begg:bounds%endg), &
+         rah1_cond_patch       (bounds%begp:bounds%endp), &
+         lnd2atm_inst%rah1_grc (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         frictionvel_inst%raw1_patch (bounds%begp:bounds%endp), &
-         lnd2atm_inst%raw1_grc       (bounds%begg:bounds%endg), &
+         raw1_cond_patch       (bounds%begp:bounds%endp), &
+         lnd2atm_inst%raw1_grc (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    call p2g(bounds, &
+         ram1_cond_patch           (bounds%begp:bounds%endp), &
+         lnd2atm_inst%ram1_cpl_grc (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    do g = bounds%begg, bounds%endg
+       lnd2atm_inst%rah1_grc(g)     = 1._r8 / lnd2atm_inst%rah1_grc(g)
+       lnd2atm_inst%raw1_grc(g)     = 1._r8 / lnd2atm_inst%raw1_grc(g)
+       lnd2atm_inst%ram1_cpl_grc(g) = 1._r8 / lnd2atm_inst%ram1_cpl_grc(g)
+    end do
 
 #endif
 

@@ -113,7 +113,7 @@ contains
     call oasis_put(oas_id_ad, seconds_elapsed,lnd2atm_inst%albd_grc(:,1), info)     ! "CLM_ALBED"
     call oasis_put(oas_id_ai, seconds_elapsed,lnd2atm_inst%albi_grc(:,1), info)     ! "CLM_ALBEI"
     if ( loascplscheme_exchcoef ) then
-       call oasis_put(oas_id_rm, seconds_elapsed,lnd2atm_inst%ram1_grc, info)       ! "CLM_RAM1"
+       call oasis_put(oas_id_rm, seconds_elapsed,lnd2atm_inst%ram1_cpl_grc, info)   ! "CLM_RAM1"
        call oasis_put(oas_id_rh, seconds_elapsed,lnd2atm_inst%rah1_grc, info)       ! "CLM_RAH1"
        call oasis_put(oas_id_rw, seconds_elapsed,lnd2atm_inst%raw1_grc, info)       ! "CLM_RAW1"
        call oasis_put(oas_id_qs, seconds_elapsed,lnd2atm_inst%q_sf_grc, info)       ! "CLMQVSFC"
