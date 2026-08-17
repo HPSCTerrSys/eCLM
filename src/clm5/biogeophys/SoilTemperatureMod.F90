@@ -1090,6 +1090,7 @@ contains
     use clm_varcon       , only : tfrz, hfus, grav
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
     use landunit_varcon  , only : istsoil, istcrop, istice_mec
+    use clm_instMod      , only : soil_water_retention_curve
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                      
@@ -1117,6 +1118,7 @@ contains
     real(r8) :: propor                             !proportionality constant (-)
     real(r8) :: tinc(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)  !t(n+1)-t(n) (K)
     real(r8) :: smp                                !frozen water potential (mm)
+    real(r8) :: s_supercool                        !relative saturation at the frozen water potential
     !-----------------------------------------------------------------------
 
     call t_startf( 'PhaseChangebeta' )
@@ -1245,7 +1247,9 @@ contains
                if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop .or. col%itype(c) == icol_road_perv) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
-                     supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
+                     call soil_water_retention_curve%soil_suction_inverse( &
+                          c, j, -smp, soilstate_inst, s_supercool)
+                     supercool(c,j) = watsat(c,j)*s_supercool
                      supercool(c,j) = supercool(c,j)*dz(c,j)*1000._r8       ! (mm)
                   endif
                endif
