@@ -356,7 +356,6 @@ contains
        end do
 
        found = .false.
-#ifndef COUP_OAS_PFL
        do c = bounds%begc, bounds%endc
           if (abs(errh2o(c)) > 1.e-9_r8) then
              found = .true.
@@ -447,7 +446,6 @@ contains
 #endif
           end if
        end if
-#endif
 
        ! Snow balance check
 
@@ -693,7 +691,6 @@ contains
 
        ! Soil energy balance check
 
-#ifndef COUP_OAS_PFL
        found = .false.
        do c = bounds%begc,bounds%endc
           if (col%active(c)) then
@@ -717,7 +714,6 @@ contains
           end if
 #endif
        end if
-#endif
 
      end associate
 
