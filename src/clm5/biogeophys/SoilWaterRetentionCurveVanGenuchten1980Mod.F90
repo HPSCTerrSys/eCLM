@@ -2,8 +2,15 @@ module SoilWaterRetentionCurveVanGenuchten1980Mod
 
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Implementation of soil_water_retention_curve_type using the Clapp-Hornberg 1978
-  ! parameterizations.
+  ! Implementation of soil_water_retention_curve_type using the van Genuchten
+  ! (1980) retention curve with the Mualem (1976) conductivity model.
+  !
+  !   Se  = (s - sres) / (1 - sres)                      effective saturation
+  !   Se  = [1 + (alpha*|psi|)^n]^(-m),   m = 1 - 1/n    retention
+  !   hk  = hksat * Se^L * [1 - (1 - Se^(1/m))^m]^2      Mualem, L = 0.5
+  !
+  ! where s is the relative saturation theta/watsat that CLM passes in, and
+  ! sres = watres/watsat is the residual relative saturation.
   !
   ! !USES:
   use shr_kind_mod   , only : r8 => shr_kind_r8
@@ -28,6 +35,13 @@ module SoilWaterRetentionCurveVanGenuchten1980Mod
      ! initialize a new soil_water_retention_curve_vangenuchten_1980_type object
      module procedure constructor  
   end interface soil_water_retention_curve_vangenuchten_1980_type
+
+  ! Effective saturation is limited from both ends.
+  real(r8), parameter :: se_min = 1.e-4_r8
+  real(r8), parameter :: se_max = 1._r8 - 1.e-8_r8
+
+  ! Mualem pore-connectivity exponent
+  real(r8), parameter :: mualem_l = 0.5_r8
 
 contains
 
@@ -61,22 +75,36 @@ contains
     real(r8), optional, intent(out)  :: dhkds    !d[hk]/ds   [mm/s]
     !
     ! !LOCAL VARIABLES:
-    
+    real(r8) :: sres      ! residual relative saturation [-]
+    real(r8) :: se        ! effective saturation [-]
+    real(r8) :: m         ! van Genuchten m = 1 - 1/n
+    real(r8) :: sem       ! se**(1/m)
+    real(r8) :: a         ! 1 - (1 - se**(1/m))**m
+    real(r8) :: dads      ! d[a]/d[se]
+
     character(len=*), parameter :: subname = 'soil_hk'
     !-----------------------------------------------------------------------
-    
-    associate(& 
-         hksat             =>    soilstate_inst%hksat_col(c,j)          , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-         bsw               =>    soilstate_inst%bsw_col(c,j)              & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
+
+    associate(&
+         hksat  => soilstate_inst%hksat_col(c,j)  , & ! Input: [real(r8) (:,:) ] hydraulic conductivity at saturation (mm H2O /s)
+         watsat => soilstate_inst%watsat_col(c,j) , & ! Input: [real(r8) (:,:) ] volumetric soil water at saturation (porosity)
+         watres => soilstate_inst%watres_col(c,j) , & ! Input: [real(r8) (:,:) ] residual soil water content
+         nvg    => soilstate_inst%nsw_col(c,j)      & ! Input: [real(r8) (:,:) ] van Genuchten "n"
          )
 
+    m    = 1._r8 - 1._r8/nvg
+    sres = min(watres/watsat, 1._r8 - se_min)
+    se   = min(max((s - sres)/(1._r8 - sres), se_min), se_max)
 
-    !compute hydraulic conductivity
-    hk=imped*hksat*s**(2._r8*bsw+3._r8)
+    sem = se**(1._r8/m)
+    a   = 1._r8 - (1._r8 - sem)**m
 
-    !compute the derivative
-    if(present(dhkds))then
-       dhkds=(2._r8*bsw+3._r8)*hk/s
+    hk = imped*hksat * se**mualem_l * a*a
+
+    if (present(dhkds)) then
+       dads = (1._r8 - sem)**(m - 1._r8) * se**(1._r8/m - 1._r8)
+       dhkds = imped*hksat * ( mualem_l*se**(mualem_l - 1._r8) * a*a &
+                             + se**mualem_l * 2._r8*a*dads ) / (1._r8 - sres)
     endif
 
     end associate 
@@ -102,24 +130,36 @@ contains
     real(r8), optional, intent(out)  :: dsmpds   !d[smp]/ds, [mm]
     !
     ! !LOCAL VARIABLES:
-    
+    real(r8) :: sres      ! residual relative saturation [-]
+    real(r8) :: se        ! effective saturation [-]
+    real(r8) :: m         ! van Genuchten m = 1 - 1/n
+    real(r8) :: u         ! se**(-1/m) - 1
+
     character(len=*), parameter :: subname = 'soil_suction'
     !-----------------------------------------------------------------------
-    
-    associate(& 
-         bsw               =>    soilstate_inst%bsw_col(c,j)            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                       
-         sucsat            =>    soilstate_inst%sucsat_col(c,j)           & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+
+    associate(&
+         watsat => soilstate_inst%watsat_col(c,j)    , & ! Input: [real(r8) (:,:) ] volumetric soil water at saturation (porosity)
+         watres => soilstate_inst%watres_col(c,j)    , & ! Input: [real(r8) (:,:) ] residual soil water content
+         alpha  => soilstate_inst%alphasw_col(c,j)   , & ! Input: [real(r8) (:,:) ] van Genuchten "alpha" [1/mm]
+         nvg    => soilstate_inst%nsw_col(c,j)         & ! Input: [real(r8) (:,:) ] van Genuchten "n"
          )
 
-    !compute soil suction potential, negative
-    smp = -sucsat*s**(-bsw)
+    m    = 1._r8 - 1._r8/nvg
+    sres = min(watres/watsat, 1._r8 - se_min)
+    se   = min(max((s - sres)/(1._r8 - sres), se_min), se_max)
 
-    !compute derivative
-    if(present(dsmpds))then
-       dsmpds=-bsw*smp/s
+    u = se**(-1._r8/m) - 1._r8
+
+    ! suction potential, negative; -> 0 as se -> 1 (no air-entry pressure)
+    smp = -(u**(1._r8/nvg))/alpha
+
+    if (present(dsmpds)) then
+       dsmpds = se**(-1._r8/m - 1._r8) * u**(1._r8/nvg - 1._r8) &
+                / (alpha*nvg*m*(1._r8 - sres))
     endif
 
-    end associate 
+    end associate
 
   end subroutine soil_suction
 
@@ -142,21 +182,30 @@ contains
     real(r8) , intent(out) :: s_target   ! relative saturation at which smp = smp_target [0,1]
     !
     ! !LOCAL VARIABLES:
-    
+    real(r8) :: sres      ! residual relative saturation [-]
+    real(r8) :: se        ! effective saturation [-]
+    real(r8) :: m         ! van Genuchten m = 1 - 1/n
+
     character(len=*), parameter :: subname = 'soil_suction_inverse'
     !-----------------------------------------------------------------------
-    
-    associate(& 
-         bsw               =>    soilstate_inst%bsw_col(c,j)            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
-         sucsat            =>    soilstate_inst%sucsat_col(c,j)           & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+
+    associate(&
+         watsat => soilstate_inst%watsat_col(c,j)    , & ! Input: [real(r8) (:,:) ] volumetric soil water at saturation (porosity)
+         watres => soilstate_inst%watres_col(c,j)    , & ! Input: [real(r8) (:,:) ] residual soil water content
+         alpha  => soilstate_inst%alphasw_col(c,j)   , & ! Input: [real(r8) (:,:) ] van Genuchten "alpha" [1/mm]
+         nvg    => soilstate_inst%nsw_col(c,j)         & ! Input: [real(r8) (:,:) ] van Genuchten "n"
          )
 
-    s_target = (-smp_target/sucsat)**(-1._r8/bsw)
+    m    = 1._r8 - 1._r8/nvg
+    sres = min(watres/watsat, 1._r8 - se_min)
 
-    end associate 
+    se = (1._r8 + (alpha*abs(smp_target))**nvg)**(-m)
+
+    ! back to relative saturation theta/watsat
+    s_target = sres + (1._r8 - sres)*se
+
+    end associate
 
   end subroutine soil_suction_inverse
 
 end module SoilWaterRetentionCurveVanGenuchten1980Mod
-
-

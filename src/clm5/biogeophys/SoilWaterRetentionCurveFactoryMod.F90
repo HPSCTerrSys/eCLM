@@ -8,7 +8,7 @@ module SoilWaterRetentionCurveFactoryMod
   ! !USES:
   use abortutils          , only : endrun
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use clm_varctl          , only : iulog
+  use clm_varctl          , only : iulog, soil_water_retention_method
   implicit none
   save
   private
@@ -38,17 +38,15 @@ contains
     !
     ! !LOCAL VARIABLES:
 
-    ! For now, hard-code the method. Eventually this will be set from namelist, either by
-    ! this routine (appropriate if the 'method' is in its own namelist group), or do the
-    ! namelist read outside this module and pass the method in as a parameter (appropriate
-    ! if the 'method' is part of a larger namelist group).
-!scs    character(len=*), parameter :: method = "clapphornberg_1978"
+    ! The method is set from the clm_inparm namelist group via clm_varctl
+    ! (soil_water_retention_method). It defaults to "clapphornberg_1978", which
+    ! reproduces the previous hard-coded behaviour.
     character(len=256) :: method
-    
+
     character(len=*), parameter :: subname = 'create_soil_water_retention_curve'
     !-----------------------------------------------------------------------
-    
-    method = "clapphornberg_1978" !scs: placeholder until bld scripts changed
+
+    method = trim(soil_water_retention_method)
 
     select case (trim(method))
        

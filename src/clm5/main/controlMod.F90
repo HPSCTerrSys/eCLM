@@ -202,7 +202,8 @@ contains
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
          albice, soil_layerstruct, subgridflag, &
-         irrigate, run_zero_weight_urban, all_active
+         irrigate, run_zero_weight_urban, all_active, &
+         soil_water_retention_method
 
     ! Snow thermal conductivity
     namelist /clm_inparm/  &
@@ -724,6 +725,7 @@ contains
     call mpi_bcast (co2_ppmv, 1, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (soil_layerstruct,len(soil_layerstruct), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (soil_water_retention_method, len(soil_water_retention_method), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (snow_thermal_cond_method, len(snow_thermal_cond_method), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (snow_thermal_cond_glc_method, len(snow_thermal_cond_glc_method), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (snow_thermal_cond_lake_method, len(snow_thermal_cond_lake_method), MPI_CHARACTER, 0, mpicom, ier)
@@ -934,6 +936,7 @@ contains
 
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   soil layer structure = ', soil_layerstruct
+    write(iulog,*) '   soil water retention curve = ', trim(soil_water_retention_method)
     write(iulog,*) '   plant hydraulic stress = ', use_hydrstress
     write(iulog,*) '   dynamic roots          = ', use_dynroot
     if (nsrest == nsrContinue) then

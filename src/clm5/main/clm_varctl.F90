@@ -266,6 +266,9 @@ module clm_varctl
   logical,           public :: use_bedrock = .false. ! true => use spatially variable soil depth
   character(len=16), public :: soil_layerstruct = '10SL_3.5m'
 
+  ! Soil water retention curve: 'clapphornberg_1978' (default) or 'vangenuchten_1980'.
+  character(len=32), public :: soil_water_retention_method = 'clapphornberg_1978'
+
   !----------------------------------------------------------
   ! plant hydraulic stress switch
   !----------------------------------------------------------

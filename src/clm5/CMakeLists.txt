@@ -279,6 +279,7 @@ target_sources(${PROJECT_NAME}
         main/readParamsMod.F90
         main/restFileMod.F90
         main/reweightMod.F90
+        main/RosettaVanGenuchtenMod.F90
         main/subgridAveMod.F90
         main/subgridMod.F90
         main/subgridRestMod.F90

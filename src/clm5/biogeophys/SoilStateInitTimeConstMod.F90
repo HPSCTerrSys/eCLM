@@ -119,6 +119,7 @@ contains
     use fileutils           , only : getfil
     use organicFileMod      , only : organicrd 
     use FuncPedotransferMod , only : pedotransf, get_ipedof
+    use RosettaVanGenuchtenMod, only : rosetta_class_params
     use RootBiophysMod      , only : init_vegrootfr
     use GridcellType     , only : grc                
     !
@@ -153,6 +154,9 @@ contains
     real(r8)           :: tkm                           ! mineral conductivity
     real(r8)           :: xksat                         ! maximum hydraulic conductivity of soil [mm/s]
     real(r8)           :: clay,sand                     ! temporaries
+    real(r8)           :: vg_alpha                      ! van Genuchten alpha from ROSETTA class average [1/mm]
+    real(r8)           :: vg_n                          ! van Genuchten n from ROSETTA class average [-]
+    real(r8)           :: vg_sres                       ! residual relative saturation from ROSETTA class average [-]
     real(r8)           :: organic_max                   ! organic matter (kg/m3) where soil is assumed to act like peat
     integer            :: dimid                         ! dimension id
     logical            :: readvar 
@@ -582,6 +586,13 @@ contains
 ! SHP adapt end
                 soilstate_inst%sucsat_col(c,lev)    = (1._r8-om_frac) * soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac  
                 soilstate_inst%hksat_min_col(c,lev) = xksat
+
+                ! van Genuchten retention parameters
+                call rosetta_class_params(sand, clay, vg_alpha, vg_n, vg_sres)
+                soilstate_inst%alphasw_col(c,lev) = vg_alpha
+                soilstate_inst%nsw_col(c,lev)     = vg_n
+                soilstate_inst%msw_col(c,lev)     = 1._r8 - 1._r8/vg_n
+                soilstate_inst%watres_col(c,lev)  = vg_sres * soilstate_inst%watsat_col(c,lev)
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
                 if (om_frac > pcalpha) then
