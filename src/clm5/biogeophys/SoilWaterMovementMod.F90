@@ -1488,13 +1488,14 @@ contains
       integer  :: nlayers                   ! lower boundary index
       real(r8) :: s1                        ! "s" at interface of layer
       real(r8) :: s2(1:nlevgrnd)            ! "s" at layer node
+      real(r8) :: vol_ice                   ! partial volume of ice
       real(r8) :: imped                     ! ice impedance
       real(r8) :: hk                        ! hydraulic conductivity (mm/s)
 
       associate(&
          dz                =>    col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
          nbedrock          =>    col%nbedrock                       , & ! Input:  [integer  (:)   ]  index of shallowest bedrock layer
-         icefrac           =>    soilhydrology_inst%icefrac_col     , & ! Input:  [real(r8) (:,:) ]  fraction of ice
+         icefrac           =>    soilhydrology_inst%icefrac_col     , & ! Output: [real(r8) (:,:) ]  fraction of ice
          watsat            =>    soilstate_inst%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          hk_l              =>    soilstate_inst%hk_l_col            , & ! Output: [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
          smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]
@@ -1524,6 +1525,10 @@ contains
             ! ParFlow water content using the same formulation as compute_hydraulic_properties.
             nlayers = nbedrock(c)
             do j = 1, nlayers
+               ! icefrac was last set in Infiltration, before the ice limiter above
+               ! refresh it so the impedance matches the ParFlow state
+               vol_ice      = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
+               icefrac(c,j) = min(1._r8, vol_ice/watsat(c,j))
                s2(j) = max(h2osoi_liq(c,j), 1.0e-6_r8) &
                        / (dz(c,j) * denh2o * watsat(c,j))
                s2(j) = min(max(s2(j), 0.01_r8), 1._r8)
