@@ -333,6 +333,7 @@ contains
     do fc = 1,num_snowc
        c = filter_snowc(fc)
        l=col%landunit(c)
+       g=col%gridcell(c)
 
        wgdif = h2osoi_ice(c,snl(c)+1) &
             + frac_sno_eff(c) * (qflx_dew_snow(c) - qflx_sub_snow(c)) * dtime
@@ -340,10 +341,12 @@ contains
        if (wgdif < 0._r8) then
           h2osoi_ice(c,snl(c)+1) = 0._r8
           h2osoi_liq(c,snl(c)+1) = h2osoi_liq(c,snl(c)+1) + wgdif
+          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, snl(c)+1, "h2osoi_liq(c,snl(c)+1) + wgdif", "SnowHydrologyMod.SnowWater.1"  !debugh2osoi
        end if
        h2osoi_liq(c,snl(c)+1) = h2osoi_liq(c,snl(c)+1) +  &
             frac_sno_eff(c) * (qflx_rain_grnd(c) + qflx_dew_grnd(c) &
             - qflx_evap_grnd(c)) * dtime
+       write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') += ', A, ', ', A)") g, l, snl(c)+1, "frac_sno_eff*(qflx_rain_grnd+qflx_dew_grnd) - qflx_evap_grnd*dtime) ", "SnowHydrologyMod.SnowWater.2"  !debugh2osoi
 
        ! if negative, reduce deeper layer's liquid water content sequentially
        if(h2osoi_liq(c,snl(c)+1) < 0._r8) then
@@ -351,7 +354,9 @@ contains
              wgdif=h2osoi_liq(c,j)
              if (wgdif >= 0._r8) exit
              h2osoi_liq(c,j) = 0._r8
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "SnowHydrologyMod.SnowWater.3"  !debugh2osoi
              h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j+1) + wgdif", "SnowHydrologyMod.SnowWater.4"  !debugh2osoi
           enddo
        end if
     end do
@@ -402,9 +407,12 @@ contains
     do j = -nlevsno+1, 0
        do fc = 1, num_snowc
           c = filter_snowc(fc)
+          l = col%landunit(c)
+          g = col%gridcell(c)
           if (j >= snl(c)+1) then
 
              h2osoi_liq(c,j) = h2osoi_liq(c,j) + qin(c)
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + qin(c)", "SnowHydrologyMod.SnowWater.5"  !debugh2osoi
 
              mss_bcphi(c,j) = mss_bcphi(c,j) + qin_bc_phi(c)
              mss_bcpho(c,j) = mss_bcpho(c,j) + qin_bc_pho(c)
@@ -433,6 +441,7 @@ contains
              end if
              qout(c) = qout(c)*1000._r8
              h2osoi_liq(c,j) = h2osoi_liq(c,j) - qout(c)
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) - qout(c)", "SnowHydrologyMod.SnowWater.6"  !debugh2osoi
              qin(c) = qout(c)
 
              ! mass of ice+water: in extremely rare circumstances, this can
@@ -795,7 +804,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c, fc                            ! column indices
     integer :: i,k                              ! loop indices
-    integer :: j,l                              ! node indices
+    integer :: j,l,g                            ! node indices
     integer :: msn_old(bounds%begc:bounds%endc) ! number of top snow layer
     integer :: mssi(bounds%begc:bounds%endc)    ! node index
     integer :: neibor                           ! adjacent node selected for combination
@@ -870,11 +879,13 @@ contains
     do fc = 1, num_snowc
        c = filter_snowc(fc)
        l = col%landunit(c)
+       g = col%gridcell(c)
        do j = msn_old(c)+1,0
           ! use 0.01 to avoid runaway ice buildup
           if (h2osoi_ice(c,j) <= .01_r8) then
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j+1) + h2osoi_liq(c,j)", "SnowHydrologyMod.CombineSnowLayers.1"  !debugh2osoi
                 h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
 
                 if (j == 0) then
@@ -902,6 +913,7 @@ contains
              else if (ltype(l) /= istsoil .and. .not. urbpoi(l) .and. ltype(l) /= istcrop .and. j /= 0) then
 
                 h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j+1) + h2osoi_liq(c,j)", "SnowHydrologyMod.CombineSnowLayers.2"  !debugh2osoi
                 h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
                 dz(c,j+1) = dz(c,j+1) + dz(c,j)
 
@@ -929,6 +941,7 @@ contains
 
                    t_soisno(c,i)   = t_soisno(c,i-1)
                    h2osoi_liq(c,i) = h2osoi_liq(c,i-1)
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, i, "h2osoi_liq(c,i-1)", "SnowHydrologyMod.CombineSnowLayers.3"  !debugh2osoi
                    h2osoi_ice(c,i) = h2osoi_ice(c,i-1)
 
                    mss_bcphi(c,i)   = mss_bcphi(c,i-1)
@@ -975,6 +988,7 @@ contains
     do fc = 1, num_snowc
        c = filter_snowc(fc)
        l = col%landunit(c)
+       g = col%gridcell(c)
        if (snow_depth(c) > 0._r8) then
           if ((ltype(l) == istdlak .and. snow_depth(c) < 0.01_r8 + lsadz ) .or. &
                ((ltype(l) /= istdlak) .and. ((frac_sno_eff(c)*snow_depth(c) < 0.01_r8)  &
@@ -997,12 +1011,16 @@ contains
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,0) = 0.0_r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "0", "SnowHydrologyMod.CombineSnowLayers.4"  !debugh2osoi
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) + zwliq(c)", "SnowHydrologyMod.CombineSnowLayers.4"  !debugh2osoi
              end if
              if (ltype(l) == istwet) then
                 h2osoi_liq(c,0) = 0.0_r8
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "0", "SnowHydrologyMod.CombineSnowLayers.5"  !debugh2osoi
              endif
              if (ltype(l)==istice_mec) then
                 h2osoi_liq(c,0) = 0.0_r8
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "0", "SnowHydrologyMod.CombineSnowLayers.6"  !debugh2osoi
              endif
           endif
        end if
@@ -1019,6 +1037,8 @@ contains
 
     do fc = 1, num_snowc
        c = filter_snowc(fc)
+       l = col%landunit(c)
+       g = col%gridcell(c)
 
        ! Two or more layers
 
@@ -1077,6 +1097,7 @@ contains
                       t_soisno(c,k) = t_soisno(c,k-1)
                       h2osoi_ice(c,k) = h2osoi_ice(c,k-1)
                       h2osoi_liq(c,k) = h2osoi_liq(c,k-1)
+                      write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, k, "h2osoi_liq(c,k-1)", "SnowHydrologyMod.CombineSnowLayers.7"  !debugh2osoi
 
                       mss_bcphi(c,k) = mss_bcphi(c,k-1)
                       mss_bcpho(c,k) = mss_bcpho(c,k-1)
@@ -1144,7 +1165,7 @@ contains
     logical                , intent(in)    :: is_lake  !TODO - this should be examined and removed in the future
     !
     ! !LOCAL VARIABLES:
-    integer  :: j, c, fc, k                              ! indices
+    integer  :: j, c, fc, k, g, l                        ! indices
     real(r8) :: drr                                      ! thickness of the combined [m]
     integer  :: msno                                     ! number of snow layer 1 (top) to msno (bottom)
     real(r8) :: dzsno(bounds%begc:bounds%endc,nlevsno)   ! Snow layer thickness [m]
@@ -1389,6 +1410,9 @@ contains
     do j = -nlevsno+1,0
        do fc = 1, num_snowc
           c = filter_snowc(fc)
+          l = col%landunit(c)
+          g = col%gridcell(c)
+
           if (j >= snl(c)+1) then
              if (is_lake) then
                 dz(c,j) = dzsno(c,j-snl(c))
@@ -1397,6 +1421,7 @@ contains
              end if
              h2osoi_ice(c,j) = swice(c,j-snl(c))
              h2osoi_liq(c,j) = swliq(c,j-snl(c))
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "swliq(c,j-snl(c))", "SnowHydrologyMod.DivideSnowLayers"  !debugh2osoi
              t_soisno(c,j)   = tsno(c,j-snl(c))
              mss_bcphi(c,j)   = mbc_phi(c,j-snl(c))
              mss_bcpho(c,j)   = mbc_pho(c,j-snl(c))
@@ -1588,7 +1613,7 @@ contains
     real(r8)   :: icefrac                          ! fraction of ice mass w.r.t. total mass [unitless]
     real(r8)   :: frac_adjust                      ! fraction of mass remaining after capping
     real(r8)   :: rho                              ! partial density of ice (not scaled with frac_sno) [kg/m3]
-    integer    :: fc, c                            ! counters
+    integer    :: fc, c, g, l                      ! counters
     real(r8)   :: h2osno_excess(bounds%begc:bounds%endc) ! excess snow that needs to be capped [mm H2O]
     logical    :: apply_runoff(bounds%begc:bounds%endc)  ! for columns with capping, whether the capping flux should be sent to runoff
     ! Always keep at least this fraction of the bottom snow layer when doing snow capping
@@ -1636,7 +1661,8 @@ contains
 
     loop_columns: do fc = 1, num_snowc
        c = filter_snowc(fc)
-
+       l = col%landunit(c)
+       g = col%gridcell(c)
        if (h2osno_excess(c) > 0._r8) then
           mss_snow_bottom_lyr = h2osoi_ice(c,0) + h2osoi_liq(c,0) 
           mss_snwcp_tot = min(h2osno_excess(c), mss_snow_bottom_lyr * (1._r8 - min_snow_to_keep)) ! Can't remove more mass than available
@@ -1658,6 +1684,7 @@ contains
           ! Adjust water content
           h2osoi_ice(c,0) = h2osoi_ice(c,0) - snwcp_flux_ice*dtime
           h2osoi_liq(c,0) = h2osoi_liq(c,0) - snwcp_flux_liq*dtime
+          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "h2osoi_liq(c,0) - snwcp_flux_liq*dtime", "SnowHydrologyMod.SnowCapping"  !debugh2osoi
 
           ! Scale dz such that ice density (or: pore space) is conserved
           !

@@ -867,6 +867,7 @@ contains
       this%h2osoi_ice_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval
       do c = bounds%begc,bounds%endc
          l = col%landunit(c)
+         g = col%gridcell(c)
          if (.not. lun%lakpoi(l)) then  !not lake
 
             ! volumetric water
@@ -925,15 +926,18 @@ contains
                if (t_soisno_col(c,j) <= SHR_CONST_TKFRZ) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*denice*this%h2osoi_vol_col(c,j)
                   this%h2osoi_liq_col(c,j) = 0._r8
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.1"  !debugh2osoi
                else
                   this%h2osoi_ice_col(c,j) = 0._r8
                   this%h2osoi_liq_col(c,j) = col%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "col%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)", "WaterstateType.InitCold.2"  !debugh2osoi
                endif
             end do
             do j = -nlevsno+1, 0
                if (j > snl(c)) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*250._r8
                   this%h2osoi_liq_col(c,j) = 0._r8
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.3"  !debugh2osoi
                end if
             end do
          end if
@@ -946,12 +950,13 @@ contains
 
       do c = bounds%begc, bounds%endc
          l = col%landunit(c)
-
+         g = col%gridcell(c)
          if (lun%lakpoi(l)) then
             do j = -nlevsno+1, 0
                if (j > snl(c)) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*bdsno
                   this%h2osoi_liq_col(c,j) = 0._r8
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.4"  !debugh2osoi
                end if
             end do
             do j = 1,nlevgrnd
@@ -959,6 +964,7 @@ contains
                   this%h2osoi_vol_col(c,j) = watsat_col(c,j)
                   this%h2osoi_liq_col(c,j) = spval
                   this%h2osoi_ice_col(c,j) = spval
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "spval", "WaterstateType.InitCold.5"  !debugh2osoi
                else                  ! bedrock
                   this%h2osoi_vol_col(c,j) = 0._r8
                end if
@@ -971,14 +977,18 @@ contains
       !--------------------------------------------
 
       do c = bounds%begc, bounds%endc
+         l = col%landunit(c)
+         g = col%gridcell(c)
          do j = 1,nlevgrnd
             if (this%h2osoi_vol_col(c,j) /= spval) then
                if (t_soisno_col(c,j) <= tfrz) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*denice*this%h2osoi_vol_col(c,j)
                   this%h2osoi_liq_col(c,j) = 0._r8
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.6"  !debugh2osoi
                else
                   this%h2osoi_ice_col(c,j) = 0._r8
                   this%h2osoi_liq_col(c,j) = col%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "col%dz(c,j)*denice*this%h2osoi_vol_col(c,j)", "WaterstateType.InitCold.7"  !debugh2osoi
                endif
             end if
          end do
@@ -1013,7 +1023,7 @@ contains
     real(r8)         , intent(in)    :: watsat_col (bounds%begc:, 1:)  ! volumetric soil water at saturation (porosity)
     !
     ! !LOCAL VARIABLES:
-    integer  :: c,l,j,nlevs
+    integer  :: c,l,j,g,nlevs
     logical  :: readvar
     real(r8) :: maxwatsat    ! maximum porosity    
     real(r8) :: excess       ! excess volumetric soil water
@@ -1114,6 +1124,7 @@ contains
        if ( is_first_step() .and. bound_h2osoi) then
           do c = bounds%begc, bounds%endc
              l = col%landunit(c)
+             g = col%gridcell(c)
              if ( col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. &
                   col%itype(c) == icol_roof )then
                 nlevs = nlevurb
@@ -1122,8 +1133,10 @@ contains
              end if
              do j = 1,nlevs
                 l = col%landunit(c)
+                g = col%gridcell(c)
                 if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
                    this%h2osoi_liq_col(c,j) = max(0._r8,this%h2osoi_liq_col(c,j))
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "max(0._r8,this%h2osoi_liq_col(c,j))", "WaterstateType.Restart.1"  !debugh2osoi
                    this%h2osoi_ice_col(c,j) = max(0._r8,this%h2osoi_ice_col(c,j))
                    this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col%dz(c,j)*denh2o) &
                                        + this%h2osoi_ice_col(c,j)/(col%dz(c,j)*denice)
@@ -1139,11 +1152,13 @@ contains
                                            (this%h2osoi_liq_col(c,j)/totwat) * excess
                       this%h2osoi_ice_col(c,j) = this%h2osoi_ice_col(c,j) - &
                                            (this%h2osoi_ice_col(c,j)/totwat) * excess
+                      write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq_col - (h2osoi_liq_col/totwat)*excess", "WaterstateType.Restart.2"  !debugh2osoi
                    end if
                    this%h2osoi_liq_col(c,j) = max(watmin,this%h2osoi_liq_col(c,j))
                    this%h2osoi_ice_col(c,j) = max(watmin,this%h2osoi_ice_col(c,j))
                    this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col%dz(c,j)*denh2o) &
                                              + this%h2osoi_ice_col(c,j)/(col%dz(c,j)*denice)
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq/(dz*denh2o) + h2osoi_ice/(dz*denice)", "WaterstateType.Restart.3"  !debugh2osoi
                 end if
              end do
           end do

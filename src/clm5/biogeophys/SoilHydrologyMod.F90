@@ -277,6 +277,9 @@ contains
 
       do fc = 1, num_urbanc
          c = filter_urbanc(fc)
+         l = col%landunit(c)
+         g = col%gridcell(c)
+
          if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
 
             ! If there are snow layers then all qflx_top_soil goes to surface runoff
@@ -288,9 +291,11 @@ contains
                     pondmx_urban/dtime)
                if (xs(c) > 0.) then
                   h2osoi_liq(c,1) = pondmx_urban
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "pondmx_urban", "SoilHydrologyMod.SurfaceRunoff.1"  !debugh2osoi
                else
                   h2osoi_liq(c,1) = max(0._r8,h2osoi_liq(c,1)+ &
                        (qflx_top_soil(c)-qflx_evap_grnd(c))*dtime)
+                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "max(0,h2osoi_liq+(qflx_top_soil-qflx_evap_grnd*dtime)", "SoilHydrologyMod.SurfaceRunoff.2"  !debugh2osoi
                end if
                qflx_surf(c) = xs(c)
             end if
@@ -598,7 +603,7 @@ contains
      type(waterflux_type)     , intent(inout) :: waterflux_inst
      !
      ! !LOCAL VARIABLES:
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,g,l                            ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
@@ -841,13 +846,15 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-
+          l = col%landunit(c)
+          g = col%gridcell(c)
           ! Renew the ice and liquid mass due to condensation
 
           if (snl(c)+1 >= 1) then
 
              ! make consistent with how evap_grnd removed in infiltration
              h2osoi_liq(c,1) = h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime", "SoilHydrologyMod.WaterTable.1"  !debugh2osoi
              h2osoi_ice(c,1) = h2osoi_ice(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_snow(c) * dtime
              if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
                 qflx_sub_snow(c) = h2osoi_ice(c,1)/dtime
@@ -862,10 +869,12 @@ contains
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
           ! Renew the ice and liquid mass due to condensation for urban roof and impervious road
-
+          l = col%landunit(c)
+          g = col%gridcell(c)
           if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
              if (snl(c)+1 >= 1) then
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime", "SoilHydrologyMod.WaterTable.2"  !debugh2osoi
                 h2osoi_ice(c,1) = h2osoi_ice(c,1) + (qflx_dew_snow(c) * dtime)
                 if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
                    qflx_sub_snow(c) = h2osoi_ice(c,1)/dtime
@@ -910,7 +919,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      character(len=32) :: subname = 'Drainage'           ! subroutine name
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,g,l                            ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
@@ -1058,6 +1067,8 @@ contains
        ! perched water table code
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
+          l = col%landunit(c)
+          g = col%gridcell(c)
 
           !  specify maximum drainage rate
           q_perch_max = 1.e-5_r8 * sin(col%topo_slope(c) * (rpi/180._r8))
@@ -1111,6 +1122,7 @@ contains
                 rsub_top_tot = rsub_top_tot - rsub_top_layer
 
                 h2osoi_liq(c,k) = h2osoi_liq(c,k) + rsub_top_layer
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, k, "h2osoi_liq(c,k) + rsub_top_layer", "SoilHydrologyMod.Drainage.1"  !debugh2osoi
 
                 if (rsub_top_tot >= 0.) then 
                    zwt(c) = zwt(c) - rsub_top_layer/eff_porosity(c,k)/1000._r8
@@ -1190,6 +1202,7 @@ contains
                    rsub_top_tot = rsub_top_tot - rsub_top_layer
 
                    h2osoi_liq(c,k) = h2osoi_liq(c,k) + rsub_top_layer
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, k, "h2osoi_liq(c,k) + rsub_top_layer", "SoilHydrologyMod.Drainage.2"  !debugh2osoi
 
                    if (rsub_top_tot >= 0.) then 
                       zwt_perched(c) = zwt_perched(c) - rsub_top_layer/eff_porosity(c,k)/1000._r8
@@ -1264,6 +1277,7 @@ contains
                 wa(c)  = wa(c) - rsub_top(c) * dtime
                 zwt(c)     = zwt(c) + (rsub_top(c) * dtime)/1000._r8/rous
                 h2osoi_liq(c,nlevsoi) = h2osoi_liq(c,nlevsoi) + max(0._r8,(wa(c)-aquifer_water_baseline))
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, nlevsoi, "h2osoi_liq(c,nlevsoi) + max(0._r8,(wa(c)-aquifer_water_baseline))", "SoilHydrologyMod.Drainage.3"  !debugh2osoi
                 wa(c)  = min(wa(c), aquifer_water_baseline)
              else                                
                 !-- water table within soil layers 1-9  -------------------------------------
@@ -1286,6 +1300,7 @@ contains
                          rsub_top_layer=max(rsub_top_tot, rsub_top_tot*hk_l(c,j)*dzmm(c,j)/wtsub_vic)
                          rsub_top_layer=min(rsub_top_layer,0._r8)
                          h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
+                         write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + rsub_top_layer", "SoilHydrologyMod.Drainage.4"  !debugh2osoi
                          rsub_top_tot = rsub_top_tot - rsub_top_layer
                       end do
                    else
@@ -1298,6 +1313,7 @@ contains
                          rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,j) - zwt(c))*1.e3))
                          rsub_top_layer=min(rsub_top_layer,0._r8)
                          h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
+                         write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + rsub_top_layer", "SoilHydrologyMod.Drainage.5"  !debugh2osoi
 
                          rsub_top_tot = rsub_top_tot - rsub_top_layer
 
@@ -1340,19 +1356,26 @@ contains
        do j = nlevsoi,2,-1
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
+             l = col%landunit(c)
+             g = col%gridcell(c)
+
              xsi(c)            = max(h2osoi_liq(c,j)-eff_porosity(c,j)*dzmm(c,j),0._r8)
              h2osoi_liq(c,j)   = min(eff_porosity(c,j)*dzmm(c,j), h2osoi_liq(c,j))
              h2osoi_liq(c,j-1) = h2osoi_liq(c,j-1) + xsi(c)
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "min(eff_porosity(c,j)*dzmm(c,j), h2osoi_liq(c,j))", "SoilHydrologyMod.Drainage.6"  !debugh2osoi
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j-1, "h2osoi_liq(c,j-1) + xsi(c)", "SoilHydrologyMod.Drainage.7"  !debugh2osoi
           end do
        end do
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-
+          l = col%landunit(c)
+          g = col%gridcell(c)
           ! watmin addition to fix water balance errors
           xs1(c)          = max(max(h2osoi_liq(c,1)-watmin,0._r8)- &
                max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_ice(c,1)-watmin)),0._r8)
           h2osoi_liq(c,1) = h2osoi_liq(c,1) - xs1(c)
+          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) - xs1(c)", "SoilHydrologyMod.Drainage.8"  !debugh2osoi
 
           if (lun%urbpoi(col%landunit(c))) then
              qflx_rsub_sat(c)     = xs1(c) / dtime
@@ -1379,6 +1402,8 @@ contains
        do j = 1, nlevsoi-1
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
+             l = col%landunit(c)
+             g = col%gridcell(c)
              if (h2osoi_liq(c,j) < watmin) then
                 xs(c) = watmin - h2osoi_liq(c,j)
                 ! deepen water table if water is passed from below zwt layer
@@ -1390,6 +1415,8 @@ contains
              end if
              h2osoi_liq(c,j  ) = h2osoi_liq(c,j  ) + xs(c)
              h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) - xs(c)
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,1) + xs1(c)", "SoilHydrologyMod.Drainage.9"  !debugh2osoi
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,1) - xs1(c)", "SoilHydrologyMod.Drainage.10"  !debugh2osoi
           end do
        end do
 
@@ -1397,6 +1424,8 @@ contains
        j = nlevsoi
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
+          l = col%landunit(c)
+          g = col%gridcell(c)
           if (h2osoi_liq(c,j) < watmin) then
              xs(c) = watmin-h2osoi_liq(c,j)
              searchforwater: do i = nlevsoi-1, 1, -1
@@ -1404,11 +1433,15 @@ contains
                 if (available_h2osoi_liq >= xs(c)) then
                    h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
                    h2osoi_liq(c,i) = h2osoi_liq(c,i) - xs(c)
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + xs(c)", "SoilHydrologyMod.Drainage.11"  !debugh2osoi
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, i, "h2osoi_liq(c,i) - xs(c)", "SoilHydrologyMod.Drainage.12"  !debugh2osoi
                    xs(c) = 0._r8
                    exit searchforwater
                 else
                    h2osoi_liq(c,j) = h2osoi_liq(c,j) + available_h2osoi_liq
                    h2osoi_liq(c,i) = h2osoi_liq(c,i) - available_h2osoi_liq
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + available_h2osoi_liq", "SoilHydrologyMod.Drainage.13"  !debugh2osoi
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, i, "h2osoi_liq(c,i) - available_h2osoi_liq", "SoilHydrologyMod.Drainage.14"  !debugh2osoi
                    xs(c) = xs(c) - available_h2osoi_liq
                 end if
              end do searchforwater
@@ -1417,6 +1450,7 @@ contains
           end if
           ! Needed in case there is no water to be found
           h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
+          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + xs(c)", "SoilHydrologyMod.Drainage.15"  !debugh2osoi
           ! Instead of removing water from aquifer where it eventually
           ! shows up as excess drainage to the ocean, take it back out of 
           ! drainage
@@ -1690,7 +1724,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      character(len=32) :: subname = 'PerchedLateralFlow' ! subroutine name
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,l,g                            ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
@@ -1749,7 +1783,8 @@ contains
        ! compute drainage from perched saturated region
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-
+          l = col%landunit(c)
+          g = col%gridcell(c)
           qflx_drain_perched(c) = 0._r8
 
           if ((frost_table(c) > zwt_perched(c)) .and. origflag == 0) then
@@ -1797,7 +1832,8 @@ contains
                    drainage_tot = drainage_tot - drainage_layer
                    
                    h2osoi_liq(c,k) = h2osoi_liq(c,k) + drainage_layer
-                   
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, k, "h2osoi_liq(c,k) + drainage_layer", "SoilHydrologyMod.PerchedLateralFlow"  !debugh2osoi
+
                    s_y = watsat(c,k) &
                         * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,k))**(-1./bsw(c,k)))
                    s_y=max(s_y,0.02_r8)
@@ -1952,7 +1988,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      character(len=32) :: subname = 'Drainage'           ! subroutine name
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,l                            ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
@@ -2080,7 +2116,8 @@ contains
        !-- Topographic runoff  -------------------------
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-
+          l = col%landunit(c)
+          g = col%gridcell(c)
           fff(c)         = 1._r8/ hkdepth(c)
 
           dzsum = 0._r8
@@ -2116,6 +2153,7 @@ contains
                 rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,j) - zwt(c))*1.e3))
                 rsub_top_layer=min(rsub_top_layer,0._r8)
                 h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,k) + rsub_top_layer", "SoilHydrologyMod.LateralFlowPowerLaw.1"  !debugh2osoi
                    
                 rsub_top_tot = rsub_top_tot - rsub_top_layer
                    
@@ -2144,20 +2182,25 @@ contains
        do j = nlevsoi,2,-1
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
+             l = col%landunit(c)
+             g = col%gridcell(c)
              xsi(c)            = max(h2osoi_liq(c,j)-eff_porosity(c,j)*dzmm(c,j),0._r8)
              h2osoi_liq(c,j)   = min(eff_porosity(c,j)*dzmm(c,j), h2osoi_liq(c,j))
              h2osoi_liq(c,j-1) = h2osoi_liq(c,j-1) + xsi(c)
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "min(eff_porosity(c,j)*dzmm(c,j), h2osoi_liq(c,j))", "SoilHydrologyMod.LateralFlowPowerLaw.2"  !debugh2osoi
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j-1, "h2osoi_liq(c,j-1) + xsi(c)", "SoilHydrologyMod.LateralFlowPowerLaw.3"  !debugh2osoi
           end do
        end do
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-
+          l = col%landunit(c)
+          g = col%gridcell(c)
           ! watmin addition to fix water balance errors
           xs1(c) = max(max(h2osoi_liq(c,1)-watmin,0._r8)- &
                max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_ice(c,1)-watmin)),0._r8)
           h2osoi_liq(c,1) = h2osoi_liq(c,1) - xs1(c)
-
+          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) - xs1(c)", "SoilHydrologyMod.LateralFlowPowerLaw.4"  !debugh2osoi
           if (lun%urbpoi(col%landunit(c))) then
              qflx_rsub_sat(c)     = xs1(c) / dtime
           else
@@ -2178,6 +2221,8 @@ contains
        do j = 1, nlevsoi-1
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
+             l = col%landunit(c)
+             g = col%gridcell(c)
              if (h2osoi_liq(c,j) < watmin) then
                 xs(c) = watmin - h2osoi_liq(c,j)
                 ! deepen water table if water is passed from below zwt layer
@@ -2189,6 +2234,8 @@ contains
              end if
              h2osoi_liq(c,j  ) = h2osoi_liq(c,j  ) + xs(c)
              h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) - xs(c)
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,1) + xs(c)", "SoilHydrologyMod.LateralFlowPowerLaw.5"  !debugh2osoi
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,1) - xs(c)", "SoilHydrologyMod.LateralFlowPowerLaw.6"  !debugh2osoi
           end do
        end do
 
@@ -2196,6 +2243,8 @@ contains
        j = nlevsoi
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
+          l = col%landunit(c)
+          g = col%gridcell(c)
           if (h2osoi_liq(c,j) < watmin) then
              xs(c) = watmin-h2osoi_liq(c,j)
              searchforwater: do i = nlevsoi-1, 1, -1
@@ -2203,11 +2252,15 @@ contains
                 if (available_h2osoi_liq >= xs(c)) then
                    h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
                    h2osoi_liq(c,i) = h2osoi_liq(c,i) - xs(c)
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + xs(c)", "SoilHydrologyMod.LateralFlowPowerLaw.7"  !debugh2osoi
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, i, "h2osoi_liq(c,i) - xs(c)", "SoilHydrologyMod.LateralFlowPowerLaw.8"  !debugh2osoi
                    xs(c) = 0._r8
                    exit searchforwater
                 else
                    h2osoi_liq(c,j) = h2osoi_liq(c,j) + available_h2osoi_liq
                    h2osoi_liq(c,i) = h2osoi_liq(c,i) - available_h2osoi_liq
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + available_h2osoi_liq", "SoilHydrologyMod.LateralFlowPowerLaw.9"  !debugh2osoi
+                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, i, "h2osoi_liq(c,i) - available_h2osoi_liq", "SoilHydrologyMod.LateralFlowPowerLaw.10"  !debugh2osoi
                    xs(c) = xs(c) - available_h2osoi_liq
                 end if
              end do searchforwater
@@ -2216,6 +2269,7 @@ contains
           end if
           ! Needed in case there is no water to be found
           h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
+          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + xs(c)", "SoilHydrologyMod.LateralFlowPowerLaw.11"  !debugh2osoi
           ! Instead of removing water from aquifer where it eventually
           ! shows up as excess drainage to the ocean, take it back out of 
           ! drainage
@@ -2277,7 +2331,7 @@ contains
      type(waterflux_type)     , intent(inout) :: waterflux_inst
      !
      ! !LOCAL VARIABLES:
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,g,l                            ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
      !-----------------------------------------------------------------------
 
@@ -2297,13 +2351,15 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-
+          l = col%landunit(c)
+          g = col%gridcell(c)
           ! Renew the ice and liquid mass due to condensation
 
           if (snl(c)+1 >= 1) then
 
              ! make consistent with how evap_grnd removed in infiltration
              h2osoi_liq(c,1) = h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime", "SoilHydrologyMod.RenewCondensation.1"  !debugh2osoi
              h2osoi_ice(c,1) = h2osoi_ice(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_snow(c) * dtime
              if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
                 qflx_sub_snow(c) = h2osoi_ice(c,1)/dtime
@@ -2318,11 +2374,14 @@ contains
 
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
+          l = col%landunit(c)
+          g = col%gridcell(c)
           ! Renew the ice and liquid mass due to condensation for urban roof and impervious road
 
           if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
              if (snl(c)+1 >= 1) then
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime", "SoilHydrologyMod.RenewCondensation.2"  !debugh2osoi
                 h2osoi_ice(c,1) = h2osoi_ice(c,1) + (qflx_dew_snow(c) * dtime)
                 if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
                    qflx_sub_snow(c) = h2osoi_ice(c,1)/dtime

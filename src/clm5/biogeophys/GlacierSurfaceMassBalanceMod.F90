@@ -162,6 +162,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine HandleIceMelt(this, bounds, num_do_smb_c, filter_do_smb_c, &
        waterstate_inst)
+    use clm_varctl      , only : iulog
     !
     ! !DESCRIPTION:
     ! Compute ice melt in glacier columns, and convert liquid back to ice
@@ -227,6 +228,7 @@ contains
                 ! convert layer back to pure ice by "borrowing" ice from below the column
                 h2osoi_ice(c,j) = h2osoi_ice(c,j) + h2osoi_liq(c,j)
                 h2osoi_liq(c,j) = 0._r8
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c), l, j, "0", "GlacierSurfaceMassBalanceMod.HandleIceMelt"  !debugh2osoi
              end if  ! liquid water is present
           end if  ! istice_mec
        end do

@@ -643,6 +643,7 @@ contains
              t_soisno(c,0) = min(tfrz, forc_t(c))      ! K
              h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
              h2osoi_liq(c,0) = 0._r8                   ! kg/m2
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g,l, 0, "0", "CanopyHydrologyMod.CanopyHydrology" !debugh2osoi
              frac_iceold(c,0) = 1._r8
 
              ! intitialize SNICAR variables for fresh snow:
@@ -818,6 +819,7 @@ contains
              else
                 frac_h2osfc(c) = 0._r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + h2osfc(c)
+                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c),l, 0, "h2osoi_liq(c,1) + h2osfc(c)", "CanopyHydrologyMod.FracH2OSfc"  !debugh2osoi
                 h2osfc(c)=0._r8
              endif
 

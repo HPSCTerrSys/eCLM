@@ -249,7 +249,7 @@ contains
     use ColumnType        , only : col
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use clm_varcon        , only : denh2o, denice
-    use clm_varctl,  only : use_flexibleCN   
+    use clm_varctl        , only : use_flexibleCN, iulog   
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds                ! bounds
@@ -270,7 +270,7 @@ contains
     character(len=32)              :: subname = 'SoilWater' ! subroutine name
     real(r8) :: xs(bounds%begc:bounds%endc)                !excess soil water above urban ponding limit
     real(r8) :: watmin
-    integer  :: fc, c, j
+    integer  :: fc, c, j,g,l
     
     !------------------------------------------------------------------------------
 
@@ -330,6 +330,8 @@ contains
        do j = 1, nlevsoi-1
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
+             l = col%landunit(c)
+             g = col%gridcell(c)
              if (h2osoi_liq(c,j) < 0._r8) then
                 xs(c) = watmin - h2osoi_liq(c,j)
              else
@@ -337,18 +339,23 @@ contains
              end if
              h2osoi_liq(c,j  ) = h2osoi_liq(c,j  ) + xs(c)
              h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) - xs(c)
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j  ) + xs(c)", "SoilWaterMovementMod.SoilWater.1"    !debugh2osoi
+             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j  ) - xs(c)", "SoilWaterMovementMod.SoilWater.2"  !debugh2osoi
           end do
        end do
        
        j = nlevsoi
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
+          l = col%landunit(c)
+          g = col%gridcell(c)
           if (h2osoi_liq(c,j) < watmin) then
              xs(c) = watmin-h2osoi_liq(c,j)
           else
              xs(c) = 0._r8
           end if
           h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
+          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j  ) + xs(c)", "SoilWaterMovementMod.SoilWater.3"  !debugh2osoi
           wa(c) = wa(c) - xs(c)
        end do
        
@@ -515,7 +522,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'soilwater_zengdecker2009' ! subroutine name 
-    integer  :: p,c,fc,j                                     ! do loop indices
+    integer  :: p,c,fc,j,g,l                                  ! do loop indices
     integer  :: jtop(bounds%begc:bounds%endc)                ! top level at each column
     real(r8) :: dtime                                        ! land model time step (sec)
     real(r8) :: hk(bounds%begc:bounds%endc,1:nlevsoi)        ! hydraulic conductivity [mm h2o/s]
@@ -923,9 +930,11 @@ contains
 
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
-
+         l = col%landunit(c)
+         g = col%gridcell(c)
          do j = 1, nlevsoi
             h2osoi_liq(c,j) = h2osoi_liq(c,j) + dwat2(c,j)*dzmm(c,j)
+            write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + dwat2(c,j)*dzmm(c,j)", "SoilWaterMovementMod.soilwater_zengdecker2009"  !debugh2osoi
          end do
 
          ! calculate qcharge for case jwt < nlevsoi
@@ -1099,7 +1108,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: nstep
     integer  :: nlayers
-    integer  :: p,c,fc,j                                     ! do loop indices
+    integer  :: p,c,fc,j,g,l                                 ! do loop indices
     integer  :: jtop                                         ! top level at each column
     real(r8) :: dtime                                        ! land model time step (sec)
     real(r8) :: hk(bounds%begc:bounds%endc,1:nlevsoi)        ! hydraulic conductivity [mm h2o/s]
@@ -1188,7 +1197,8 @@ contains
       ! main spatial loop
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
-
+         l = col%landunit(c)
+         g = col%gridcell(c)
          ! set number of layers over which to solve soilwater movement
          nlayers = nbedrock(c)
 
@@ -1369,6 +1379,7 @@ contains
             ! Renew the mass of liquid water
             do j = 1, nlayers
                h2osoi_liq(c,j) = h2osoi_liq(c,j) + dwat(c,j) * (m_to_mm * dz(c,j))
+               write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + dwat(c,j) * (m_to_mm * dz(c,j))", "SoilWaterMovementMod.soilwater_moisture_form"  !debugh2osoi
             end do
 
              ! compute drainage from the bottom of the soil column
@@ -1484,7 +1495,7 @@ contains
       type(energyflux_type)   , intent(in)    :: energyflux_inst
       class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
 
-      integer  :: c,j,fc                    ! indices
+      integer  :: c,j,fc,l,g                    ! indices
 
       associate(&
          smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]
@@ -1501,10 +1512,12 @@ contains
          ! Keep the ice what PhaseChanged diagnosed earlier in the time step.
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
-
+            l = col%landunit(c)
+            g = col%gridcell(c)
             do j = 1, nlevgrnd
                h2osoi_ice(c,j) = min(h2osoi_ice(c,j), pfl_h2osoi_liq(c,j))
                h2osoi_liq(c,j) = max(0._r8, pfl_h2osoi_liq(c,j) - h2osoi_ice(c,j))
+               write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "max(0._r8, pfl_h2osoi_liq(c,j) - h2osoi_ice(c,j))", "SoilWaterMovementMod.soilwater_parflow"  !debugh2osoi
                if (pfl_psi(c,j) <= 0) then
                   smp_l(c,j) = max(smpmin(c), pfl_psi(c,j))
                end if
