@@ -1455,7 +1455,7 @@ contains
                 if (dophasechangeflag) then
                    h2osoi_ice(c,j) = h2osoi_ice(c,j) - melt
                    h2osoi_liq(c,j) = h2osoi_liq(c,j) + melt
-                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c), col%landunit(c), j, "h2osoi_liq(c,j) + melt", "LakeTemperatureMod.PhaseChange_Lake"  !debugh2osoi
+                   write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), j, "LakeTemperatureMod.PhaseChange_Lake.1" 
                    lhabs(c) = lhabs(c) + melt*hfus
                    ! Update heat capacity
                    cv(c,j) = cv(c,j) + melt*(cpliq-cpice)
@@ -1464,7 +1464,7 @@ contains
                    if (h2osoi_ice(c,j) < smallnumber) h2osoi_ice(c,j) = 0._r8
                    if (h2osoi_liq(c,j) < smallnumber) then 
                      h2osoi_liq(c,j) = 0._r8
-                     write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c), col%landunit(c), j, "0", "LakeTemperatureMod.PhaseChange_Lake"  !debugh2osoi
+                     write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), j, "LakeTemperatureMod.PhaseChange_Lake.2" 
                    end if
                 end if
 

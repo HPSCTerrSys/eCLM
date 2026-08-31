@@ -341,12 +341,12 @@ contains
        if (wgdif < 0._r8) then
           h2osoi_ice(c,snl(c)+1) = 0._r8
           h2osoi_liq(c,snl(c)+1) = h2osoi_liq(c,snl(c)+1) + wgdif
-          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, snl(c)+1, "h2osoi_liq(c,snl(c)+1) + wgdif", "SnowHydrologyMod.SnowWater.1"  !debugh2osoi
+          write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), snl(c)+1, "SnowHydrologyMod.SnowWater.1" 
        end if
        h2osoi_liq(c,snl(c)+1) = h2osoi_liq(c,snl(c)+1) +  &
             frac_sno_eff(c) * (qflx_rain_grnd(c) + qflx_dew_grnd(c) &
             - qflx_evap_grnd(c)) * dtime
-       write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') += ', A, ', ', A)") g, l, snl(c)+1, "frac_sno_eff*(qflx_rain_grnd+qflx_dew_grnd) - qflx_evap_grnd*dtime) ", "SnowHydrologyMod.SnowWater.2"  !debugh2osoi
+       write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), snl(c)+1, "SnowHydrologyMod.SnowWater.2" 
 
        ! if negative, reduce deeper layer's liquid water content sequentially
        if(h2osoi_liq(c,snl(c)+1) < 0._r8) then
@@ -354,9 +354,9 @@ contains
              wgdif=h2osoi_liq(c,j)
              if (wgdif >= 0._r8) exit
              h2osoi_liq(c,j) = 0._r8
-             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "SnowHydrologyMod.SnowWater.3"  !debugh2osoi
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.SnowWater.3" 
              h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
-             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j+1) + wgdif", "SnowHydrologyMod.SnowWater.4"  !debugh2osoi
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j+1, "SnowHydrologyMod.SnowWater.4" 
           enddo
        end if
     end do
@@ -412,7 +412,7 @@ contains
           if (j >= snl(c)+1) then
 
              h2osoi_liq(c,j) = h2osoi_liq(c,j) + qin(c)
-             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + qin(c)", "SnowHydrologyMod.SnowWater.5"  !debugh2osoi
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.SnowWater.5" 
 
              mss_bcphi(c,j) = mss_bcphi(c,j) + qin_bc_phi(c)
              mss_bcpho(c,j) = mss_bcpho(c,j) + qin_bc_pho(c)
@@ -441,7 +441,7 @@ contains
              end if
              qout(c) = qout(c)*1000._r8
              h2osoi_liq(c,j) = h2osoi_liq(c,j) - qout(c)
-             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) - qout(c)", "SnowHydrologyMod.SnowWater.6"  !debugh2osoi
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j,"SnowHydrologyMod.SnowWater.6" 
              qin(c) = qout(c)
 
              ! mass of ice+water: in extremely rare circumstances, this can
@@ -885,7 +885,7 @@ contains
           if (h2osoi_ice(c,j) <= .01_r8) then
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
-                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j+1) + h2osoi_liq(c,j)", "SnowHydrologyMod.CombineSnowLayers.1"  !debugh2osoi
+                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j+1, "SnowHydrologyMod.CombineSnowLayers.1" 
                 h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
 
                 if (j == 0) then
@@ -913,7 +913,7 @@ contains
              else if (ltype(l) /= istsoil .and. .not. urbpoi(l) .and. ltype(l) /= istcrop .and. j /= 0) then
 
                 h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
-                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j+1) + h2osoi_liq(c,j)", "SnowHydrologyMod.CombineSnowLayers.2"  !debugh2osoi
+                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j+1, "SnowHydrologyMod.CombineSnowLayers.2" 
                 h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
                 dz(c,j+1) = dz(c,j+1) + dz(c,j)
 
@@ -941,7 +941,7 @@ contains
 
                    t_soisno(c,i)   = t_soisno(c,i-1)
                    h2osoi_liq(c,i) = h2osoi_liq(c,i-1)
-                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, i, "h2osoi_liq(c,i-1)", "SnowHydrologyMod.CombineSnowLayers.3"  !debugh2osoi
+                   write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), i, "SnowHydrologyMod.CombineSnowLayers.3" 
                    h2osoi_ice(c,i) = h2osoi_ice(c,i-1)
 
                    mss_bcphi(c,i)   = mss_bcphi(c,i-1)
@@ -1011,16 +1011,16 @@ contains
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,0) = 0.0_r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
-                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "0", "SnowHydrologyMod.CombineSnowLayers.4"  !debugh2osoi
-                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 1, "h2osoi_liq(c,1) + zwliq(c)", "SnowHydrologyMod.CombineSnowLayers.4"  !debugh2osoi
+                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.4" 
+                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 1, "SnowHydrologyMod.CombineSnowLayers.4" 
              end if
              if (ltype(l) == istwet) then
                 h2osoi_liq(c,0) = 0.0_r8
-                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "0", "SnowHydrologyMod.CombineSnowLayers.5"  !debugh2osoi
+                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.5" 
              endif
              if (ltype(l)==istice_mec) then
                 h2osoi_liq(c,0) = 0.0_r8
-                write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "0", "SnowHydrologyMod.CombineSnowLayers.6"  !debugh2osoi
+                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.6" 
              endif
           endif
        end if
@@ -1097,7 +1097,7 @@ contains
                       t_soisno(c,k) = t_soisno(c,k-1)
                       h2osoi_ice(c,k) = h2osoi_ice(c,k-1)
                       h2osoi_liq(c,k) = h2osoi_liq(c,k-1)
-                      write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, k, "h2osoi_liq(c,k-1)", "SnowHydrologyMod.CombineSnowLayers.7"  !debugh2osoi
+                      write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), k, "SnowHydrologyMod.CombineSnowLayers.7" 
 
                       mss_bcphi(c,k) = mss_bcphi(c,k-1)
                       mss_bcpho(c,k) = mss_bcpho(c,k-1)
@@ -1421,7 +1421,7 @@ contains
              end if
              h2osoi_ice(c,j) = swice(c,j-snl(c))
              h2osoi_liq(c,j) = swliq(c,j-snl(c))
-             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "swliq(c,j-snl(c))", "SnowHydrologyMod.DivideSnowLayers"  !debugh2osoi
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.DivideSnowLayers" 
              t_soisno(c,j)   = tsno(c,j-snl(c))
              mss_bcphi(c,j)   = mbc_phi(c,j-snl(c))
              mss_bcpho(c,j)   = mbc_pho(c,j-snl(c))
@@ -1684,7 +1684,7 @@ contains
           ! Adjust water content
           h2osoi_ice(c,0) = h2osoi_ice(c,0) - snwcp_flux_ice*dtime
           h2osoi_liq(c,0) = h2osoi_liq(c,0) - snwcp_flux_liq*dtime
-          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, 0, "h2osoi_liq(c,0) - snwcp_flux_liq*dtime", "SnowHydrologyMod.SnowCapping"  !debugh2osoi
+          write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.SnowCapping" 
 
           ! Scale dz such that ice density (or: pore space) is conserved
           !

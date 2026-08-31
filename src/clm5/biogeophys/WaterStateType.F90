@@ -926,18 +926,18 @@ contains
                if (t_soisno_col(c,j) <= SHR_CONST_TKFRZ) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*denice*this%h2osoi_vol_col(c,j)
                   this%h2osoi_liq_col(c,j) = 0._r8
-                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.1"  !debugh2osoi
+                  ! write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.InitCold.1" 
                else
                   this%h2osoi_ice_col(c,j) = 0._r8
                   this%h2osoi_liq_col(c,j) = col%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)
-                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "col%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)", "WaterstateType.InitCold.2"  !debugh2osoi
+                  ! write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.InitCold.2" 
                endif
             end do
             do j = -nlevsno+1, 0
                if (j > snl(c)) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*250._r8
                   this%h2osoi_liq_col(c,j) = 0._r8
-                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.3"  !debugh2osoi
+                  ! write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.InitCold.3" 
                end if
             end do
          end if
@@ -956,7 +956,7 @@ contains
                if (j > snl(c)) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*bdsno
                   this%h2osoi_liq_col(c,j) = 0._r8
-                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.4"  !debugh2osoi
+                  ! write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.InitCold.4" 
                end if
             end do
             do j = 1,nlevgrnd
@@ -964,7 +964,7 @@ contains
                   this%h2osoi_vol_col(c,j) = watsat_col(c,j)
                   this%h2osoi_liq_col(c,j) = spval
                   this%h2osoi_ice_col(c,j) = spval
-                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "spval", "WaterstateType.InitCold.5"  !debugh2osoi
+                  ! write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.InitCold.5" 
                else                  ! bedrock
                   this%h2osoi_vol_col(c,j) = 0._r8
                end if
@@ -984,11 +984,11 @@ contains
                if (t_soisno_col(c,j) <= tfrz) then
                   this%h2osoi_ice_col(c,j) = col%dz(c,j)*denice*this%h2osoi_vol_col(c,j)
                   this%h2osoi_liq_col(c,j) = 0._r8
-                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "0", "WaterstateType.InitCold.6"  !debugh2osoi
+                  ! write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.InitCold.6" 
                else
                   this%h2osoi_ice_col(c,j) = 0._r8
                   this%h2osoi_liq_col(c,j) = col%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)
-                  write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "col%dz(c,j)*denice*this%h2osoi_vol_col(c,j)", "WaterstateType.InitCold.7"  !debugh2osoi
+                  ! write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.InitCold.7"
                endif
             end if
          end do
@@ -1136,7 +1136,7 @@ contains
                 g = col%gridcell(c)
                 if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
                    this%h2osoi_liq_col(c,j) = max(0._r8,this%h2osoi_liq_col(c,j))
-                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "max(0._r8,this%h2osoi_liq_col(c,j))", "WaterstateType.Restart.1"  !debugh2osoi
+                   write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.Restart.1" 
                    this%h2osoi_ice_col(c,j) = max(0._r8,this%h2osoi_ice_col(c,j))
                    this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col%dz(c,j)*denh2o) &
                                        + this%h2osoi_ice_col(c,j)/(col%dz(c,j)*denice)
@@ -1152,13 +1152,13 @@ contains
                                            (this%h2osoi_liq_col(c,j)/totwat) * excess
                       this%h2osoi_ice_col(c,j) = this%h2osoi_ice_col(c,j) - &
                                            (this%h2osoi_ice_col(c,j)/totwat) * excess
-                      write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq_col - (h2osoi_liq_col/totwat)*excess", "WaterstateType.Restart.2"  !debugh2osoi
+                      write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.Restart.2"
                    end if
                    this%h2osoi_liq_col(c,j) = max(watmin,this%h2osoi_liq_col(c,j))
                    this%h2osoi_ice_col(c,j) = max(watmin,this%h2osoi_ice_col(c,j))
                    this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col%dz(c,j)*denh2o) &
                                              + this%h2osoi_ice_col(c,j)/(col%dz(c,j)*denice)
-                   write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq/(dz*denh2o) + h2osoi_ice/(dz*denice)", "WaterstateType.Restart.3"  !debugh2osoi
+                   write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "WaterstateType.Restart.3" 
                 end if
              end do
           end do

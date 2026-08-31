@@ -261,7 +261,7 @@ contains
             t_soisno(c,0) = min(tfrz, forc_t(c))      ! K
             h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
             h2osoi_liq(c,0) = 0._r8                   ! kg/m2
-            write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c), col%landunit(c), 0, "0", "LakeHydrologyMod.LakeHydrology (init)"  !debugh2osoi
+            write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), "LakeHydrologyMod.LakeHydrology.1" 
             frac_iceold(c,0) = 1._r8
 
              ! intitialize SNICAR variables for fresh snow:
@@ -408,11 +408,11 @@ contains
 
             if (h2osoi_vol(c,j) < watsat(c,j)) then
                h2osoi_liq(c,j) = (watsat(c,j)*dz(c,j) - h2osoi_ice(c,j)/denice)*denh2o
-               write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c), col%landunit(c), 0, "(watsat(c,j)*dz(c,j) - h2osoi_ice(c,j)/denice)*denh2o", "LakeHydrologyMod.LakeHydrology" !debugh2osoi
+               write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), j, "LakeHydrologyMod.LakeHydrology.2"
                ! h2osoi_vol will be updated below, and this water addition will come from qflx_qrgwl
             else if (h2osoi_liq(c,j) > watsat(c,j)*denh2o*dz(c,j)) then
                h2osoi_liq(c,j) = watsat(c,j)*denh2o*dz(c,j)
-               write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c), col%landunit(c), 0, "watsat(c,j)*denh2o*dz(c,j)" !debugh2osoi
+               write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), j, "LakeHydrologyMod.LakeHydrology.3"
                ! Another way to do this would be: if h2osoi_vol > watsat then remove min(h2osoi_liq,
                !(h2osoi_vol-watsat)*dz*denh2o) from h2osoi_liq.  The question is whether the excess ice
                ! melts first or last (or simultaneously) to the pore ice.  Because excess ice is often in chunks,
@@ -574,7 +574,7 @@ contains
             if (j <= snl(c) .and. snl(c) > -nlevsno) then
                h2osoi_ice(c,j) = 0._r8
                h2osoi_liq(c,j) = 0._r8
-               write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") col%gridcell(c), l, j, "0", "LakeHydrologyMod.LakeHydrology (empty snow layers = 0)"  !debugh2osoi
+               write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), j, "LakeHydrologyMod.LakeHydrology.4" 
                t_soisno(c,j) = 0._r8
                dz(c,j) = 0._r8
                z(c,j) = 0._r8

@@ -339,8 +339,8 @@ contains
              end if
              h2osoi_liq(c,j  ) = h2osoi_liq(c,j  ) + xs(c)
              h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) - xs(c)
-             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j  ) + xs(c)", "SoilWaterMovementMod.SoilWater.1"    !debugh2osoi
-             write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j+1, "h2osoi_liq(c,j  ) - xs(c)", "SoilWaterMovementMod.SoilWater.2"  !debugh2osoi
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SoilWaterMovementMod.SoilWater.1"   
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j+1, "SoilWaterMovementMod.SoilWater.2" 
           end do
        end do
        
@@ -355,7 +355,7 @@ contains
              xs(c) = 0._r8
           end if
           h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
-          write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j  ) + xs(c)", "SoilWaterMovementMod.SoilWater.3"  !debugh2osoi
+          write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SoilWaterMovementMod.SoilWater.3" 
           wa(c) = wa(c) - xs(c)
        end do
        
@@ -934,7 +934,7 @@ contains
          g = col%gridcell(c)
          do j = 1, nlevsoi
             h2osoi_liq(c,j) = h2osoi_liq(c,j) + dwat2(c,j)*dzmm(c,j)
-            write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + dwat2(c,j)*dzmm(c,j)", "SoilWaterMovementMod.soilwater_zengdecker2009"  !debugh2osoi
+            write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SoilWaterMovementMod.soilwater_zengdecker2009" 
          end do
 
          ! calculate qcharge for case jwt < nlevsoi
@@ -1379,7 +1379,7 @@ contains
             ! Renew the mass of liquid water
             do j = 1, nlayers
                h2osoi_liq(c,j) = h2osoi_liq(c,j) + dwat(c,j) * (m_to_mm * dz(c,j))
-               write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "h2osoi_liq(c,j) + dwat(c,j) * (m_to_mm * dz(c,j))", "SoilWaterMovementMod.soilwater_moisture_form"  !debugh2osoi
+               write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SoilWaterMovementMod.soilwater_moisture_form" 
             end do
 
              ! compute drainage from the bottom of the soil column
@@ -1517,7 +1517,7 @@ contains
             do j = 1, nlevgrnd
                h2osoi_ice(c,j) = min(h2osoi_ice(c,j), pfl_h2osoi_liq(c,j))
                h2osoi_liq(c,j) = max(0._r8, pfl_h2osoi_liq(c,j) - h2osoi_ice(c,j))
-               write(iulog, "( 'h2osoi_liq(', I0, ',', I0, ',', I0, ') = ', A, ', ', A)") g, l, j, "max(0._r8, pfl_h2osoi_liq(c,j) - h2osoi_ice(c,j))", "SoilWaterMovementMod.soilwater_parflow"  !debugh2osoi
+               write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SoilWaterMovementMod.soilwater_parflow" 
                if (pfl_psi(c,j) <= 0) then
                   smp_l(c,j) = max(smpmin(c), pfl_psi(c,j))
                end if
