@@ -1487,7 +1487,7 @@ contains
       integer  :: c,j,fc                    ! indices
 
       associate(&
-         smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]
+         smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]         
          h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col     , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col     , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)
          smpmin            =>    soilstate_inst%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
@@ -1498,7 +1498,8 @@ contains
 
          ! Exchange of soil water and pressure head between ParFlow and eCLM
          ! ParFlow has no ice phase, so that the received water it the total water content.
-         ! Keep the ice what PhaseChanged diagnosed earlier in the time step.
+         ! Keep the ice what PhaseChanged diagnosed earlier in the time step and
+         ! attribute the remainder to liquid, so that liq and ice matches the received total.
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
 
