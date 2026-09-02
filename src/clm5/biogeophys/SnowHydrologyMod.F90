@@ -1422,7 +1422,7 @@ contains
              end if
              h2osoi_ice(c,j) = swice(c,j-snl(c))
              h2osoi_liq(c,j) = swliq(c,j-snl(c))
-             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.DivideSnowLayers" 
+             !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.DivideSnowLayers"
              t_soisno(c,j)   = tsno(c,j-snl(c))
              mss_bcphi(c,j)   = mbc_phi(c,j-snl(c))
              mss_bcpho(c,j)   = mbc_pho(c,j-snl(c))

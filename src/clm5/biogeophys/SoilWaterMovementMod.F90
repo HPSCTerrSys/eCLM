@@ -1517,7 +1517,7 @@ contains
             do j = 1, nlevgrnd
                h2osoi_ice(c,j) = min(h2osoi_ice(c,j), pfl_h2osoi_liq(c,j))
                h2osoi_liq(c,j) = max(0._r8, pfl_h2osoi_liq(c,j) - h2osoi_ice(c,j))
-               write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SoilWaterMovementMod.soilwater_parflow" 
+               !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SoilWaterMovementMod.soilwater_parflow"
                if (pfl_psi(c,j) <= 0) then
                   smp_l(c,j) = max(smpmin(c), pfl_psi(c,j))
                end if
