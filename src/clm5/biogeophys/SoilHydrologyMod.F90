@@ -2333,13 +2333,15 @@ contains
      ! !LOCAL VARIABLES:
      integer  :: c,j,fc,i,g,l                            ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
+     real(r8) :: condensation                            ! (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
           snl                =>    col%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                              
-          h2osoi_liq         =>    waterstate_inst%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                            
+          h2osoi_liq         =>    waterstate_inst%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
+          h2osoi_liq_debug1  =>    waterstate_inst%h2osoi_liq_col_debug1 , & ! Output: [real(r8) (:,:) ]  liquid water after soil condensation
           h2osoi_ice         =>    waterstate_inst%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                                
-          frac_h2osfc        =>    waterstate_inst%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ]                                                    
+          frac_h2osfc        =>    waterstate_inst%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ]
           qflx_dew_grnd      =>    waterflux_inst%qflx_dew_grnd_col      , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]      
           qflx_dew_snow      =>    waterflux_inst%qflx_dew_snow_col      , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]    
           qflx_sub_snow      =>    waterflux_inst%qflx_sub_snow_col       & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]   
@@ -2358,7 +2360,9 @@ contains
           if (snl(c)+1 >= 1) then
 
              ! make consistent with how evap_grnd removed in infiltration
-             h2osoi_liq(c,1) = h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
+             condensation = (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
+             h2osoi_liq(c,1) = h2osoi_liq(c,1) + condensation
+             h2osoi_liq_debug1(c) = condensation
              write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 1, "SoilHydrologyMod.RenewCondensation.1" 
              h2osoi_ice(c,1) = h2osoi_ice(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_snow(c) * dtime
              if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
@@ -2381,6 +2385,7 @@ contains
           if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
              if (snl(c)+1 >= 1) then
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime
+                h2osoi_liq_debug1(c) = h2osoi_liq(c,1)
                 write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 1, "SoilHydrologyMod.RenewCondensation.2" 
                 h2osoi_ice(c,1) = h2osoi_ice(c,1) + (qflx_dew_snow(c) * dtime)
                 if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then

@@ -837,6 +837,7 @@ contains
          h2osno           => waterstate_inst%h2osno_col          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)
          h2osoi_ice       => waterstate_inst%h2osoi_ice_col      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
          h2osoi_liq       => waterstate_inst%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
+         h2osoi_liq_debug2 => waterstate_inst%h2osoi_liq_col_debug2 , & ! Output: [real(r8) (:,:) ] liquid water after snowmelt
          snw_rds          => waterstate_inst%snw_rds_col         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
 
          qflx_sl_top_soil => waterflux_inst%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
@@ -1011,7 +1012,7 @@ contains
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,0) = 0.0_r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
-                !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.4"
+                h2osoi_liq_debug2(c) = zwliq(c)
                 write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 1, "SnowHydrologyMod.CombineSnowLayers.4" 
              end if
              if (ltype(l) == istwet) then

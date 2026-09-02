@@ -108,6 +108,8 @@ module WaterstateType
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: pfl_psi_col            (:,:) ! ParFlow pressure head   COUP_OAS_PFL
      real(r8), pointer :: pfl_h2osoi_liq_col     (:,:) ! ParFlow soil liquid     COUP_OAS_PFL
+     real(r8), pointer :: h2osoi_liq_col_debug1  (:)   ! liquid water after soil condensation
+     real(r8), pointer :: h2osoi_liq_col_debug2  (:)   ! liquid water after snowmelt
 #endif
      real(r8), pointer :: total_plant_stored_h2o_col(:)! col water that is bound in plants, including roots, sapwood, leaves, etc
                                                        ! in most cases, the vegetation scheme does not have a dynamic
@@ -247,6 +249,8 @@ contains
 #ifdef COUP_OAS_PFL
     allocate(this%pfl_psi_col            (begc:endc,1:nlevgrnd))          ; this%pfl_psi_col           (:,:) = nan
     allocate(this%pfl_h2osoi_liq_col     (begc:endc,1:nlevgrnd))          ; this%pfl_h2osoi_liq_col    (:,:) = nan
+    allocate(this%h2osoi_liq_col_debug1  (begc:endc))                      ; this%h2osoi_liq_col_debug1 (:)   = nan
+    allocate(this%h2osoi_liq_col_debug2  (begc:endc))                      ; this%h2osoi_liq_col_debug2 (:)   = nan
 #endif
     allocate(this%h2osoi_ice_tot_col     (begc:endc))                     ; this%h2osoi_ice_tot_col     (:)   = nan
     allocate(this%h2osoi_liq_tot_col     (begc:endc))                     ; this%h2osoi_liq_tot_col     (:)   = nan
@@ -392,6 +396,16 @@ contains
    call hist_addfld2d (fname='PFL_SOILLIQ',  units='mm', type2d='levgrnd', &
                avgflag='A', long_name='Parflow H2O soil liquid', &
                ptr_col=this%pfl_h2osoi_liq_col, l2g_scale_type='veg')
+
+   this%h2osoi_liq_col_debug1(begc:endc) = spval
+   call hist_addfld1d (fname='SOILLIQ_DEBUG1',  units='kg/m2', &
+      avgflag='A', long_name='soil liquid water after condensation', &
+      ptr_col=this%h2osoi_liq_col_debug1, set_urb=spval, set_lake=spval, l2g_scale_type='veg')
+
+   this%h2osoi_liq_col_debug2(begc:endc) = spval
+   call hist_addfld1d (fname='SOILLIQ_DEBUG2',  units='kg/m2', &
+      avgflag='A', long_name='total liquid water in snow', &
+      ptr_col=this%h2osoi_liq_col_debug2, set_urb=spval, set_lake=spval, l2g_scale_type='veg')
 #endif
     if ( use_soil_moisture_streams )then
        data2dptr => this%h2osoi_vol_prs_grc(begg:endg,1:nlevsoi)
