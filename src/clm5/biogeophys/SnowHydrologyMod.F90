@@ -341,12 +341,12 @@ contains
        if (wgdif < 0._r8) then
           h2osoi_ice(c,snl(c)+1) = 0._r8
           h2osoi_liq(c,snl(c)+1) = h2osoi_liq(c,snl(c)+1) + wgdif
-          write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), snl(c)+1, "SnowHydrologyMod.SnowWater.1" 
+          !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), snl(c)+1, "SnowHydrologyMod.SnowWater.1"
        end if
        h2osoi_liq(c,snl(c)+1) = h2osoi_liq(c,snl(c)+1) +  &
             frac_sno_eff(c) * (qflx_rain_grnd(c) + qflx_dew_grnd(c) &
             - qflx_evap_grnd(c)) * dtime
-       write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), snl(c)+1, "SnowHydrologyMod.SnowWater.2" 
+       !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), snl(c)+1, "SnowHydrologyMod.SnowWater.2"
 
        ! if negative, reduce deeper layer's liquid water content sequentially
        if(h2osoi_liq(c,snl(c)+1) < 0._r8) then
@@ -356,7 +356,7 @@ contains
              h2osoi_liq(c,j) = 0._r8
              write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.SnowWater.3" 
              h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
-             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j+1, "SnowHydrologyMod.SnowWater.4" 
+             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j+1, "SnowHydrologyMod.SnowWater.4"
           enddo
        end if
     end do
@@ -412,7 +412,7 @@ contains
           if (j >= snl(c)+1) then
 
              h2osoi_liq(c,j) = h2osoi_liq(c,j) + qin(c)
-             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.SnowWater.5" 
+             !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j, "SnowHydrologyMod.SnowWater.5"
 
              mss_bcphi(c,j) = mss_bcphi(c,j) + qin_bc_phi(c)
              mss_bcpho(c,j) = mss_bcpho(c,j) + qin_bc_pho(c)
@@ -441,7 +441,7 @@ contains
              end if
              qout(c) = qout(c)*1000._r8
              h2osoi_liq(c,j) = h2osoi_liq(c,j) - qout(c)
-             write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j,"SnowHydrologyMod.SnowWater.6" 
+             !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), j,"SnowHydrologyMod.SnowWater.6"
              qin(c) = qout(c)
 
              ! mass of ice+water: in extremely rare circumstances, this can
@@ -1011,16 +1011,16 @@ contains
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,0) = 0.0_r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
-                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.4" 
+                !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.4"
                 write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 1, "SnowHydrologyMod.CombineSnowLayers.4" 
              end if
              if (ltype(l) == istwet) then
                 h2osoi_liq(c,0) = 0.0_r8
-                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.5" 
+                !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.5"
              endif
              if (ltype(l)==istice_mec) then
                 h2osoi_liq(c,0) = 0.0_r8
-                write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.6" 
+                !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") g, col%itype(c), 0, "SnowHydrologyMod.CombineSnowLayers.6"
              endif
           endif
        end if

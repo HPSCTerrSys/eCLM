@@ -258,7 +258,7 @@ contains
             if (j <= snl(c) .and. snl(c) > -nlevsno) then
                h2osoi_ice(c,j) = 0._r8
                h2osoi_liq(c,j) = 0._r8
-               write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), j, "HydrologyNoDrainageMod.HydrologyNoDrainage"
+               !write(iulog, "( 'DEBUGH2OSOI', ',', I0, ',', I0, ',', I0, ',', A)") col%gridcell(c), col%itype(c), j, "HydrologyNoDrainageMod.HydrologyNoDrainage"
                t_soisno(c,j)  = 0._r8
                dz(c,j)    = 0._r8
                z(c,j)     = 0._r8
