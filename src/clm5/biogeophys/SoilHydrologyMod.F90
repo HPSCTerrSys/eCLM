@@ -2373,6 +2373,7 @@ contains
           qflx_drain         =>    waterflux_inst%qflx_drain_col         , & ! sub-surface runoff (mm H2O /s)
           qflx_drain_perched =>    waterflux_inst%qflx_drain_perched_col , & ! perched wt sub-surface runoff (mm H2O /s)         
           qflx_qrgwl         =>    waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes (mm H2O /s)
+          qflx_surf          =>    waterflux_inst%qflx_surf_col          , & ! surface runoff (mm H2O /s)
           qflx_rsub_sat      =>    waterflux_inst%qflx_rsub_sat_col      , & ! soil saturation excess [mm h2o/s]
           qflx_infl          =>    waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)
           qflx_rootsoi       =>    waterflux_inst%qflx_rootsoi_col       , & ! vegetation/soil water exchange (mm H2O/s) (+ = to atm) 
@@ -2409,6 +2410,17 @@ contains
                qflx_drain(c) = 0._r8
                ! This must be done for roofs and impervious road (walls will be zero)
                qflx_qrgwl(c) = qflx_snwcp_liq(c)
+
+               ! Instead of leaving as river runoff, impervious urban runoff enters
+               ! ParFlow through layer 1. It is zeroed here so it is not counted twice.
+               qflx_parflow(c,1:nlevsoi) = 0._r8
+               qflx_parflow(c,1)         = qflx_surf(c) + qflx_qrgwl(c)
+               qflx_surf(c)              = 0._r8
+               qflx_qrgwl(c)             = 0._r8
+
+               qflx_drain(c) = -sum(qflx_parflow(c,:))
+
+               qflx_parflow(c,1:nlevsoi) = qflx_parflow(c,1:nlevsoi) * sec_per_hr * m_per_mm * (1._r8/dz(c,1:nlevsoi))
             end if
          end do
      end associate
