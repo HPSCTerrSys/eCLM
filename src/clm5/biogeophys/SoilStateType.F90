@@ -214,37 +214,44 @@ contains
          avgflag='A', long_name='soil matric potential (vegetated landunits only)', &
          ptr_col=this%smp_l_col, set_spec=spval, l2g_scale_type='veg')
 
-    this%root_conductance_patch(begp:endp,:) = spval
-    call hist_addfld2d (fname='KROOT', units='1/s', type2d='levsoi', &
-       avgflag='A', long_name='root conductance each soil layer', &
-       ptr_patch=this%root_conductance_patch, default='inactive')
+       this%root_conductance_patch(begp:endp,:) = spval
+       call hist_addfld2d (fname='KROOT', units='1/s', type2d='levsoi', &
+          avgflag='A', long_name='root conductance each soil layer', &
+          ptr_patch=this%root_conductance_patch, default='inactive')
 
-    this%soil_conductance_patch(begp:endp,:) = spval
-    call hist_addfld2d (fname='KSOIL', units='1/s', type2d='levsoi', &
-       avgflag='A', long_name='soil conductance in each soil layer', &
-       ptr_patch=this%soil_conductance_patch, default='inactive')
+       this%soil_conductance_patch(begp:endp,:) = spval
+       call hist_addfld2d (fname='KSOIL', units='1/s', type2d='levsoi', &
+          avgflag='A', long_name='soil conductance in each soil layer', &
+          ptr_patch=this%soil_conductance_patch, default='inactive')
 
+#ifndef COUP_OAS_PFL
+    if (use_cn) then    ! Necessary to enable this history fields when coupled with Parflow.
+#endif
+       this%bsw_col(begc:endc,:) = spval
+       call hist_addfld2d (fname='bsw', units='unitless', type2d='levgrnd', &
+            avgflag='A', long_name='clap and hornberger B', &
+            ptr_col=this%bsw_col, default='inactive')
+#ifndef COUP_OAS_PFL
+    end if
+#endif
 
     if (use_dynroot) then
        this%rootfr_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='ROOTFR', units='proportion', type2d='levgrnd', &
             avgflag='A', long_name='fraction of roots in each soil layer', &
             ptr_patch=this%rootfr_patch, default='active')
+    end if
 
+    if ( use_dynroot ) then
        this%root_depth_patch(begp:endp) = spval
         call hist_addfld1d (fname='ROOT_DEPTH', units="m", &
              avgflag='A', long_name='rooting depth', &
              ptr_patch=this%root_depth_patch )
-    end if
+     end if
 
 #ifndef COUP_OAS_PFL
-    if (use_cn) then   ! Necessary to enable this history fields when coupled with Parflow.
+    if (use_cn) then
 #endif
-       this%bsw_col(begc:endc,:) = spval 
-       call hist_addfld2d (fname='bsw', units='unitless', type2d='levgrnd', &
-            avgflag='A', long_name='clap and hornberger B', &
-            ptr_col=this%bsw_col, default='inactive')
-
        this%rootr_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='ROOTR', units='proportion', type2d='levgrnd', &
             avgflag='A', long_name='effective fraction of roots in each soil layer', &
@@ -259,21 +266,6 @@ contains
        call hist_addfld2d (fname='SOILPSI', units='MPa', type2d='levgrnd', &
             avgflag='A', long_name='soil water potential in each soil layer', &
             ptr_col=this%soilpsi_col, default='inactive')
-
-       this%watsat_col(begc:endc,:) = spval 
-       call hist_addfld2d (fname='watsat', units='m^3/m^3', type2d='levgrnd', &
-            avgflag='A', long_name='water saturated', &
-            ptr_col=this%watsat_col, default='inactive')
-
-       this%eff_porosity_col(begc:endc,:) = spval
-       call hist_addfld2d (fname='EFF_POROSITY', units='proportion', type2d='levgrnd', &
-            avgflag='A', long_name='effective porosity = porosity - vol_ice', &
-            ptr_col=this%eff_porosity_col, default='inactive')
-
-       this%watfc_col(begc:endc,:) = spval 
-       call hist_addfld2d (fname='watfc', units='m^3/m^3', type2d='levgrnd', &
-            avgflag='A', long_name='water field capacity', &
-            ptr_col=this%watfc_col, default='inactive')
 #ifndef COUP_OAS_PFL
     end if
 #endif
@@ -304,6 +296,26 @@ contains
          avgflag='A', long_name='urban factor limiting ground evap', &
          ptr_col=this%soilalpha_u_col, set_nourb=spval, default='inactive')
 
+#ifndef COUP_OAS_PFL
+    if (use_cn) then
+#endif
+       this%watsat_col(begc:endc,:) = spval
+       call hist_addfld2d (fname='watsat', units='m^3/m^3', type2d='levgrnd', &
+            avgflag='A', long_name='water saturated', &
+            ptr_col=this%watsat_col, default='inactive')
+
+       this%eff_porosity_col(begc:endc,:) = spval
+       call hist_addfld2d (fname='EFF_POROSITY', units='proportion', type2d='levgrnd', &
+            avgflag='A', long_name='effective porosity = porosity - vol_ice', &
+            ptr_col=this%eff_porosity_col, default='inactive')
+
+       this%watfc_col(begc:endc,:) = spval
+       call hist_addfld2d (fname='watfc', units='m^3/m^3', type2d='levgrnd', &
+            avgflag='A', long_name='water field capacity', &
+            ptr_col=this%watfc_col, default='inactive')
+#ifndef COUP_OAS_PFL
+    end if
+#endif
 
     this%soilresis_col(begc:endc) = spval
     call hist_addfld1d (fname='SOILRESIS',  units='s/m',  &
