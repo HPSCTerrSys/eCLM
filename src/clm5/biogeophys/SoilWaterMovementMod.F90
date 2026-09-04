@@ -1489,16 +1489,21 @@ contains
       real(r8) :: s1                        ! "s" at interface of layer
       real(r8) :: s2(1:nlevgrnd)            ! "s" at layer node
       real(r8) :: vol_ice                   ! partial volume of ice
-      real(r8) :: imped                     ! ice impedance
       real(r8) :: hk                        ! hydraulic conductivity (mm/s)
 
       associate(&
-         smp_l             =>    soilstate_inst%smp_l_col             , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]         
-         h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col       , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col   , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
-         pfl_psi           =>    waterstate_inst%pfl_psi_col          , & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
-         icefrac           =>    soilhydrology_inst%icefrac_col       , & ! Input:  [real(r8) (:,:) ]  fraction of ice
-         ice_impedance     =>    soilhydrology_inst%ice_impedance_col   & ! Input:  [real(r8) (:,:) ]  ice impedance
+         dz                =>    col%dz                              , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
+         nbedrock          =>    col%nbedrock                        , & ! Input:  [integer  (:)   ]  index of shallowest bedrock layer
+         icefrac           =>    soilhydrology_inst%icefrac_col      , & ! Output: [real(r8) (:,:) ]  fraction of ice
+         ice_impedance     =>    soilhydrology_inst%ice_impedance_col, & ! Input:  [real(r8) (:,:) ]  ice impedance
+         watsat            =>    soilstate_inst%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
+         hk_l              =>    soilstate_inst%hk_l_col             , & ! Output: [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
+         smp_l             =>    soilstate_inst%smp_l_col            , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]         
+         h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col      , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)
+         smpmin            =>    soilstate_inst%smpmin_col           , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
+         pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col  , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
+         pfl_psi           =>    waterstate_inst%pfl_psi_col           & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
          )  ! end associate statement
 
 
@@ -1515,14 +1520,6 @@ contains
                if (pfl_psi(c,j) <= 0) then
                   smp_l(c,j) = max(smpmin(c), pfl_psi(c,j))
                end if
-
-               if(j==nlevsoi)then
-                  call IceImpedance(icefrac(c,j), e_ice, ice_impedance(c,j) )
-               else if(j<nlevsoi)then
-                  call IceImpedance(0.5_r8*(icefrac(c,j) + icefrac(c,j+1)), e_ice, ice_impedance(c,j) )
-               else 
-                  ice_impedance(c,j) = 1._r8
-               endif
             end do
 
             ! ParFlow replaces the eCLM soil water solver. Recompute hk_l from the
@@ -1541,13 +1538,13 @@ contains
                ! hk is evaluated at the layer interface, as in the standalone model
                if (j == nlayers) then
                   s1 = s2(j)
-                  call IceImpedance(icefrac(c,j), e_ice, imped)
+                  call IceImpedance(icefrac(c,j), e_ice, ice_impedance(c,j))
                else
                   s1 = 0.5_r8 * (s2(j) + s2(j+1))
-                  call IceImpedance(0.5_r8*(icefrac(c,j) + icefrac(c,j+1)), e_ice, imped)
+                  call IceImpedance(0.5_r8*(icefrac(c,j) + icefrac(c,j+1)), e_ice, ice_impedance(c,j))
                end if
                s1 = min(max(s1, 0.01_r8), 1._r8)
-               call soil_water_retention_curve%soil_hk(c, j, s1, imped, &
+               call soil_water_retention_curve%soil_hk(c, j, s1, ice_impedance(c,j), &
                     soilstate_inst, hk)
                hk_l(c,j) = hk
             end do
