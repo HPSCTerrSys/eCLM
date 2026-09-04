@@ -1159,7 +1159,7 @@ contains
     real(r8) :: vLiqIter(bounds%begc:bounds%endc,1:nlevsoi)   !  iteration increment for the volumetric liquid water content (v/v)
     real(r8) :: vLiqRes(bounds%begc:bounds%endc,1:nlevsoi)   ! residual for the volumetric liquid water content (v/v)
 
-    real(r8) :: dwat_temp
+    real(r8) :: over_saturation  ! Amount of water that over saturates this soil layer [kg/m2]
     !-----------------------------------------------------------------------
 
     associate(&
@@ -1173,6 +1173,7 @@ contains
          qcharge           =>    soilhydrology_inst%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)                      
          zwt               =>    soilhydrology_inst%zwt_col         , & ! Input:  [real(r8) (:)   ]  water table depth (m)                             
 
+         eff_porosity      =>    soilstate_inst%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice
          smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]                      
          hk_l              =>    soilstate_inst%hk_l_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)                   
          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col     , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)                               
@@ -1192,10 +1193,15 @@ contains
          ! set number of layers over which to solve soilwater movement
          nlayers = nbedrock(c)
 
-         dwat_temp = 0.
-
          ! initialize the number of substeps
          nsubstep=0
+
+         ! check for over-saturated layers and move excess upward
+         do j = nlayers,2,-1
+            over_saturation   = max(h2osoi_liq(c,j)-(eff_porosity(c,j)*m_to_mm*dz(c,j)),0._r8)
+            h2osoi_liq(c,j)   = min(eff_porosity(c,j)*m_to_mm*dz(c,j), h2osoi_liq(c,j))
+            h2osoi_liq(c,j-1) = h2osoi_liq(c,j-1) + over_saturation
+         end do
 
          ! initialize substeps
          dtsub = dtime   ! length of the substep
