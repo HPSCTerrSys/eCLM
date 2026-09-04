@@ -356,6 +356,7 @@ contains
        end do
 
        found = .false.
+#ifndef COUP_OAS_PFL
        do c = bounds%begc, bounds%endc
           if (abs(errh2o(c)) > 1.e-9_r8) then
              found = .true.
@@ -402,13 +403,8 @@ contains
              write(iulog,*)'deltawb/dtime    = ',(endwb(indexc)-begwb(indexc))/dtime
              write(iulog,*)'deltaflux        = ',forc_rain_col(indexc)+forc_snow_col(indexc) - (qflx_evap_tot(indexc) + &
                   qflx_surf(indexc)+qflx_h2osfc_surf(indexc)+qflx_drain(indexc))
-#ifdef COUP_OAS_PFL
-             ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
-             write(iulog,*)'Ignoring water balance error...'
-#else
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
-#endif
           else if (abs(errh2o(indexc)) > 1.e-5_r8 .and. (DAnstep > skip_steps) ) then
 
              write(iulog,*)'clm model is stopping - error is greater than 1e-5 (mm)'
@@ -437,15 +433,11 @@ contains
              write(iulog,*)'qflx_drain_perched         = ',qflx_drain_perched(indexc)*dtime
              write(iulog,*)'qflx_glcice_dyn_water_flux = ',qflx_glcice_dyn_water_flux(indexc)*dtime
              write(iulog,*)'qflx_rootsoi_col(1:nlevsoil)  = ',qflx_rootsoi_col(indexc,:)*dtime
-#ifdef COUP_OAS_PFL
-             ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
-             write(iulog,*)'Ignoring water balance error...'
-#else
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
-#endif
           end if
        end if
+#endif
 
        ! Snow balance check
 
@@ -691,6 +683,7 @@ contains
 
        ! Soil energy balance check
 
+#ifndef COUP_OAS_PFL
        found = .false.
        do c = bounds%begc,bounds%endc
           if (col%active(c)) then
@@ -704,16 +697,12 @@ contains
           write(iulog,*)'WARNING: BalanceCheck: soil balance error (W/m2)'
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
-#ifdef COUP_OAS_PFL
-          ! TODO: Balance errors must be fixed for fully coupled model (ICON-eCLM-ParFlow)
-          write(iulog,*)'Ignoring soil balance error...'
-#else
           if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (DAnstep > skip_steps) ) then
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(sourcefile, __LINE__))
           end if
-#endif
        end if
+#endif
 
      end associate
 
