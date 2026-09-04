@@ -137,6 +137,9 @@ contains
        solarabs_inst, drydepvel_inst,  &
        vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
        soilhydrology_inst, lnd2atm_inst, &
+#ifdef USE_PDAF
+       soilstate_inst, &
+#endif
        net_carbon_exchange_grc) 
     !
     ! !DESCRIPTION:
