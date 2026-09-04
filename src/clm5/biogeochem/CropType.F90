@@ -28,6 +28,8 @@ module CropType
   type, public :: crop_type
 
      ! Note that cropplant and harvdate could be 2D to facilitate rotation
+     !!tbo added variables for vernalization and cold tolerance modified after YLu (2017)
+
      integer , pointer :: nyrs_crop_active_patch  (:)   ! number of years this crop patch has been active (0 for non-crop patches)
      logical , pointer :: croplive_patch          (:)   ! patch Flag, true if planted, not harvested
      logical , pointer :: cropplant_patch         (:)   ! patch Flag, true if planted
@@ -41,6 +43,17 @@ module CropType
      character(len=20) :: baset_mapping
      real(r8) :: baset_latvary_intercept
      real(r8) :: baset_latvary_slope
+     real(r8), pointer :: lt50_patch              (:)   !lethal temperature at which 50% of the individuals are damaged
+     real(r8), pointer :: wdd_patch               (:)   !winter wheat weighted cumulated degree days
+     real(r8), pointer :: rateh_patch             (:)   !winter wheat weighted cumulated degree days
+     real(r8), pointer :: rated_patch             (:)   !loss of tolerance cause by dehardening
+     real(r8), pointer :: rates_patch             (:)   !loss of tolerance caused by low tempeature
+     real(r8), pointer :: rater_patch             (:)   !loss of tolerance caused by respiration under snow
+     real(r8), pointer :: fsurv_patch             (:)   !winter wheat survival rate
+     real(r8), pointer :: accfsurv_patch          (:)   !accumulated winter wheat survival rate
+     real(r8), pointer :: countfsurv_patch        (:)   !numbers of accumulated winter wheat survival rate
+     real(r8), pointer :: ck_patch                (:)   ! fraction of green leaf area killed
+     real(r8), pointer :: tcrown_patch             (:)   ! tcrown
 
    contains
      ! Public routines
@@ -186,6 +199,7 @@ contains
     
     character(len=*), parameter :: subname = 'InitAllocate'
     !-----------------------------------------------------------------------
+    !!tbo added variables for vernalization and cold tolerance modified after !YLu (2017)
 
     begp = bounds%begp; endp = bounds%endp
 
@@ -193,12 +207,23 @@ contains
     allocate(this%croplive_patch (begp:endp)) ; this%croplive_patch (:) = .false.
     allocate(this%cropplant_patch(begp:endp)) ; this%cropplant_patch(:) = .false.
     allocate(this%harvdate_patch (begp:endp)) ; this%harvdate_patch (:) = huge(1) 
-    allocate(this%fertnitro_patch (begp:endp)) ; this%fertnitro_patch (:) = spval
+    allocate(this%fertnitro_patch(begp:endp)) ; this%fertnitro_patch(:) = spval
     allocate(this%gddplant_patch (begp:endp)) ; this%gddplant_patch (:) = spval
     allocate(this%gddtsoi_patch  (begp:endp)) ; this%gddtsoi_patch  (:) = spval
     allocate(this%vf_patch       (begp:endp)) ; this%vf_patch       (:) = 0.0_r8
     allocate(this%cphase_patch   (begp:endp)) ; this%cphase_patch   (:) = 0.0_r8
     allocate(this%latbaset_patch (begp:endp)) ; this%latbaset_patch (:) = spval
+    allocate(this%lt50_patch     (begp:endp)) ; this%lt50_patch     (:) = spval
+    allocate(this%wdd_patch      (begp:endp)) ; this%wdd_patch      (:) = spval
+    allocate(this%rateh_patch    (begp:endp)) ; this%rateh_patch    (:) = spval
+    allocate(this%rated_patch    (begp:endp)) ; this%rated_patch    (:) = spval
+    allocate(this%rates_patch    (begp:endp)) ; this%rates_patch    (:) = spval
+    allocate(this%rater_patch    (begp:endp)) ; this%rater_patch    (:) = spval
+    allocate(this%fsurv_patch    (begp:endp)) ; this%fsurv_patch   (:) = spval
+    allocate(this%accfsurv_patch (begp:endp)) ; this%accfsurv_patch (:) = spval
+    allocate(this%countfsurv_patch(begp:endp)) ; this%countfsurv_patch  (:) = spval
+    allocate(this%ck_patch       (begp:endp)) ; this%ck_patch      (:) = spval
+    allocate(this%tcrown_patch   (begp:endp)) ; this%ck_patch      (:) = spval
 
   end subroutine InitAllocate
 
@@ -529,7 +554,10 @@ contains
     use clm_varpar       , only : nlevsno, nlevgrnd
     use pftconMod        , only : nswheat, nirrig_swheat, pftcon
     use pftconMod        , only : nwwheat, nirrig_wwheat
+    use pftconMod        , only : nwbarley, nirrig_wbarley
+    use pftconMod        , only : nrapeseed, nirrig_rapeseed
     use pftconMod        , only : nsugarcane, nirrig_sugarcane
+    use pftconMod        , only : ncovercrop_1, ncovercrop_2
     use ColumnType       , only : col
     use PatchType        , only : patch
     !
@@ -591,8 +619,11 @@ contains
              t_ref2m_patch(p)-(SHR_CONST_TKFRZ + pftcon%baset(ivt)))) &
              * dtime/SHR_CONST_CDAY
           end if
-          if (ivt == nwwheat .or. ivt == nirrig_wwheat) then
-             rbufslp(p) = rbufslp(p) * this%vf_patch(p)
+          if (ivt == nwwheat .or. ivt == nirrig_wwheat .or. &
+              ivt == ncovercrop_1 .or. ivt == ncovercrop_2 .or. & 
+              ivt == nwbarley  .or. ivt == nirrig_wbarley  .or. &
+              ivt == nrapeseed  .or. ivt == nirrig_rapeseed) then
+            rbufslp(p) = rbufslp(p) * this%vf_patch(p)
           end if
        else
           rbufslp(p) = accumResetVal
@@ -613,8 +644,11 @@ contains
                ((t_soisno_col(c,1)*col%dz(c,1) + &
                t_soisno_col(c,2)*col%dz(c,2))/(col%dz(c,1)+col%dz(c,2))) - &
                (SHR_CONST_TKFRZ + pftcon%baset(ivt)))) * dtime/SHR_CONST_CDAY
-          if (ivt == nwwheat .or. ivt == nwwheat) then
-             rbufslp(p) = rbufslp(p) * this%vf_patch(p)
+          if (ivt == nwwheat .or. ivt == nwwheat .or. &
+              ivt == ncovercrop_1 .or. ivt == ncovercrop_2 .or. &
+              ivt == nwbarley  .or. ivt == nirrig_wbarley  .or. &
+              ivt == nrapeseed  .or. ivt == nirrig_rapeseed) then
+            rbufslp(p) = rbufslp(p) * this%vf_patch(p)
           end if
        else
           rbufslp(p) = accumResetVal
