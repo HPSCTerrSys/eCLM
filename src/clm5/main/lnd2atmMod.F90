@@ -466,16 +466,6 @@ contains
          waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
          lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
-
-    ! adjust nan values after c2g, need to be rechecked
-    do g = bounds%begg, bounds%endg
-     do j = 1, nlevsoi
-      if (lnd2atm_inst%qflx_parflow_grc(g,j) == spval) then
-       lnd2atm_inst%qflx_parflow_grc(g,j) = 0._r8
-!       write(iulog,*)'WARNING: qflx_parflow_grc is nan at grid point ',g,' level',j,' replaced with 0.'
-      end if
-     end do
-    enddo
 #endif
 
 #ifdef USE_PDAF
