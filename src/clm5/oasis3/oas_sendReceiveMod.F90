@@ -11,8 +11,8 @@ module oas_sendReceiveMod
   private
 
 #ifdef COUP_OAS_PFL
-  public  :: oas_send
-  public  :: oas_receive
+  public  :: oas_send_parflow
+  public  :: oas_receive_parflow
 #endif
 
 #ifdef COUP_OAS_ICON
@@ -23,20 +23,20 @@ module oas_sendReceiveMod
 contains
 
 #ifdef COUP_OAS_PFL
-  subroutine oas_receive(bounds, seconds_elapsed, atm2lnd_inst)
-    use atm2lndType, only: atm2lnd_type
+  subroutine oas_receive_parflow(bounds, seconds_elapsed, pfl2lnd_inst)
+    use pfl2lndType, only: pfl2lnd_type
 
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
-    type(atm2lnd_type), intent(inout) :: atm2lnd_inst
+    type(pfl2lnd_type), intent(inout) :: pfl2lnd_inst
     integer                           :: info
 
-    call oasis_get(oas_psi_id, seconds_elapsed, atm2lnd_inst%pfl_psi_grc, info)
-    call oasis_get(oas_sat_id, seconds_elapsed, atm2lnd_inst%pfl_h2osoi_liq_grc, info)
+    call oasis_get(oas_psi_id, seconds_elapsed, pfl2lnd_inst%pfl_psi_grc, info)
+    call oasis_get(oas_sat_id, seconds_elapsed, pfl2lnd_inst%pfl_h2osoi_liq_grc, info)
 
-  end subroutine oas_receive
+  end subroutine oas_receive_parflow
 
-  subroutine oas_send(bounds, seconds_elapsed, lnd2atm_inst)
+  subroutine oas_send_parflow(bounds, seconds_elapsed, lnd2atm_inst)
     use lnd2atmType, only : lnd2atm_type
     use spmdMod,     only : mpicom
     use shr_mpi_mod, only: shr_mpi_barrier
@@ -49,7 +49,7 @@ contains
     
     call oasis_put(oas_et_loss_id, seconds_elapsed, lnd2atm_inst%qflx_parflow_grc, info)
     
-  end subroutine oas_send
+  end subroutine oas_send_parflow
 #endif
 
 #ifdef COUP_OAS_ICON

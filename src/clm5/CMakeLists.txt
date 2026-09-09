@@ -38,6 +38,13 @@ if (USE_OASIS)
             oasis3/oas_sendReceiveMod.F90
     )
 endif()
+if (COUP_OAS_PFL)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+        main/pfl2lndType.F90
+        main/pfl2lndMod.F90
+    )
+endif()
 target_sources(${PROJECT_NAME} 
     PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}/ncdio_pio.F90  

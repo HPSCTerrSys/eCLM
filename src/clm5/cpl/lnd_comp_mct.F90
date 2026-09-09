@@ -18,7 +18,7 @@ module lnd_comp_mct
   use oas_sendReceiveMod, only : oas_receive_icon, oas_send_icon
 #endif                   
 #ifdef COUP_OAS_PFL
-   use oas_sendReceiveMod, only : oas_receive, oas_send
+   use oas_sendReceiveMod, only : oas_receive_parflow, oas_send_parflow
 #endif
 #endif
   !
@@ -300,6 +300,9 @@ contains
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
     use clm_initializeMod, only : lnd2atm_inst, atm2lnd_inst, lnd2glc_inst, glc2lnd_inst
+#ifdef COUP_OAS_PFL
+    use clm_initializeMod, only : pfl2lnd_inst
+#endif
     use clm_driver      ,  only : clm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
@@ -474,7 +477,7 @@ contains
 #endif
 
 #ifdef COUP_OAS_PFL
-       call oas_receive(bounds, time_elapsed, atm2lnd_inst)
+       call oas_receive_parflow(bounds, time_elapsed, pfl2lnd_inst)
 #endif
        ! Run clm 
        call t_barrierf('sync_clm_run1', mpicom)
@@ -493,7 +496,7 @@ contains
 #endif
 
 #if defined(COUP_OAS_PFL)
-       call oas_send(bounds, time_elapsed, lnd2atm_inst)
+       call oas_send_parflow(bounds, time_elapsed, lnd2atm_inst)
 #endif
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
        call t_startf ('lc_lnd_export')
