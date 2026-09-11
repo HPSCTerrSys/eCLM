@@ -33,7 +33,9 @@ contains
 
     call oasis_get(oas_psi_id, seconds_elapsed, pfl2lnd_inst%pfl_psi_grc, info)
     call oasis_get(oas_sat_id, seconds_elapsed, pfl2lnd_inst%pfl_h2osoi_liq_grc, info)
-
+    if (seconds_elapsed == 0) then
+      call oasis_get(oas_porosity_id, seconds_elapsed, pfl2lnd_inst%pfl_porosity_grc, info)
+    end if
   end subroutine oas_receive_parflow
 
   subroutine oas_send_parflow(bounds, seconds_elapsed, lnd2atm_inst)

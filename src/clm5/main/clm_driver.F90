@@ -66,7 +66,7 @@ module clm_driver
   use lnd2atmMod             , only : lnd2atm
   use lnd2glcMod             , only : lnd2glc_type
 #ifdef COUP_OAS_PFL
-  use pfl2lndMod             , only : downscale_parflow_fields
+  use pfl2lndMod             , only : downscale_parflow_fields, import_parflow_porosity
 #endif
   !
   use seq_drydep_mod         , only : n_drydep, drydep_method, DD_XLND
@@ -446,8 +446,11 @@ contains
             waterflux_inst%qflx_runoff_rain_to_snow_conversion_col(bounds_clump%begc:bounds_clump%endc))
 
 #ifdef COUP_OAS_PFL
-       call downscale_parflow_fields(bounds_clump, &
-            filter(nc), pfl2lnd_inst, waterstate_inst)
+       call downscale_parflow_fields(bounds_clump, filter(nc), pfl2lnd_inst, waterstate_inst)
+       if (get_nstep() == 0) then
+          ! eCLM porosity values are overwritten only for the 1st timestep.
+          call import_parflow_porosity(bounds_clump, filter(nc), pfl2lnd_inst, soilstate_inst)
+       end if
 #endif
        ! Update filters that depend on variables set in clm_drv_init
        

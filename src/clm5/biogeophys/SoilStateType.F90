@@ -260,10 +260,10 @@ contains
             avgflag='A', long_name='soil water potential in each soil layer', &
             ptr_col=this%soilpsi_col, default='inactive')
 
-       this%watsat_col(begc:endc,:) = spval 
+       this%watsat_col(begc:endc,:) = spval
        call hist_addfld2d (fname='watsat', units='m^3/m^3', type2d='levgrnd', &
-            avgflag='A', long_name='water saturated', &
-            ptr_col=this%watsat_col, default='inactive')
+       avgflag='A', long_name='water saturated', &
+       ptr_col=this%watsat_col, default='inactive')
 
        this%eff_porosity_col(begc:endc,:) = spval
        call hist_addfld2d (fname='EFF_POROSITY', units='proportion', type2d='levgrnd', &

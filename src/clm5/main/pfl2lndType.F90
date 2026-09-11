@@ -30,6 +30,7 @@ module pfl2lndType
      ! parflow->lnd not downscaled
      real(r8), pointer :: pfl_psi_grc                   (:,:) => null() ! Parflow soil matrix potential [mm]
      real(r8), pointer :: pfl_h2osoi_liq_grc            (:,:) => null() ! Parflow H2O soil liquid       [mm]
+     real(r8), pointer :: pfl_porosity_grc              (:,:) => null() ! Parflow porosity              [m^3/m^3]
 
    contains
 
@@ -71,15 +72,14 @@ contains
     ! !LOCAL VARIABLES:
     real(r8) :: ival  = 0.0_r8  ! initial value
     integer  :: begg, endg
-    integer  :: begc, endc
     !------------------------------------------------------------------------
 
     begg = bounds%begg; endg= bounds%endg
-    begc = bounds%begc; endc= bounds%endc
 
     ! parflow->lnd
-    allocate(this%pfl_psi_grc                   (begg:endg,1:nlevgrnd)); this%pfl_psi_grc            (:,:) = ival
-    allocate(this%pfl_h2osoi_liq_grc            (begg:endg,1:nlevgrnd)); this%pfl_h2osoi_liq_grc     (:,:) = ival
+    allocate(this%pfl_psi_grc                   (begg:endg,1:nlevgrnd)); this%pfl_psi_grc            (:,:) = spval
+    allocate(this%pfl_h2osoi_liq_grc            (begg:endg,1:nlevgrnd)); this%pfl_h2osoi_liq_grc     (:,:) = spval
+    allocate(this%pfl_porosity_grc              (begg:endg,1:nlevgrnd)); this%pfl_porosity_grc       (:,:) = spval
 
   end subroutine InitAllocate
 
@@ -93,21 +93,24 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: begg, endg
-    integer  :: begc, endc
     !---------------------------------------------------------------------
 
     begg = bounds%begg; endg= bounds%endg
-    begc = bounds%begc; endc= bounds%endc
 
-    this%pfl_psi_grc(begg:endg, :) = 0._r8
+    this%pfl_psi_grc(begg:endg, :) = spval
     call hist_addfld2d (fname='PFL_PSI_GRC', units='mm', type2d='levgrnd', &
       avgflag='A', long_name='Parflow pressure head (gridcell)', &
       ptr_lnd=this%pfl_psi_grc, default='inactive')
 
-    this%pfl_h2osoi_liq_grc(begg:endg, :) = 1
+    this%pfl_h2osoi_liq_grc(begg:endg, :) = spval
     call hist_addfld2d (fname='PFL_SOILLIQ_GRC', units='mm', type2d='levgrnd', &
       avgflag='A', long_name='Parflow H2O soil liquid (gridcell)', &
       ptr_lnd=this%pfl_h2osoi_liq_grc, default='inactive')
+
+    this%pfl_porosity_grc(begg:endg, :) = spval
+    call hist_addfld2d (fname='PFL_POROSITY_GRC', units='m^3/m^3', type2d='levgrnd', &
+      avgflag='A', long_name='Parflow porosity (gridcell)', &
+      ptr_lnd=this%pfl_porosity_grc, default='inactive')
   end subroutine InitHistory
 
   !------------------------------------------------------------------------
@@ -130,6 +133,7 @@ contains
     !-----------------------------------------------------------------------
     deallocate(this%pfl_psi_grc)
     deallocate(this%pfl_h2osoi_liq_grc)
+    deallocate(this%pfl_porosity_grc)
 
   end subroutine Clean
 
