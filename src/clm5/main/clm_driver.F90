@@ -1306,13 +1306,14 @@ contains
       end do
 
 #ifdef COUP_OAS_PFL
-      ! TSMP/bldsva/intf_oas3/clm3_5/mct/receive_fld_2pfl.F90
-      ! COUP_OAS_PFL
-      do f = 1, num_soilc
-        c = filter_soilc(f)
-        g = col%gridcell(c)  
-        pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
-        pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
+      ! Cover every column that soilwater_parflow will later overwrite.
+      do f = 1, num_nolakec
+        c = filter_nolakec(f)
+        if (col%hydrologically_active(c)) then
+          g = col%gridcell(c)
+          pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
+          pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
+        end if
       end do
 #endif
     end associate

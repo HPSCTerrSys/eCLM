@@ -319,7 +319,7 @@ target_sources(${PROJECT_NAME}
         utils/spmdMod.F90
 )
 
-find_package(LAPACK)
+find_package(LAPACK REQUIRED)
 if(LAPACK_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE LAPACK::LAPACK)
 endif()

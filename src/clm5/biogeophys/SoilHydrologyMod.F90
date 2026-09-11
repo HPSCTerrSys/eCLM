@@ -2379,7 +2379,10 @@ contains
           qflx_parflow       =>    waterflux_inst%qflx_parflow_col         & ! source/sink flux passed to ParFlow for each soil layer
           )
 
-         ! COUP_OAS_PFL
+         ! Zero every column first. Any columns left at spval would return the mean over the
+         ! contributing fraction instead of the gridcell mean by c2g.
+         qflx_parflow(bounds%begc:bounds%endc, 1:nlevsoi) = 0._r8
+
          ! Calculate here the source/sink term for ParFlow
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)

@@ -75,14 +75,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libxml2-utils pylint wget cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
-          version: 1.0
-          execute_install_scripts: true
+
+      #
+      # This should be uncommented once https://github.com/awalsh128/cache-apt-pkgs-action/issues/221 is solved
+      #
+      #- uses: awalsh128/cache-apt-pkgs-action@latest
+      #  with:
+      #    packages: libxml2-utils pylint wget cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
+      #    version: 1.0
+      #    execute_install_scripts: true
+
+      #
+      # Temporary workaround to the awalsh/cache-apt-pkgs problem above
+      #
+      - name: Install primary eCLM dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libxml2-utils pylint wget cmake netcdf-bin libnetcdf-dev libnetcdff-dev libpnetcdf-dev
 
       - name: Download MPI Fortran compiler
-        run: sudo apt-get install gfortran openmpi-bin libopenmpi-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install gfortran openmpi-bin libopenmpi-dev
 
       - if: matrix.config.use_oasis == 'True'
         name: Cache OASIS3-MCT
