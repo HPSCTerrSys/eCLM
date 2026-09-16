@@ -1011,13 +1011,13 @@ contains
                 vol_ice = min(watsat(c,1), h2osoi_ice(c,1)/(dz(c,1)*denice))
                 eff_porosity = watsat(c,1)-vol_ice
                 h2osoi_liq_saturated = eff_porosity*dz(c,1)*m_to_mm
-                excess_h2osno_liq = max(h2osoi_liq(c,1) - (eff_porosity*dz(c,1)*m_to_mm), 0._r8)
+                excess_h2osno_liq = max(h2osoi_liq(c,1) - h2osoi_liq_saturated, 0._r8)
                 if (excess_h2osno_liq > 0._r8) then
-                  ! TODO: Remove debugging statements
-                  write(iulog, "('DEBUGWATSAT[col', I0, '] Before excess correction: total h2osoi_liq across a snow column=', F0.8, ' mm, vol_ice[1]=', F0.8, ' m^3/m^3, eff_porosity[1]=', F0.8, '  m^3/m^3, excess_h2osno_liq[1]=', F0.8, ' mm'  )") c, zwliq(c), vol_ice, eff_porosity, h2osoi_liq_saturated
-                  write(iulog, "('DEBUGWATSAT[col', I0, '] Before excess correction: h2osoi_liq[0]=', F0.8, ' mm, h2osoi_liq[1]=', F0.8, ' mm')") c, h2osoi_liq(c,0), h2osoi_liq(c,1)
+                  ! TODO: Remove all debugging statements later
+                  write(iulog, "('DEBUGWATSAT[col', I0, '] Before excess correction: total h2osoi_liq across a snow column=', F0.8, ' mm, vol_ice[1]=', F0.8, ' m^3/m^3, eff_porosity[1]=', F0.8, '  m^3/m^3' )") c, zwliq(c), vol_ice, eff_porosity
+                  write(iulog, "('DEBUGWATSAT[col', I0, '] Before excess correction: h2osoi_liq[0]=', F0.8, ' mm, h2osoi_liq[1]=', F0.8, ' mm, h2osoi_liq_saturated[1]=', F0.8, ' mm')") c, h2osoi_liq(c,0), h2osoi_liq(c,1), h2osoi_liq_saturated
                   h2osoi_liq(c,0) = excess_h2osno_liq
-                  h2osoi_liq(c,1) = eff_porosity
+                  h2osoi_liq(c,1) = h2osoi_liq_saturated
                   write(iulog, "('DEBUGWATSAT[col', I0, '] After excess correction: h2osoi_liq[0]=', F0.8, ' mm, h2osoi_liq[1]=', F0.8, ' mm')") c, h2osoi_liq(c,0), h2osoi_liq(c,1)
                 end if
              end if
