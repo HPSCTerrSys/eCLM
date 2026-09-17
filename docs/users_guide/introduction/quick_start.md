@@ -70,7 +70,7 @@ cd TSMP2
 cd ..
 git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
 cd extpar_eclm_wuestebach_sp/static.resources
-generate_wtb_namelists.sh 1x1_wuestebach
+./generate_wtb_namelists.sh 1x1_wuestebach
 ```
 
 4. Run eCLM.
