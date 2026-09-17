@@ -73,7 +73,42 @@ cd extpar_eclm_wuestebach_sp/static.resources
 ./generate_wtb_namelists.sh 1x1_wuestebach
 ```
 
-4. Run eCLM.
+4a. (ONLY on JSC systems) Set up the run directory with symlinks and a
+job script.
+
+```sh
+cd 1x1_wuestebach
+
+# Symlink the eCLM executable and the JSC environment file
+ln -s ../../../TSMP2/bin/JUWELS_eCLM/bin/eclm.exe eclm.exe
+ln -s ../../../TSMP2/bin/JUWELS_eCLM/jsc.2025.intel.psmpi loadenvs
+
+cat > jobscript.slurm << 'EOF'
+#!/usr/bin/env bash
+#SBATCH --job-name=1x1_wuestebach
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=48
+#SBATCH --account=jibg36
+#SBATCH --partition=batch
+#SBATCH --time=0:30:00
+#SBATCH --output=logs/%j.eclm.1x1_wuestebach.out
+#SBATCH --error=logs/%j.eclm.1x1_wuestebach.err
+
+# Load environment
+source loadenvs
+
+# Run model
+srun -n $SLURM_NTASKS eclm.exe
+EOF
+```
+
+Run eCLM:
+```sh
+# On JSC systems (submit via Slurm):
+sbatch jobscript.slurm
+```
+
+4b. (GENERIC HPC) Run eCLM.
 
 ```sh
 cd 1x1_wuestebach
