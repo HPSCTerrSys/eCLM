@@ -44,7 +44,7 @@ module clm_varpar
   integer, parameter :: ndst        =   4     ! number of dust size classes (BGC only)
   integer, parameter :: dst_src_nbr =   3     ! number of size distns in src soil (BGC only)
   integer, parameter :: sz_nbr      = 200     ! number of sub-grid bins in large bin of dust size distribution (BGC only)
-  integer, parameter :: mxpft       =  78     ! maximum number of PFT's for any mode;
+  integer, parameter :: mxpft       =  78    ! maximum number of PFT's for any mode;
   ! FIX(RF,032414) might we set some of these automatically from reading pft-physiology?
   integer, parameter :: numveg      =  16     ! number of veg types (without specific crop)
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
@@ -52,7 +52,7 @@ module clm_varpar
   integer, parameter :: nvariants   =   2     ! number of variants of PFT constants
 
   integer :: numpft      = mxpft   ! actual # of pfts (without bare)
-  integer :: numcft      =  64     ! actual # of crops (includes unused CFTs that are merged into other CFTs)
+  integer :: numcft      =  64    ! actual # of crops (includes unused CFTs that are merged into other CFTs)
   integer :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
 
   integer :: maxpatch_pft        ! max number of plant functional types in naturally vegetated landunit (namelist setting)
