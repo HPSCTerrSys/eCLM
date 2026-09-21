@@ -1068,7 +1068,7 @@ contains
          solarabs_inst, drydepvel_inst,       &
          vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
          lnd2atm_inst, &
-#ifdef USE_PDAF
+#if defined(USE_PDAF) || defined(COUP_OAS_PFL)
          soilhydrology_inst, soilstate_inst, &
 #endif
          net_carbon_exchange_grc = net_carbon_exchange_grc(bounds_proc%begg:bounds_proc%endg))
@@ -1219,7 +1219,7 @@ contains
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
     use shr_infnan_mod     , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar         , only : nlevsno, nlevsoi
+    use clm_varpar         , only : nlevsno, nlevsoi, nlevgrnd
     use CanopyStateType    , only : canopystate_type
     use WaterStateType     , only : waterstate_type
     use WaterFluxType      , only : waterflux_type
@@ -1257,6 +1257,7 @@ contains
 #ifdef COUP_OAS_PFL
          pfl_psi            => waterstate_inst%pfl_psi_col               , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
          pfl_h2osoi_liq     => waterstate_inst%pfl_h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+         h2osoi_ice_prev    => waterstate_inst%h2osoi_ice_prev_col       , & ! Output: [real(r8) (:,:) ]  COUP_OAS_PFL
 #endif
          elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
          esai               => canopystate_inst%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow    
@@ -1314,6 +1315,8 @@ contains
           pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
           pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
         end if
+        ! Get ice content before PhaseChange, to make it consistent with ParFlow
+        h2osoi_ice_prev(c,1:nlevgrnd) = h2osoi_ice(c,1:nlevgrnd)
       end do
 #endif
     end associate

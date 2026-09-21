@@ -108,6 +108,7 @@ module WaterstateType
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: pfl_psi_col            (:,:) ! ParFlow pressure head   COUP_OAS_PFL
      real(r8), pointer :: pfl_h2osoi_liq_col     (:,:) ! ParFlow soil liquid     COUP_OAS_PFL
+     real(r8), pointer :: h2osoi_ice_prev_col    (:,:) ! ice lens at the start of the time step, before PhaseChange (kg/m2)
 #endif
      real(r8), pointer :: total_plant_stored_h2o_col(:)! col water that is bound in plants, including roots, sapwood, leaves, etc
                                                        ! in most cases, the vegetation scheme does not have a dynamic
@@ -247,6 +248,7 @@ contains
 #ifdef COUP_OAS_PFL
     allocate(this%pfl_psi_col            (begc:endc,1:nlevgrnd))          ; this%pfl_psi_col           (:,:) = nan
     allocate(this%pfl_h2osoi_liq_col     (begc:endc,1:nlevgrnd))          ; this%pfl_h2osoi_liq_col    (:,:) = nan
+    allocate(this%h2osoi_ice_prev_col    (begc:endc,1:nlevgrnd))          ; this%h2osoi_ice_prev_col   (:,:) = nan
 #endif
     allocate(this%h2osoi_ice_tot_col     (begc:endc))                     ; this%h2osoi_ice_tot_col     (:)   = nan
     allocate(this%h2osoi_liq_tot_col     (begc:endc))                     ; this%h2osoi_liq_tot_col     (:)   = nan
@@ -861,6 +863,7 @@ contains
 #ifdef COUP_OAS_PFL
       this%pfl_psi_col(bounds%begc:bounds%endc,            1:) = -1000._r8
       this%pfl_h2osoi_liq_col(bounds%begc:bounds%endc,     1:) = spval
+      this%h2osoi_ice_prev_col(bounds%begc:bounds%endc,    1:) = 0._r8
 #endif
       this%h2osoi_vol_prs_grc(bounds%begg:bounds%endg,     1:) = spval
       this%h2osoi_liq_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval

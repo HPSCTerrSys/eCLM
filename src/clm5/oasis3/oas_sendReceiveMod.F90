@@ -48,7 +48,8 @@ contains
     integer                           :: info
     
     call oasis_put(oas_et_loss_id, seconds_elapsed, lnd2atm_inst%qflx_parflow_grc, info)
-    
+    call oasis_put(oas_eff_porosity_id, seconds_elapsed, lnd2atm_inst%pfl_eff_porosity_grc, info)
+
   end subroutine oas_send
 #endif
 
