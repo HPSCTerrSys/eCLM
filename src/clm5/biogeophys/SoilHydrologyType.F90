@@ -55,9 +55,6 @@ Module SoilHydrologyType
      real(r8), pointer :: max_infil_col     (:)     ! col VIC maximum infiltration rate calculated in VIC
      real(r8), pointer :: i_0_col           (:)     ! col VIC average saturation in top soil layers 
      real(r8), pointer :: ice_col           (:,:)   ! col VIC soil ice (kg/m2) for VIC soil layers
-#ifdef COUP_OAS_PFL
-     real(r8), pointer :: ice_impedance_col (:,:)   ! col ice impdeance
-#endif
 
 #ifdef USE_PDAF
      ! Yorck
@@ -138,7 +135,6 @@ contains
     allocate(this%icefrac_col       (begc:endc,nlevgrnd))        ; this%icefrac_col       (:,:)   = nan
 #ifdef COUP_OAS_PFL
     allocate(this%pfl_eff_porosity_col (begc:endc,nlevgrnd))     ; this%pfl_eff_porosity_col(:,:) = 0._r8
-    allocate(this%ice_impedance_col (begc:endc,nlevgrnd))        ; this%ice_impedance_col (:,:)   = nan
 #endif
     allocate(this%fcov_col          (begc:endc))                 ; this%fcov_col          (:)     = nan   
     allocate(this%fsat_col          (begc:endc))                 ; this%fsat_col          (:)     = nan
@@ -246,9 +242,6 @@ contains
     do c = bounds%begc, bounds%endc
        this%num_substeps_col(c) = spval
        this%icefrac_col(c,:) = spval
-#ifdef COUP_OAS_PFL
-       this%ice_impedance_col(c,:) = 1.0_r8
-#endif
     end do
 
   end subroutine InitCold

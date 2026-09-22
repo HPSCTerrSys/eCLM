@@ -108,7 +108,6 @@ contains
     call oasis_def_var(oas_sat_id, "ECLM_SOILLIQ", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
     call oasis_def_var(oas_psi_id, "ECLM_PSI", grid_id, var_nodims, OASIS_In, OASIS_Real, ierror)
     call oasis_def_var(oas_eff_porosity_id, "ECLM_EFFPOROSITY", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
-    call oasis_def_var(oas_ice_impedance_id, "ECLM_ICE_IMPEDANCE", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror)
 #endif
 
 #ifdef COUP_OAS_ICON

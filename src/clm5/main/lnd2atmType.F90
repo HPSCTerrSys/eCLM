@@ -78,7 +78,6 @@ module lnd2atmType
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: qflx_parflow_grc        (:,:) => null() ! source/sink flux per soil layer sent to ParFlow [1/hr] [- out from root]
      real(r8), pointer :: pfl_eff_porosity_grc    (:,:) => null() ! effective porosity per soil layer sent to ParFlow [m3/m3]
-     real(r8), pointer :: ice_impedance_grc       (:,:) => null() ! soil ice impedance (values in [0,1])
 #endif
      real(r8), pointer :: qirrig_grc              (:)   => null() ! irrigation flux
 
@@ -194,7 +193,6 @@ contains
 #ifdef COUP_OAS_PFL
     allocate(this%qflx_parflow_grc     (begg:endg,1:nlevsoi)); this%qflx_parflow_grc     (:,:) =ival
     allocate(this%pfl_eff_porosity_grc (begg:endg,1:nlevgrnd)); this%pfl_eff_porosity_grc(:,:) =-9999._r8
-    allocate(this%ice_impedance_grc    (begg:endg,1:nlevgrnd)); this%ice_impedance_grc   (:,:) =1.0_r8
 #endif
     allocate(this%qirrig_grc           (begg:endg))          ; this%qirrig_grc           (:)   =ival
 
@@ -352,10 +350,6 @@ contains
     call hist_addfld2d (fname='EFF_POROSITY_TO_OASIS', units='m3/m3', type2d='levgrnd', &
          avgflag='A', long_name='effective porosity per soil layer sent to ParFlow', &
          ptr_lnd=this%pfl_eff_porosity_grc, default='inactive')
-    this%ice_impedance_grc(begg:endg, :) = 1._r8
-    call hist_addfld2d (fname='ICE_IMPEDANCE', units='unitless', type2d='levgrnd', &
-         avgflag='A', long_name='soil ice impedance sent to ParFlow', &
-         ptr_lnd=this%ice_impedance_grc, default='inactive')
 #endif
   end subroutine InitHistory
 
