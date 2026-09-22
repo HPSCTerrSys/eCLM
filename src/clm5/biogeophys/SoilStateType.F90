@@ -293,8 +293,12 @@ contains
          avgflag='A', long_name='urban factor limiting ground evap', &
          ptr_col=this%soilalpha_u_col, set_nourb=spval, default='inactive')
 
+#ifdef COUP_OAS_PFL
+    if (.true.) then
+#else
     if (use_cn) then
-       this%watsat_col(begc:endc,:) = spval 
+#endif
+       this%watsat_col(begc:endc,:) = spval
        call hist_addfld2d (fname='watsat', units='m^3/m^3', type2d='levgrnd', &
             avgflag='A', long_name='water saturated', &
             ptr_col=this%watsat_col, default='inactive')
