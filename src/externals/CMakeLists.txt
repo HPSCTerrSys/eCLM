@@ -36,12 +36,18 @@ target_link_libraries(gptl INTERFACE libgptl.a)
 add_dependencies(gptl gptl_external)
 install (FILES ${GPTL_BLD_DIR}/lib/libgptl.a TYPE LIB)
 
-
 # ===========
 #     MCT
 # ===========
 option(BUILD_MCT "Use built-in MCT library." ON)
 add_library(mct INTERFACE IMPORTED GLOBAL)
+if (CMAKE_BUILD_TYPE STREQUAL "PROFILE")
+  set(MCT_CONFIGURE_FLAG "SCOREP_WRAPPER=off")
+  set(MCT_MAKE_FLAG SCOREP_WRAPPER_INSTRUMENTER_FLAGS=--thread=pthread)
+else()
+  set(MCT_CONFIGURE_FLAG "")
+  set(MCT_MAKE_FLAG "")
+endif()
 if (BUILD_MCT)
     set(MCT_BLD_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct)
     file(MAKE_DIRECTORY ${MCT_BLD_DIR}/include ${MCT_BLD_DIR}/lib)
@@ -49,15 +55,15 @@ if (BUILD_MCT)
         PREFIX            mct
         SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/mct
         BUILD_IN_SOURCE   TRUE
-        CONFIGURE_COMMAND ./configure
-                        --prefix=${MCT_BLD_DIR}
-                        --exec-prefix=${MCT_BLD_DIR}
-                        CC=${CMAKE_C_COMPILER}
-                        FC=${CMAKE_Fortran_COMPILER}
-                        MPIFC=${CMAKE_Fortran_COMPILER}
-                        CFLAGS=${CMAKE_C_FLAGS}
-                        FCFLAGS=${CMAKE_Fortran_FLAGS}
-        BUILD_COMMAND     make clean install
+	CONFIGURE_COMMAND ${MCT_CONFIGURE_FLAG} ./configure
+                          --prefix=${MCT_BLD_DIR}
+                          --exec-prefix=${MCT_BLD_DIR}
+                          CC=${CMAKE_C_COMPILER}
+                          FC=${CMAKE_Fortran_COMPILER}
+                          MPIFC=${CMAKE_Fortran_COMPILER}
+                          CFLAGS=${CMAKE_C_FLAGS}
+                          FCFLAGS=${CMAKE_Fortran_FLAGS}
+        BUILD_COMMAND     ${MCT_MAKE_FLAG} make clean install
         BUILD_ALWAYS      YES
         BUILD_BYPRODUCTS  ${GPTL_BLD_DIR}/lib/libmct.a ${GPTL_BLD_DIR}/lib/libmpeu.a
     )
@@ -74,7 +80,6 @@ else()
     endif()
 endif()
 
-# ===========
-#     PIO
+# =========== PIO
 # ===========
 add_subdirectory(pio1)
