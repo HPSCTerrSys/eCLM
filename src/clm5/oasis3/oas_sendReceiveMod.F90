@@ -3,7 +3,7 @@ module oas_sendReceiveMod
   use clm_time_manager , only: get_nstep, get_step_size
   use decompMod        , only: bounds_type
   use clm_varpar       , only: nlevgrnd
-  use clm_varctl       , only: iulog, loascplscheme_exchcoef
+  use clm_varctl       , only: iulog, use_exchcoef_oascoupling
   use oas_vardefMod
   use mod_oasis
   implicit none
@@ -116,7 +116,7 @@ contains
     call oasis_put(oas_id_it, seconds_elapsed,lnd2atm_inst%t_rad_grc, info)         ! "CLM_INFRA"
     call oasis_put(oas_id_ad, seconds_elapsed,lnd2atm_inst%albd_grc, info)         ! "CLM_ALBED"
     call oasis_put(oas_id_ai, seconds_elapsed,lnd2atm_inst%albi_grc, info)         ! "CLM_ALBEI"
-    if ( loascplscheme_exchcoef ) then
+    if ( use_exchcoef_oascoupling ) then
        call oasis_put(oas_id_rm, seconds_elapsed,lnd2atm_inst%ram1_cpl_grc, info)   ! "CLM_RAM1"
        call oasis_put(oas_id_rh, seconds_elapsed,lnd2atm_inst%rah1_grc, info)       ! "CLM_RAH1"
        call oasis_put(oas_id_rw, seconds_elapsed,lnd2atm_inst%raw1_grc, info)       ! "CLM_RAW1"

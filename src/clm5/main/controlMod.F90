@@ -261,7 +261,7 @@ contains
 
 #ifdef COUP_OAS_ICON
     ! Enable exchange-coefficient coupling scheme when using OASIS ECLM coupling
-    namelist /clm_inparm/ loascplscheme_exchcoef
+    namelist /clm_inparm/ use_exchcoef_oascoupling
 #endif
 
     ! flag for SSRE diagnostic
@@ -606,7 +606,7 @@ contains
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_SSRE, 1, MPI_LOGICAL, 0, mpicom, ier)
 #ifdef COUP_OAS_ICON
-    call mpi_bcast (loascplscheme_exchcoef, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_exchcoef_oascoupling, 1, MPI_LOGICAL, 0, mpicom, ier)
 #endif
 
     ! initial file variables

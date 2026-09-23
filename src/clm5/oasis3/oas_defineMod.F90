@@ -15,7 +15,7 @@ contains
 #ifdef COUP_OAS_ICON
     use clm_varpar   , only : numrad
 #endif
-    use clm_varctl   , only : loascplscheme_exchcoef
+    use clm_varctl   , only : use_exchcoef_oascoupling
     use decompMod    , only : ldecomp, bounds_type
     use oas_vardefMod
 
@@ -155,7 +155,7 @@ contains
     CALL oasis_def_var(oas_id_ai, "CLMALBEI", grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !14
     IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLMALBEI.')
     var_nodims(2) = 1
-    IF ( loascplscheme_exchcoef ) THEN
+    IF ( use_exchcoef_oascoupling ) THEN
       CALL oasis_def_var(oas_id_rm, "CLM_RAM1" , grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !15
       IF (ierror /= 0) CALL oasis_abort(oas_comp_id, oas_comp_name, 'Failure in oasis_def_var for CLM_RAM1.')
       CALL oasis_def_var(oas_id_rh, "CLM_RAH1" , grid_id, var_nodims, OASIS_Out, OASIS_Real, ierror) !16
