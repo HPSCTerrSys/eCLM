@@ -91,14 +91,14 @@ module pftconMod
   integer :: nirrig_miscanthus
   integer :: nswitchgrass
   integer :: nirrig_switchgrass
-  integer :: ntrp_corn              !value for tropical corn (rf)
-  integer :: nirrig_trp_corn        !value for tropical corn (ir)
-  integer :: ntrp_soybean           !value for tropical soybean (rf)
-  integer :: nirrig_trp_soybean     !value for tropical soybean (ir)
+  integer :: ntrp_corn              ! value for tropical corn (rf)
+  integer :: nirrig_trp_corn        ! value for tropical corn (ir)
+  integer :: ncovercrop_1           ! before value for tropical soybean (rf)
+  integer :: ncovercrop_2           ! before value for tropical soybean (if)
   integer :: npcropmax              ! value for last prognostic crop in list
   integer :: nc3crop                ! value for generic crop (rf)
   integer :: nc3irrig               ! value for irrigated generic crop (ir)
-
+  
   ! Number of crop functional types actually used in the model. This includes each CFT for
   ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if
   ! irrigation is turned off in this run: it just excludes crop types that aren't handled
@@ -255,10 +255,13 @@ module pftconMod
      real(r8), allocatable :: fun_cn_flex_b (:)   ! Parameter b of FUN-flexcn link code (def 200)
      real(r8), allocatable :: fun_cn_flex_c (:)   ! Parameter b of FUN-flexcn link code (def 80)         
      real(r8), allocatable :: FUN_fracfixers(:)   ! Fraction of C that can be used for fixation.    
-
+     integer , allocatable :: covercrop     (:)   ! Cover crop flag
 
      ! pft parameters for dynamic root code
      real(r8), allocatable :: root_dmx(:)     !maximum root depth
+
+     ! pft parameters for cover crop routine 
+     !integer, allocatable :: covercrop(:)     !cover crop flag
 
    contains
 
@@ -459,7 +462,7 @@ contains
     allocate( this%fun_cn_flex_b (0:mxpft) )
     allocate( this%fun_cn_flex_c (0:mxpft) )
     allocate( this%FUN_fracfixers(0:mxpft) )
-    
+    allocate( this%covercrop     (0:mxpft) )
  
   end subroutine InitAllocate
 
@@ -577,10 +580,10 @@ contains
     expected_pftnames(74) = 'irrigated_switchgrass              '
     expected_pftnames(75) = 'tropical_corn                      '
     expected_pftnames(76) = 'irrigated_tropical_corn            '
-    expected_pftnames(77) = 'tropical_soybean                   '
-    expected_pftnames(78) = 'irrigated_tropical_soybean         '
-
-    ! Set specific vegetation type values
+    expected_pftnames(77) = 'covercrop_1                        '
+    expected_pftnames(78) = 'covercrop_2                        '
+    
+! Set specific vegetation type values
 
     if (masterproc) then
        write(iulog,*) 'Attempting to read PFT physiological data .....'
@@ -963,6 +966,11 @@ contains
     call ncd_io('max_SH_planting_date', this%mxSHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
+!Cover crop flag read-in
+
+    call ncd_io('covercrop', this%covercrop, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in cover crop flag'//errMsg(sourcefile, __LINE__))
+
     !
     ! Constants
     !
@@ -1093,8 +1101,9 @@ contains
        if ( trim(pftname(i)) == 'irrigated_switchgrass'               ) nirrig_switchgrass   = i
        if ( trim(pftname(i)) == 'tropical_corn'                       ) ntrp_corn            = i
        if ( trim(pftname(i)) == 'irrigated_tropical_corn'             ) nirrig_trp_corn      = i
-       if ( trim(pftname(i)) == 'tropical_soybean'                    ) ntrp_soybean         = i
-       if ( trim(pftname(i)) == 'irrigated_tropical_soybean'          ) nirrig_trp_soybean   = i
+       if ( trim(pftname(i)) == 'covercrop_1'                         ) ncovercrop_1         = i
+       if ( trim(pftname(i)) == 'covercrop_2'                         ) ncovercrop_2         = i
+    
     end do
 
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
@@ -1139,8 +1148,7 @@ contains
                 i == nirrig_sugarbeet       .or. i == nirrig_sugarcane   .or. &
                 i == nirrig_sunflower       .or.                              &
                 i == nirrig_miscanthus      .or. i == nirrig_switchgrass .or. &
-                i == nirrig_trp_corn        .or.                              &
-                i == nirrig_trp_soybean) )then
+                i == nirrig_trp_corn ) )then
              ! correct
           else if ( this%irrigated(i) == 0.0_r8 )then
              ! correct
@@ -1194,6 +1202,16 @@ contains
     ! so we can't handle it in the general loop below. But CLM always uses type 0, so
     ! handle it specially here.
     this%is_pft_known_to_model(0) = .true.
+    this%is_pft_known_to_model(27) = .true.
+    this%is_pft_known_to_model(28) = .true.
+    this%is_pft_known_to_model(55) = .true.
+    this%is_pft_known_to_model(56) = .true.
+    this%is_pft_known_to_model(59) = .true.
+    this%is_pft_known_to_model(60) = .true.
+    this%is_pft_known_to_model(65) = .true.
+    this%is_pft_known_to_model(66) = .true.
+    this%is_pft_known_to_model(78) = .true.
+    this%is_pft_known_to_model(79) = .true.
 
     ! NOTE(wjs, 2015-10-04) Currently, mergetoclmpft is only used for crop types.
     ! However, we handle it more generally here (treating ALL pft types), in case its use
@@ -1374,7 +1392,8 @@ contains
     deallocate( this%fun_cn_flex_b)
     deallocate( this%fun_cn_flex_c)
     deallocate( this%FUN_fracfixers)
-    
+    deallocate( this%covercrop)
+
   end subroutine Clean
 
 end module pftconMod
