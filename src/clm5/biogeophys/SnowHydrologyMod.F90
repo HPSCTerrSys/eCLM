@@ -28,6 +28,7 @@ module SnowHydrologyMod
   use TemperatureType , only : temperature_type
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
+  use SoilStateType   , only : soilstate_type
   use LandunitType    , only : lun
   use TopoMod, only : topo_type
   use ColumnType      , only : col
@@ -772,7 +773,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CombineSnowLayers(bounds, num_snowc, filter_snowc, &
-        aerosol_inst, temperature_inst, waterflux_inst, waterstate_inst)
+        aerosol_inst, temperature_inst, waterflux_inst, waterstate_inst, soilstate_inst)
     !
     ! !DESCRIPTION:
     ! Combine snow layers that are less than a minimum thickness or mass
@@ -782,6 +783,7 @@ contains
     !
     ! !USES:
     use LakeCon          , only : lsadz
+    use clm_varcon       , only : denice
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -791,6 +793,7 @@ contains
     type(temperature_type) , intent(inout) :: temperature_inst
     type(waterflux_type)   , intent(inout) :: waterflux_inst
     type(waterstate_type)  , intent(inout) :: waterstate_inst
+    type(soilstate_type)   , intent(in)    :: soilstate_inst
     !
     ! !LOCAL VARIABLES:
     integer :: c, fc                            ! column indices
@@ -803,7 +806,11 @@ contains
     real(r8):: zwliq (bounds%begc:bounds%endc)  ! total liquid water in snow
     real(r8):: dzminloc(size(dzmin))            ! minimum of top snow layer (local)
     real(r8):: dtime                            !land model time step (sec)
-
+    real(r8):: vol_ice                          ! partial volume of ice
+    real(r8):: eff_porosity                     ! effective porosity = porosity - vol_ice
+    real(r8):: h2osoi_liq_saturated             ! amount of h2osoi_liq at top soil layer when fully saturated (accounts for h2osoi_ice)
+    real(r8):: excess_h2osno_liq                ! excess snow water in 1st soil layer
+    real(r8),parameter :: m_to_mm = 1.e3_r8     ! convert meters to mm
     !-----------------------------------------------------------------------
 
     associate( &
@@ -823,6 +830,8 @@ contains
 
          frac_sno         => waterstate_inst%frac_sno_col        , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
          frac_sno_eff     => waterstate_inst%frac_sno_eff_col    , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+         watsat           => soilstate_inst%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
+
          snow_depth       => waterstate_inst%snow_depth_col      , & ! Output: [real(r8) (:)   ] snow height (m)
          int_snow         => waterstate_inst%int_snow_col        , & ! Output:  [real(r8) (:)   ] integrated snowfall [mm]
          h2osno           => waterstate_inst%h2osno_col          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)
@@ -997,6 +1006,20 @@ contains
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,0) = 0.0_r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
+
+                ! If top soil layer (j=1) is saturated, move excess snow liquid water back to the bottom snow layer (j=0)
+                vol_ice = min(watsat(c,1), h2osoi_ice(c,1)/(dz(c,1)*denice))
+                eff_porosity = watsat(c,1)-vol_ice
+                h2osoi_liq_saturated = eff_porosity*dz(c,1)*m_to_mm
+                excess_h2osno_liq = max(h2osoi_liq(c,1) - h2osoi_liq_saturated, 0._r8)
+                if (excess_h2osno_liq > 0._r8) then
+                  ! TODO: Remove all debugging statements later
+                  write(iulog, "('DEBUGWATSAT[col', I0, '] Before excess correction: total h2osoi_liq across a snow column=', F0.8, ' mm, vol_ice[1]=', F0.8, ' m^3/m^3, eff_porosity[1]=', F0.8, '  m^3/m^3' )") c, zwliq(c), vol_ice, eff_porosity
+                  write(iulog, "('DEBUGWATSAT[col', I0, '] Before excess correction: h2osoi_liq[0]=', F0.8, ' mm, h2osoi_liq[1]=', F0.8, ' mm, h2osoi_liq_saturated[1]=', F0.8, ' mm')") c, h2osoi_liq(c,0), h2osoi_liq(c,1), h2osoi_liq_saturated
+                  h2osoi_liq(c,0) = excess_h2osno_liq
+                  h2osoi_liq(c,1) = h2osoi_liq_saturated
+                  write(iulog, "('DEBUGWATSAT[col', I0, '] After excess correction: h2osoi_liq[0]=', F0.8, ' mm, h2osoi_liq[1]=', F0.8, ' mm')") c, h2osoi_liq(c,0), h2osoi_liq(c,1)
+                end if
              end if
              if (ltype(l) == istwet) then
                 h2osoi_liq(c,0) = 0.0_r8

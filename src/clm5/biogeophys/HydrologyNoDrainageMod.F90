@@ -245,7 +245,7 @@ contains
 
       ! Combine thin snow elements
       call CombineSnowLayers(bounds, num_snowc, filter_snowc, &
-           aerosol_inst, temperature_inst, waterflux_inst, waterstate_inst)
+           aerosol_inst, temperature_inst, waterflux_inst, waterstate_inst, soilstate_inst)
 
       ! Divide thick snow elements
       call DivideSnowLayers(bounds, num_snowc, filter_snowc, &
