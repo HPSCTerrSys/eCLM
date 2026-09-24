@@ -135,7 +135,7 @@ contains
          ! clm3.5/bld/usr.src/SoilHydrologyMod.F90
          ! ignore drainage calculations in eCLM and instead pass these fluxes to ParFlow 
          call ParFlowDrainage(bounds, num_hydrologyc, filter_hydrologyc, &
-            num_urbanc, filter_urbanc, waterflux_inst)
+            num_urbanc, filter_urbanc, waterstate_inst, waterflux_inst)
       else
          if (use_aquifer_layer()) then 
             call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
