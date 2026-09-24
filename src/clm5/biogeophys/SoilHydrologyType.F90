@@ -29,6 +29,9 @@ Module SoilHydrologyType
      real(r8), pointer :: qcharge_col       (:)     ! col aquifer recharge rate (mm/s) 
      real(r8), pointer :: fracice_col       (:,:)   ! col fractional impermeability (-)
      real(r8), pointer :: icefrac_col       (:,:)   ! col fraction of ice       
+#ifdef COUP_OAS_PFL
+     real(r8), pointer :: pfl_eff_porosity_col (:,:) ! col effective porosity sent to ParFlow = watsat - vol_ice (m3/m3), unfloored
+#endif
      real(r8), pointer :: fcov_col          (:)     ! col fractional impermeable area
      real(r8), pointer :: fsat_col          (:)     ! col fractional area with water table at surface
      real(r8), pointer :: h2osfc_thresh_col (:)     ! col level at which h2osfc "percolates"   (time constant)
@@ -130,6 +133,9 @@ contains
     allocate(this%qcharge_col       (begc:endc))                 ; this%qcharge_col       (:)     = nan
     allocate(this%fracice_col       (begc:endc,nlevgrnd))        ; this%fracice_col       (:,:)   = nan
     allocate(this%icefrac_col       (begc:endc,nlevgrnd))        ; this%icefrac_col       (:,:)   = nan
+#ifdef COUP_OAS_PFL
+    allocate(this%pfl_eff_porosity_col (begc:endc,nlevgrnd))     ; this%pfl_eff_porosity_col(:,:) = 0._r8
+#endif
     allocate(this%fcov_col          (begc:endc))                 ; this%fcov_col          (:)     = nan   
     allocate(this%fsat_col          (begc:endc))                 ; this%fsat_col          (:)     = nan
     allocate(this%h2osfc_thresh_col (begc:endc))                 ; this%h2osfc_thresh_col (:)     = nan
@@ -235,6 +241,7 @@ contains
     ! averaging for the accum field
     do c = bounds%begc, bounds%endc
        this%num_substeps_col(c) = spval
+       this%icefrac_col(c,:) = spval
     end do
 
   end subroutine InitCold
