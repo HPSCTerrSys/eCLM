@@ -65,6 +65,9 @@ module clm_driver
   use atm2lndMod             , only : downscale_forcings
   use lnd2atmMod             , only : lnd2atm
   use lnd2glcMod             , only : lnd2glc_type
+#ifdef COUP_OAS_PFL
+  use pfl2lndMod             , only : downscale_parflow_fields, import_parflow_porosity
+#endif
   !
   use seq_drydep_mod         , only : n_drydep, drydep_method, DD_XLND
   use DryDepVelocity         , only : depvel_compute
@@ -442,6 +445,13 @@ contains
             qflx_runoff_rain_to_snow_conversion = &
             waterflux_inst%qflx_runoff_rain_to_snow_conversion_col(bounds_clump%begc:bounds_clump%endc))
 
+#ifdef COUP_OAS_PFL
+       call downscale_parflow_fields(bounds_clump, filter(nc), pfl2lnd_inst, waterstate_inst)
+       if (get_nstep() == 0) then
+          ! eCLM porosity values are overwritten only for the 1st timestep.
+          call import_parflow_porosity(bounds_clump, filter(nc), pfl2lnd_inst, soilstate_inst)
+       end if
+#endif
        ! Update filters that depend on variables set in clm_drv_init
        
        call setExposedvegpFilter(bounds_clump, &
@@ -1254,10 +1264,6 @@ contains
          h2osoi_liq         => waterstate_inst%h2osoi_liq_col            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
          h2osno_old         => waterstate_inst%h2osno_old_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O) at previous time step
          frac_iceold        => waterstate_inst%frac_iceold_col           , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
-#ifdef COUP_OAS_PFL
-         pfl_psi            => waterstate_inst%pfl_psi_col               , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
-         pfl_h2osoi_liq     => waterstate_inst%pfl_h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
-#endif
          elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
          esai               => canopystate_inst%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow    
          frac_veg_nosno     => canopystate_inst%frac_veg_nosno_patch     , & ! Output: [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
@@ -1304,18 +1310,6 @@ contains
             end if
          end do
       end do
-
-#ifdef COUP_OAS_PFL
-      ! Cover every column that soilwater_parflow will later overwrite.
-      do f = 1, num_nolakec
-        c = filter_nolakec(f)
-        if (col%hydrologically_active(c)) then
-          g = col%gridcell(c)
-          pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
-          pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
-        end if
-      end do
-#endif
     end associate
 
   end subroutine clm_drv_init

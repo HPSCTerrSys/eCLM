@@ -64,6 +64,9 @@ module clm_instMod
   use CNFireEmissionsMod              , only : fireemis_type
   use atm2lndType                     , only : atm2lnd_type
   use lnd2atmType                     , only : lnd2atm_type
+#ifdef COUP_OAS_PFL
+  use pfl2lndType                     , only : pfl2lnd_type
+#endif
   use lnd2glcMod                      , only : lnd2glc_type 
   use glc2lndMod                      , only : glc2lnd_type
   use glcBehaviorMod                  , only : glc_behavior_type
@@ -111,6 +114,9 @@ module clm_instMod
   type(waterflux_type)                    :: waterflux_inst
   type(waterstate_type)                   :: waterstate_inst
   type(atm2lnd_type)                      :: atm2lnd_inst
+#ifdef COUP_OAS_PFL
+  type(pfl2lnd_type)                      :: pfl2lnd_inst
+#endif
   type(glc2lnd_type)                      :: glc2lnd_inst
   type(lnd2atm_type)                      :: lnd2atm_inst
   type(lnd2glc_type)                      :: lnd2glc_inst
@@ -259,6 +265,11 @@ contains
 
     call glc2lnd_inst%Init( bounds, glc_behavior )
     call lnd2glc_inst%Init( bounds )
+
+#ifdef COUP_OAS_PFL
+    ! Initialize parflow->lnd data structures
+    call pfl2lnd_inst%Init( bounds )
+#endif
 
     ! Initialization of public data types
 
@@ -465,6 +476,12 @@ contains
 
     call atm2lnd_inst%restart (bounds, ncid, flag=flag)
 
+#ifdef COUP_OAS_PFL
+    !
+    ! Might be necessary in the future.
+    !
+    !call pfl2lnd_inst%restart (bounds, ncid, flag=flag)
+#endif
     call canopystate_inst%restart (bounds, ncid, flag=flag)
 
     call energyflux_inst%restart (bounds, ncid, flag=flag, &
