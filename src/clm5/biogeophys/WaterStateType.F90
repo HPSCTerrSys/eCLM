@@ -108,6 +108,7 @@ module WaterstateType
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: pfl_psi_col            (:,:) ! ParFlow pressure head   COUP_OAS_PFL
      real(r8), pointer :: pfl_h2osoi_liq_col     (:,:) ! ParFlow soil liquid     COUP_OAS_PFL
+     real(r8), pointer :: pfl_top_sync_col       (:)   ! liquid+ice of soil layer 1 right after ParFlow state was applied [kg/m2]
 #endif
      real(r8), pointer :: total_plant_stored_h2o_col(:)! col water that is bound in plants, including roots, sapwood, leaves, etc
                                                        ! in most cases, the vegetation scheme does not have a dynamic
@@ -247,6 +248,7 @@ contains
 #ifdef COUP_OAS_PFL
     allocate(this%pfl_psi_col            (begc:endc,1:nlevgrnd))          ; this%pfl_psi_col           (:,:) = nan
     allocate(this%pfl_h2osoi_liq_col     (begc:endc,1:nlevgrnd))          ; this%pfl_h2osoi_liq_col    (:,:) = nan
+    allocate(this%pfl_top_sync_col       (begc:endc))                     ; this%pfl_top_sync_col      (:)   = nan
 #endif
     allocate(this%h2osoi_ice_tot_col     (begc:endc))                     ; this%h2osoi_ice_tot_col     (:)   = nan
     allocate(this%h2osoi_liq_tot_col     (begc:endc))                     ; this%h2osoi_liq_tot_col     (:)   = nan
