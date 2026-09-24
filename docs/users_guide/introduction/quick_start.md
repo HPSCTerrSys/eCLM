@@ -76,6 +76,7 @@ cd extpar_eclm_wuestebach_sp/static.resources
 cd ..
 git lfs install
 git lfs pull
+cd static.resources
 ```
 
 4a. (ONLY on JSC systems) Set up the run directory with symlinks and a
