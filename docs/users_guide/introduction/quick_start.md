@@ -47,6 +47,8 @@ mpirun -np 1 eclm.exe
 
 ## Setting up eCLM on HPC systems
 
+### HPC at Forschungszentrum Jülich (Jülich Supercomputing Centre, JSC)
+
 The steps are similar to above. The only difference is the build step and running step.
 
 1. Download TSMP2 build system.
@@ -70,7 +72,9 @@ cd TSMP2
 cd ..
 git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
 cd extpar_eclm_wuestebach_sp/static.resources
-./generate_wtb_namelists.sh 1x1_wuestebach
+
+# Download Wüstebach namelist configuration (internal repository, login needed)
+git clone --branch relative-paths https://icg4geo.icg.kfa-juelich.de/Configurations/CLM/wtb_eclm.git 1x1_wuestebach
 
 # Download large files (possibly git-lfs needs to be configured)
 cd ..
@@ -79,8 +83,7 @@ git lfs pull
 cd static.resources
 ```
 
-4a. (ONLY on JSC systems) Set up the run directory with symlinks and a
-job script.
+4. Set up the run directory with symlinks and a job script.
 
 ```sh
 cd 1x1_wuestebach
@@ -114,7 +117,41 @@ Run eCLM:
 sbatch jobscript.slurm
 ```
 
-4b. (GENERIC HPC) Run eCLM.
+### Generic HPC
+
+The steps are similar to above. The only difference is the build step and running step.
+
+1. Download TSMP2 build system.
+
+```sh
+# eCLM can be easily built via the TSMP2 build system. The following step will download TSMP2.
+git clone https://github.com/HPSCTerrSys/TSMP2.git
+```
+
+2. Build eCLM
+
+```sh
+# Build eCLM
+cd TSMP2
+./build_tsmp2.sh eCLM
+```
+
+3. Set up a simulation experiment.
+
+```sh
+cd ..
+git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
+cd extpar_eclm_wuestebach_sp/static.resources
+./generate_wtb_namelists.sh 1x1_wuestebach
+
+# Download large files (possibly git-lfs needs to be configured)
+cd ..
+git lfs install
+git lfs pull
+cd static.resources
+```
+
+4b. Run eCLM.
 
 ```sh
 cd 1x1_wuestebach
