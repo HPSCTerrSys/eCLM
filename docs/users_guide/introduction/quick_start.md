@@ -83,7 +83,7 @@ git lfs pull
 cd static.resources
 ```
 
-4. Set up the run directory with symlinks and a job script.
+4a. Set up the run directory with symlinks.
 
 ```sh
 cd 1x1_wuestebach
@@ -91,14 +91,23 @@ cd 1x1_wuestebach
 # Symlink the eCLM executable and the JSC environment file
 ln -s ../../../TSMP2/bin/JUWELS_eCLM/bin/eclm.exe eclm.exe
 ln -s ../../../TSMP2/bin/JUWELS_eCLM/jsc.2025.intel.psmpi loadenvs
+```
 
-cat > jobscript.slurm << 'EOF'
+4b. Set up the run directory with a job script adding your account
+information.
+
+```sh
+# Set your compute account and CPU partition
+ACCOUNT=<account>
+PARTITION=<partition>
+
+cat > jobscript.slurm << EOF
 #!/usr/bin/env bash
 #SBATCH --job-name=1x1_wuestebach
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=48
-#SBATCH --account=jibg36
-#SBATCH --partition=batch
+#SBATCH --account=${ACCOUNT}
+#SBATCH --partition=${PARTITION}
 #SBATCH --time=0:30:00
 #SBATCH --output=logs/%j.eclm.1x1_wuestebach.out
 #SBATCH --error=logs/%j.eclm.1x1_wuestebach.err
@@ -107,7 +116,7 @@ cat > jobscript.slurm << 'EOF'
 source loadenvs
 
 # Run model
-srun -n $SLURM_NTASKS eclm.exe
+srun -n \$SLURM_NTASKS eclm.exe
 EOF
 ```
 
