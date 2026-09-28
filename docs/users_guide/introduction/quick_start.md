@@ -66,48 +66,54 @@ cd TSMP2
 ./build_tsmp2.sh eCLM
 ```
 
-3. Set up a simulation experiment.
+3. Clone namelist files for the simulation experiment Wüstebach.
 
 ```sh
 cd ..
-git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/extpar_eclm_wuestebach_sp.git
-cd extpar_eclm_wuestebach_sp/static.resources
 
 # Download Wüstebach namelist configuration (internal repository, login needed)
 git clone --branch relative-paths https://icg4geo.icg.kfa-juelich.de/Configurations/CLM/wtb_eclm.git 1x1_wuestebach
-
-# Download large files (possibly git-lfs needs to be configured)
-cd ..
-git lfs install
-git lfs pull
-cd static.resources
 ```
 
-4a. Set up the run directory with symlinks.
+4. Set up the executable and environment file with symlinks.
 
 ```sh
 cd 1x1_wuestebach
 
 # Symlink the eCLM executable and the JSC environment file
-ln -s ../../../TSMP2/bin/JUWELS_eCLM/bin/eclm.exe eclm.exe
-ln -s ../../../TSMP2/bin/JUWELS_eCLM/jsc.2025.intel.psmpi loadenvs
+ln -s ../TSMP2/bin/JUWELS_eCLM/bin/eclm.exe eclm.exe
+ln -s ../TSMP2/bin/JUWELS_eCLM/jsc.2025.intel.psmpi loadenvs
 ```
 
-4b. Set up the run directory with a job script adding your account
-information.
+5. Activate your JSC account
 
 ```sh
-# Set your compute account and CPU partition
+# Select a compute project with a non-empty 'budget-accounts'. If you don't have 
+# one, request access via JuDOOR: https://judoor.fz-juelich.de
+jutil user projects -u $USER
+
+# Set your compute account, examples `cjicg41`, `cslts`
 ACCOUNT=<account>
-PARTITION=<partition>
+
+# Activate project
+jutil env activate -p ${ACCOUNT} 
+
+# Check if $BUDGET_ACCOUNTS was set
+echo $BUDGET_ACCOUNTS
+```
+
+6. Write the job script including your account information
+(automatically if `$BUDGET_ACCOUNTS` is set).
+
+```sh
 
 cat > jobscript.slurm << EOF
 #!/usr/bin/env bash
 #SBATCH --job-name=1x1_wuestebach
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=48
-#SBATCH --account=${ACCOUNT}
-#SBATCH --partition=${PARTITION}
+#SBATCH --account=${BUDGET_ACCOUNTS}
+#SBATCH --partition=dc-cpu
 #SBATCH --time=0:30:00
 #SBATCH --output=logs/%j.eclm.1x1_wuestebach.out
 #SBATCH --error=logs/%j.eclm.1x1_wuestebach.err
@@ -116,11 +122,11 @@ cat > jobscript.slurm << EOF
 source loadenvs
 
 # Run model
-srun -n \$SLURM_NTASKS eclm.exe
+srun -n 1 eclm.exe
 EOF
 ```
 
-Run eCLM:
+6. Run eCLM using the jobscript:
 ```sh
 # On JSC systems (submit via Slurm):
 sbatch jobscript.slurm
