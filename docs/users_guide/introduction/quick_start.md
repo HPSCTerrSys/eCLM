@@ -92,11 +92,8 @@ ln -s ../TSMP2/bin/JUWELS_eCLM/jsc.2025.intel.psmpi loadenvs
 # one, request access via JuDOOR: https://judoor.fz-juelich.de
 jutil user projects -u $USER
 
-# Set your compute account, examples `cjicg41`, `cslts`
-ACCOUNT=<account>
-
 # Activate project
-jutil env activate -p ${ACCOUNT} 
+jutil env activate -p <account>
 
 # Check if $BUDGET_ACCOUNTS was set
 echo $BUDGET_ACCOUNTS
