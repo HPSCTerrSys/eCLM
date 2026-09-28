@@ -72,7 +72,7 @@ cd TSMP2
 cd ..
 
 # Download Wüstebach namelist configuration (internal repository, login needed)
-git clone --branch relative-paths https://icg4geo.icg.kfa-juelich.de/Configurations/CLM/wtb_eclm.git 1x1_wuestebach
+git clone https://icg4geo.icg.kfa-juelich.de/Configurations/CLM/wtb_eclm.git 1x1_wuestebach
 ```
 
 4. Set up the executable and environment file with symlinks.
