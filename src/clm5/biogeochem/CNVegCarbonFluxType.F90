@@ -137,7 +137,6 @@ module CNVegCarbonFluxType
      real(r8), pointer :: livestemc_to_litter_patch                 (:)     ! live stem C litterfall (gC/m2/s)
      real(r8), pointer :: grainc_to_food_patch                      (:)     ! grain C to food for prognostic crop(gC/m2/s)
      real(r8), pointer :: grainc_to_seed_patch                      (:)     ! grain C to seed for prognostic crop(gC/m2/s)
-
      ! pruning litterfall flux
      real(r8), pointer :: prunec_to_litter_patch                    (:)     ! pruning C litterfall (gC/m2/s)
      real(r8), pointer :: prunec_storage_to_litter_patch            (:)     ! pruning storage C litterfall (gC/m2/s)
@@ -666,6 +665,7 @@ contains
     allocate(this%dwt_crop_productc_gain_patch      (begp:endp))                  ; this%dwt_crop_productc_gain_patch(:) =nan
 
     allocate(this%crop_seedc_to_leaf_patch          (begp:endp))                  ; this%crop_seedc_to_leaf_patch  (:)  =nan
+
     allocate(this%crop_seedc_to_froot_patch         (begp:endp))                  ; this%crop_seedc_to_froot_patch  (:)  =nan
     allocate(this%crop_seedc_to_deadstem_patch      (begp:endp))                  ; this%crop_seedc_to_deadstem_patch (:)  =nan 
     ! tboas: always allocate fertC_patch so associate pointer in CNPhenologyMod is always valid
@@ -1287,7 +1287,6 @@ contains
        call hist_addfld1d (fname='LIVECROOT_MR', units='gC/m^2/s', &
             avgflag='A', long_name='live coarse root maintenance respiration', &
             ptr_patch=this%livecroot_mr_patch, default='inactive')
-
        this%grain_mr_patch(begp:endp) = spval
        call hist_addfld1d (fname='GRAIN_MR', units='gC/m^2/s', &
             avgflag='A', long_name='grain maintenance respiration', &
@@ -2956,7 +2955,6 @@ contains
        call hist_addfld1d (fname='CROP_SEEDC_TO_DEADSTEM', units='gC/m^2/s', &
             avgflag='A', long_name='crop seed source to deadstem', &
             ptr_patch=this%crop_seedc_to_deadstem_patch, default='inactive')
-
         this%sr_col(begc:endc) = spval
         call hist_addfld1d (fname='SR', units='gC/m^2/s', &
              avgflag='A', long_name='total soil respiration (HR + root resp)', &
@@ -3140,7 +3138,6 @@ contains
        call hist_addfld1d (fname='C13_CROP_SEEDC_TO_DEADSTEM', units='gC13/m^2/s', &
             avgflag='A', long_name='C13 crop seed source to deadstem', &
             ptr_patch=this%crop_seedc_to_deadstem_patch, default='inactive')
-
         this%sr_col(begc:endc) = spval
         call hist_addfld1d (fname='C13_SR', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 total soil respiration (HR + root resp)', &
@@ -3296,7 +3293,6 @@ contains
        call hist_addfld1d (fname='C14_CROP_SEEDC_TO_LEAF', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 crop seed source to leaf', &
             ptr_patch=this%crop_seedc_to_leaf_patch, default='inactive')
-
        this%crop_seedc_to_froot_patch(begp:endp) = spval
        call hist_addfld1d (fname='C14_CROP_SEEDC_TO_FROOT', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 crop seed source to fine root', &
@@ -3306,7 +3302,6 @@ contains
        call hist_addfld1d (fname='C14_CROP_SEEDC_TO_DEADSTEM', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 crop seed source to deadstem', &
             ptr_patch=this%crop_seedc_to_deadstem_patch, default='inactive')
-
 
         this%sr_col(begc:endc) = spval
         call hist_addfld1d (fname='C14_SR', units='gC14/m^2/s', &
@@ -4597,7 +4592,8 @@ contains
        ! total ecosystem respiration, autotrophic + heterotrophic (ER)
        this%er_col(c) = &
             this%ar_col(c) + &
-            soilbiogeochem_hr_col(c) 
+            soilbiogeochem_hr_col(c)
+       
        ! coarse woody debris heterotrophic respiration
        this%cwdc_hr_col(c) = 0._r8
 

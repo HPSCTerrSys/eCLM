@@ -6,56 +6,56 @@ module CNNDynamicsMod
   ! for coupled carbon-nitrogen code.
   !
   ! !USES:
-  use shr_kind_mod                     , only : r8 => shr_kind_r8
-  use decompMod                        , only : bounds_type
-  use clm_varcon                       , only : dzsoi_decomp, zisoi
+  use shr_kind_mod                    , only : r8 => shr_kind_r8
+  use decompMod                       , only : bounds_type
+  use clm_varcon                      , only : dzsoi_decomp, zisoi
   use clm_varpar                       , only : nlevdecomp
   use clm_varctl                       , only : manure_fmet, manure_fcel, manure_flig, &
                                                 manure_injection_depth  ! tboas: cfert_inparm params
   use clm_varctl                       , only : manure_freq_years, manure_apply_month, &
                                                 manure_apply_day  ! tboas: timing/frequency params
-  use clm_varctl                       , only : use_nitrif_denitrif, use_vertsoilc, nfix_timeconst
+  use clm_varctl                      , only : use_nitrif_denitrif, use_vertsoilc, nfix_timeconst
   use clm_varctl                       , only : use_cfert, use_crop  ! tboas: use_cfert for organic C fert
-  use subgridAveMod                    , only : p2c
-  use atm2lndType                      , only : atm2lnd_type
-  use CNVegStateType                   , only : cnveg_state_type
-  use CNVegCarbonFluxType              , only : cnveg_carbonflux_type
-  use CNVegNitrogenStateType           , only : cnveg_nitrogenstate_type
-  use CNVegNitrogenFluxType            , only : cnveg_nitrogenflux_type
-  use SoilBiogeochemStateType          , only : soilbiogeochem_state_type
-  use SoilBiogeochemNitrogenStateType  , only : soilbiogeochem_nitrogenstate_type
-  use SoilBiogeochemNitrogenFluxType   , only : soilbiogeochem_nitrogenflux_type
-  use WaterStateType                   , only : waterstate_type
-  use WaterFluxType                    , only : waterflux_type
-  use CropType                         , only : crop_type
-  use ColumnType                       , only : col
-  use PatchType                        , only : patch
-  use perf_mod                         , only : t_startf, t_stopf
+  use subgridAveMod                   , only : p2c
+  use atm2lndType                     , only : atm2lnd_type
+  use CNVegStateType                  , only : cnveg_state_type
+  use CNVegCarbonFluxType             , only : cnveg_carbonflux_type
+  use CNVegNitrogenStateType	      , only : cnveg_nitrogenstate_type
+  use CNVegNitrogenFluxType	      , only : cnveg_nitrogenflux_type
+  use SoilBiogeochemStateType         , only : soilbiogeochem_state_type
+  use SoilBiogeochemNitrogenStateType , only : soilbiogeochem_nitrogenstate_type
+  use SoilBiogeochemNitrogenFluxType  , only : soilbiogeochem_nitrogenflux_type
+  use WaterStateType                  , only : waterstate_type
+  use WaterFluxType                   , only : waterflux_type
+  use CropType                        , only : crop_type
+  use ColumnType                      , only : col                
+  use PatchType                       , only : patch                
+  use perf_mod                        , only : t_startf, t_stopf
   !
   implicit none
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNNDynamicsReadNML   ! Read in namelist for Mineral Nitrogen Dynamics
-  public :: CNNDeposition        ! Update N deposition rate from atm forcing
-  public :: CNNFixation          ! Update N Fixation rate
-  public :: CNNFert              ! Update N fertilizer for crops
+  public :: CNNDynamicsReadNML          ! Read in namelist for Mineral Nitrogen Dynamics
+  public :: CNNDeposition               ! Update N deposition rate from atm forcing
+  public :: CNNFixation                 ! Update N Fixation rate
+  public :: CNNFert                     ! Update N fertilizer for crops
   public :: CNCSoilFert          ! tboas: route organic C fertilizer into litter pools
-  public :: CNSoyfix             ! N Fixation for soybeans
-  public :: CNFreeLivingFixation ! N free living fixation
+  public :: CNSoyfix                    ! N Fixation for soybeans
+  public :: CNFreeLivingFixation        ! N free living fixation
+
   !
   ! !PRIVATE DATA MEMBERS:
   type, private :: params_type
-     real(r8) :: freelivfix_intercept ! intercept of line of free living fixation with annual ET
-     real(r8) :: freelivfix_slope_wET ! slope of line of free living fixation with annual ET
+     real(r8) :: freelivfix_intercept   ! intercept of line of free living fixation with annual ET
+     real(r8) :: freelivfix_slope_wET   ! slope of line of free living fixation with annual ET
   end type params_type
   type(params_type) :: params_inst
-
   ! tboas: litter partitioning fractions for manure C (metabolic / cellulose / lignin)
   ! Based on typical farmyard manure composition (10% lignin, ~60% metabolic, ~30% cellulose)
   ! tboas: manure_fmet/fcel/flig and manure_injection_depth imported from clm_varctl via use statement below
-
   !-----------------------------------------------------------------------
+
 contains
 
   !-----------------------------------------------------------------------
@@ -65,17 +65,18 @@ contains
     ! Read the namelist for Mineral Nitrogen Dynamics
     !
     ! !USES:
-    use fileutils    , only : getavu, relavu, opnfil
-    use shr_nl_mod   , only : shr_nl_find_group_name
-    use spmdMod      , only : masterproc, mpicom
-    use shr_mpi_mod  , only : shr_mpi_bcast
-    use clm_varctl   , only : iulog
-    use shr_log_mod  , only : errMsg => shr_log_errMsg
-    use abortutils   , only : endrun
+    use fileutils      , only : getavu, relavu, opnfil
+    use shr_nl_mod     , only : shr_nl_find_group_name
+    use spmdMod        , only : masterproc, mpicom
+    use shr_mpi_mod    , only : shr_mpi_bcast
+    use clm_varctl     , only : iulog
+    use shr_log_mod    , only : errMsg => shr_log_errMsg
+    use abortutils     , only : endrun
     !
     character(len=*), intent(in) :: NLFilename
     !
     integer  :: ierr, unitn
+
     character(len=*), parameter :: subname = 'CNNDynamicsReadNML'
     character(len=*), parameter :: nmlname = 'mineral_nitrogen_dynamics'
     !-----------------------------------------------------------------------
@@ -83,12 +84,13 @@ contains
     real(r8) :: freelivfix_slope_wET
     namelist /mineral_nitrogen_dynamics/ freelivfix_slope_wET, freelivfix_intercept
 
+
+
     freelivfix_intercept = 0.0117_r8
     freelivfix_slope_wET = 0.0006_r8
-
     if (masterproc) then
        unitn = getavu()
-       write(iulog,*) 'Read in '//nmlname//' namelist'
+       write(iulog,*) 'Read in '//nmlname//'  namelist'
        call opnfil (NLFilename, unitn, 'F')
        call shr_nl_find_group_name(unitn, nmlname, status=ierr)
        if (ierr == 0) then
@@ -111,7 +113,6 @@ contains
        write(iulog,nml=mineral_nitrogen_dynamics)
        write(iulog,*) ' '
     end if
-
     params_inst%freelivfix_intercept = freelivfix_intercept
     params_inst%freelivfix_slope_wET = freelivfix_slope_wET
 
@@ -121,49 +122,63 @@ contains
   subroutine CNNDeposition( bounds, &
        atm2lnd_inst, soilbiogeochem_nitrogenflux_inst )
     !
-    type(bounds_type)                        , intent(in)    :: bounds
-    type(atm2lnd_type)                       , intent(in)    :: atm2lnd_inst
-    type(soilbiogeochem_nitrogenflux_type)   , intent(inout) :: soilbiogeochem_nitrogenflux_inst
+    type(bounds_type)        , intent(in)    :: bounds  
+    type(atm2lnd_type)       , intent(in)    :: atm2lnd_inst
+    type(soilbiogeochem_nitrogenflux_type) , intent(inout) :: soilbiogeochem_nitrogenflux_inst
     !
     integer :: g,c
     !-----------------------------------------------------------------------
-    associate( &
+    
+    associate(                                                                & 
          forc_ndep    => atm2lnd_inst%forc_ndep_grc                            , &
          ndep_to_sminn => soilbiogeochem_nitrogenflux_inst%ndep_to_sminn_col   &
          )
+      
       do c = bounds%begc, bounds%endc
          g = col%gridcell(c)
          ndep_to_sminn(c) = forc_ndep(g)
+
       end do
+
     end associate
+
   end subroutine CNNDeposition
 
   !-----------------------------------------------------------------------
   subroutine CNFreeLivingFixation(num_soilc, filter_soilc, &
        waterflux_inst, soilbiogeochem_nitrogenflux_inst)
+
+
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
     use clm_varcon       , only : secspday, spval
+ 
     integer                                 , intent(in)    :: num_soilc
     integer                                 , intent(in)    :: filter_soilc(:)
-    type(soilbiogeochem_nitrogenflux_type)  , intent(inout) :: soilbiogeochem_nitrogenflux_inst
-    type(waterflux_type)                    , intent(inout) :: waterflux_inst
+   
+    type(soilbiogeochem_nitrogenflux_type) , intent(inout) :: soilbiogeochem_nitrogenflux_inst 
+    type(waterflux_type)                   , intent(inout) :: waterflux_inst 
     !
     integer  :: c,fc
     real(r8) :: dayspyr, secs_per_year
-    associate( &
+
+       associate(                                                                        &
          AnnET           => waterflux_inst%AnnET                                       , &
          freelivfix_slope => params_inst%freelivfix_slope_wET                          , &
          freelivfix_inter => params_inst%freelivfix_intercept                          , &
          ffix_to_sminn   => soilbiogeochem_nitrogenflux_inst%ffix_to_sminn_col        &
-         )
-      dayspyr       = get_days_per_year()
-      secs_per_year = dayspyr*24_r8*3600_r8
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
+                ) 
+       
+       dayspyr = get_days_per_year()
+       secs_per_year = dayspyr*24_r8*3600_r8
+
+       do fc = 1,num_soilc
+           c = filter_soilc(fc)
          ffix_to_sminn(c) = (freelivfix_slope*(max(0._r8,AnnET(c))*secs_per_year) + freelivfix_inter)/secs_per_year
-      end do
-    end associate
+
+       end do
+
+  end associate
   end subroutine CNFreeLivingFixation
 
   !-----------------------------------------------------------------------
@@ -172,26 +187,30 @@ contains
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
     use clm_varcon       , only : secspday, spval
-    use CNSharedParamsMod, only : use_fun
+    use CNSharedParamsMod    , only: use_fun
     integer                                , intent(in)    :: num_soilc
     integer                                , intent(in)    :: filter_soilc(:)
     type(cnveg_carbonflux_type)            , intent(inout) :: cnveg_carbonflux_inst
-    type(soilbiogeochem_nitrogenflux_type) , intent(inout) :: soilbiogeochem_nitrogenflux_inst
+    type(soilbiogeochem_nitrogenflux_type) , intent(inout) :: soilbiogeochem_nitrogenflux_inst 
     !
     integer  :: c,fc
     real(r8) :: t, dayspyr
     !-----------------------------------------------------------------------
-    associate( &
+
+    associate(                                                                & 
          cannsum_npp  => cnveg_carbonflux_inst%annsum_npp_col          , &
          col_lag_npp  => cnveg_carbonflux_inst%lag_npp_col             , &
          nfix_to_sminn => soilbiogeochem_nitrogenflux_inst%nfix_to_sminn_col &
          )
+
       dayspyr = get_days_per_year()
+
       if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
          do fc = 1,num_soilc
-            c = filter_soilc(fc)
+            c = filter_soilc(fc)         
+
             if (col_lag_npp(c) /= spval) then
-               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)
+               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
                nfix_to_sminn(c) = max(0._r8,t)
             else
                nfix_to_sminn(c) = 0._r8
@@ -200,32 +219,37 @@ contains
       else
          do fc = 1,num_soilc
             c = filter_soilc(fc)
+
             t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
             nfix_to_sminn(c) = max(0._r8,t)
          end do
       endif
       if(use_fun)then
-         nfix_to_sminn(c) = 0.0_r8
+        nfix_to_sminn(c) = 0.0_r8
       end if
-    end associate
-  end subroutine CNNFixation
 
+    end associate
+
+  end subroutine CNNFixation
+ 
   !-----------------------------------------------------------------------
   subroutine CNNFert(bounds, num_soilc, filter_soilc, &
        cnveg_nitrogenflux_inst, soilbiogeochem_nitrogenflux_inst)
     !
-    type(bounds_type)                      , intent(in)    :: bounds
+    type(bounds_type)                      , intent(in)    :: bounds  
     integer                                , intent(in)    :: num_soilc
     integer                                , intent(in)    :: filter_soilc(:)
     type(cnveg_nitrogenflux_type)          , intent(in)    :: cnveg_nitrogenflux_inst
-    type(soilbiogeochem_nitrogenflux_type) , intent(inout) :: soilbiogeochem_nitrogenflux_inst
+    type(soilbiogeochem_nitrogenflux_type) , intent(inout) :: soilbiogeochem_nitrogenflux_inst 
     !
     integer :: c,fc
     !-----------------------------------------------------------------------
-    associate( &
+
+    associate(                                                                  &   
          fert         => cnveg_nitrogenflux_inst%fert_patch                        , &
          fert_to_sminn => soilbiogeochem_nitrogenflux_inst%fert_to_sminn_col       &
          )
+      
       call p2c(bounds, num_soilc, filter_soilc, &
            fert(bounds%begp:bounds%endp), &
            fert_to_sminn(bounds%begc:bounds%endc))
@@ -357,28 +381,29 @@ contains
     !
     use pftconMod, only : ntmp_soybean, nirrig_tmp_soybean, ntrp_soybean, nirrig_trp_soybean
     !
-    type(bounds_type)                      , intent(in)    :: bounds
+    type(bounds_type)                       , intent(in)    :: bounds  
     integer                                , intent(in)    :: num_soilc
     integer                                , intent(in)    :: filter_soilc(:)
     integer                                , intent(in)    :: num_soilp
     integer                                , intent(in)    :: filter_soilp(:)
-    type(waterstate_type)                  , intent(in)    :: waterstate_inst
-    type(crop_type)                        , intent(in)    :: crop_inst
-    type(cnveg_state_type)                 , intent(in)    :: cnveg_state_inst
-    type(cnveg_nitrogenflux_type)          , intent(inout) :: cnveg_nitrogenflux_inst
-    type(soilbiogeochem_state_type)        , intent(in)    :: soilbiogeochem_state_inst
-    type(soilbiogeochem_nitrogenstate_type), intent(in)    :: soilbiogeochem_nitrogenstate_inst
-    type(soilbiogeochem_nitrogenflux_type) , intent(inout) :: soilbiogeochem_nitrogenflux_inst
+    type(waterstate_type)                   , intent(in)    :: waterstate_inst
+    type(crop_type)                         , intent(in)    :: crop_inst
+    type(cnveg_state_type)                  , intent(in)    :: cnveg_state_inst
+    type(cnveg_nitrogenflux_type)           , intent(inout) :: cnveg_nitrogenflux_inst
+    type(soilbiogeochem_state_type)         , intent(in)    :: soilbiogeochem_state_inst
+    type(soilbiogeochem_nitrogenstate_type) , intent(in)    :: soilbiogeochem_nitrogenstate_inst
+    type(soilbiogeochem_nitrogenflux_type)  , intent(inout) :: soilbiogeochem_nitrogenflux_inst 
     !
-    integer  :: fp,p,c
+    integer :: fp,p,c
     real(r8) :: fxw,fxn,fxg,fxr
     real(r8) :: soy_ndemand
-    real(r8) :: GDDfrac
-    real(r8) :: sminnthreshold1, sminnthreshold2
-    real(r8) :: GDDfracthreshold1, GDDfracthreshold2
-    real(r8) :: GDDfracthreshold3, GDDfracthreshold4
+    real(r8):: GDDfrac
+    real(r8):: sminnthreshold1, sminnthreshold2
+    real(r8):: GDDfracthreshold1, GDDfracthreshold2
+    real(r8):: GDDfracthreshold3, GDDfracthreshold4
     !-----------------------------------------------------------------------
-    associate( &
+
+    associate(                                                                      & 
          wf            => waterstate_inst%wf_col                                         , &
          hui           => crop_inst%gddplant_patch                                        , &
          croplive      => crop_inst%croplive_patch                                        , &
@@ -390,29 +415,33 @@ contains
          soyfixn_to_sminn => soilbiogeochem_nitrogenflux_inst%soyfixn_to_sminn_col        &
          )
 
-      sminnthreshold1    = 30._r8
-      sminnthreshold2    = 10._r8
-      GDDfracthreshold1  = 0.15_r8
-      GDDfracthreshold2  = 0.30_r8
-      GDDfracthreshold3  = 0.55_r8
-      GDDfracthreshold4  = 0.75_r8
+      sminnthreshold1 = 30._r8
+      sminnthreshold2 = 10._r8
+      GDDfracthreshold1 = 0.15_r8
+      GDDfracthreshold2 = 0.30_r8
+      GDDfracthreshold3 = 0.55_r8
+      GDDfracthreshold4 = 0.75_r8
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          c = patch%column(p)
 
+
          if (croplive(p) .and. &
               (patch%itype(p) == ntmp_soybean .or. &
                patch%itype(p) == nirrig_tmp_soybean .or. &
                patch%itype(p) == ntrp_soybean .or. &
-               patch%itype(p) == nirrig_trp_soybean)) then
+               patch%itype(p) == nirrig_trp_soybean) ) then
+
 
             if (fpg(c) < 1._r8) then
                soy_ndemand = 0._r8
                soy_ndemand = plant_ndemand(p) - plant_ndemand(p)*fpg(c)
 
+
                fxw = 0._r8
                fxw = wf(c)/0.85_r8
+
 
                if (sminn(c) > sminnthreshold1) then
                   fxn = 0._r8
@@ -422,7 +451,9 @@ contains
                   fxn = 1._r8
                end if
 
+
                GDDfrac = hui(p) / gddmaturity(p)
+
                if (GDDfrac <= GDDfracthreshold1) then
                   fxg = 0._r8
                else if (GDDfrac > GDDfracthreshold1 .and. GDDfrac <= GDDfracthreshold2) then
@@ -435,15 +466,22 @@ contains
                   fxg = 0._r8
                end if
 
-               fxr = min(1._r8, fxw, fxn) * fxg
+
+               fxr = min(1._r8, fxw, fxn) * fxg 
                fxr = max(0._r8, fxr)
-               soyfixn(p) = fxr * soy_ndemand
+               soyfixn(p) =  fxr * soy_ndemand
                soyfixn(p) = min(soyfixn(p), soy_ndemand)
+
             else
+
                soyfixn(p) = 0._r8
+
             end if
+
          else
+
             soyfixn(p) = 0._r8
+
          end if
       end do
 

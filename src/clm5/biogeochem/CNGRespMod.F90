@@ -63,7 +63,7 @@ contains
          frootcn                       =>    pftcon%frootcn                                            , & ! Input:  fine root C:N (gC/gN)                    
          livewdcn                      =>    pftcon%livewdcn                                           , & ! Input:  live wood (phloem and ray parenchyma) C:N (gC/gN)  
          perennial                     =>    pftcon%perennial                                          , & ! Input:  binary flag for perennial crop types (1=perennial, 0=not perennial) 
-
+         
          laisun                        =>    canopystate_inst%laisun_patch                             , & ! Input:  [real(r8) (:)]  sunlit projected leaf area index      
          laisha                        =>    canopystate_inst%laisha_patch                             , & ! Input:  [real(r8) (:)]  shaded projected leaf area index  
          
@@ -156,20 +156,19 @@ contains
                transfer_grain_gr(p) = grainc_xfer_to_grainc(p) * grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
                
             else
-               cpool_livestem_gr(p) = cpool_to_livestemc(p) * grperc(ivt(p)) * respfact_livestem     
+            cpool_livestem_gr(p) = cpool_to_livestemc(p) * grperc(ivt(p)) * respfact_livestem     
 
-               cpool_livestem_storage_gr(p) = cpool_to_livestemc_storage(p) * grperc(ivt(p)) * grpnow(ivt(p)) * &
-                    respfact_livestem_storage   
+            cpool_livestem_storage_gr(p) = cpool_to_livestemc_storage(p) * grperc(ivt(p)) * grpnow(ivt(p)) * &
+                 respfact_livestem_storage   
 
-               transfer_livestem_gr(p) = livestemc_xfer_to_livestemc(p) * grperc(ivt(p)) * (1._r8 - grpnow(ivt(p))) * &
-                    respfact_livestem_storage   
+            transfer_livestem_gr(p) = livestemc_xfer_to_livestemc(p) * grperc(ivt(p)) * (1._r8 - grpnow(ivt(p))) * &
+                 respfact_livestem_storage   
 
-               cpool_grain_gr(p) = cpool_to_grainc(p) * grperc(ivt(p))   
+            cpool_grain_gr(p) = cpool_to_grainc(p) * grperc(ivt(p))   
 
-               cpool_grain_storage_gr(p) = cpool_to_grainc_storage(p) * grperc(ivt(p)) * grpnow(ivt(p)) 
+            cpool_grain_storage_gr(p) = cpool_to_grainc_storage(p) * grperc(ivt(p)) * grpnow(ivt(p)) 
 
-               transfer_grain_gr(p) = grainc_xfer_to_grainc(p) * grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
-                
+            transfer_grain_gr(p) = grainc_xfer_to_grainc(p) * grperc(ivt(p)) * (1._r8 - grpnow(ivt(p))) 
             end if
          end if
 
@@ -214,7 +213,6 @@ respfact_livecroot_storage
             cpool_deadcroot_storage_gr(p) = cpool_to_deadcrootc_storage(p) * grperc(ivt(p)) * grpnow(ivt(p)) 
 
             transfer_deadcroot_gr(p) = deadcrootc_xfer_to_deadcrootc(p) * grperc(ivt(p)) * (1._r8 - grpnow(ivt(p))) 
-            
          end if
 
       end do

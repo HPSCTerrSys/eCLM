@@ -99,7 +99,7 @@ contains
          laimx              =>  pftcon%laimx                            , & ! Input:
          nstem              =>  pftcon%nstem                            , & ! Input:  Tree number density (#ind/m2) (introduced by E.Kluzek (2020, unreleased code) and adopted here by O.Dombrowski)
          taper              =>  pftcon%taper                            , & ! Input:  ratio of height:radius_breast_height (tree allometry) (introduced by E.Kluzek (2020, unreleased code) and adopted here by O.Dombrowski)         
-
+         
          allom2             =>  dgv_ecophyscon%allom2                   , & ! Input:  [real(r8) (:) ] ecophys const                                     
          allom3             =>  dgv_ecophyscon%allom3                   , & ! Input:  [real(r8) (:) ] ecophys const                                     
 
@@ -116,6 +116,7 @@ contains
          farea_burned       =>  cnveg_state_inst%farea_burned_col       , & ! Input:  [real(r8) (:) ] F. Li and S. Levis                                 
          htmx               =>  cnveg_state_inst%htmx_patch             , & ! Output: [real(r8) (:) ] max hgt attained by a crop during yr (m)          
          peaklai            =>  cnveg_state_inst%peaklai_patch          , & ! Output: [integer  (:) ] 1: max allowed lai; 0: not at max                  
+
          dormant_flag       =>  cnveg_state_inst%dormant_flag_patch     , & ! Output: [real(r8) (:) ] dormancy flag
          harvdate           =>  crop_inst%harvdate_patch                , & ! Input:  [integer  (:) ] harvest date                                       
 
@@ -130,6 +131,7 @@ contains
          )
 
       dt = real( get_rad_step_size(), r8 )
+
 
       ! patch loop
       do fp = 1,num_soilp
@@ -196,10 +198,10 @@ contains
 
                else
                   !correct height calculation if doing accelerated spinup
-                  if (spinup_state == 2) then                    
+                  if (spinup_state == 2) then
                     if (perennial(ivt(p)) == 1._r8 .and. dormant_flag(p) == 1._r8 .and.  deadstemc(p)== 0._r8) then
                         htop(p) =  0.01_r8                    
-                    else
+                  else
                        htop(p) = ((3._r8 * deadstemc(p) * 10._r8 * taper(ivt(p)) * taper(ivt(p)))/ &
                             (SHR_CONST_PI * nstem(ivt(p)) * dwood(ivt(p))))**(1._r8/3._r8)
                     end if
@@ -218,6 +220,7 @@ contains
                ! Adding test to keep htop from getting too close to forcing height for windspeed
                ! Also added for grass, below, although it is not likely to ever be an issue.
                htop(p) = min(htop(p),(forc_hgt_u_patch(p)/(displar(ivt(p))+z0mr(ivt(p))))-3._r8)
+
                ! Peter Thornton, 8/11/2004
                ! Adding constraint to keep htop from going to 0.0.
                ! This becomes an issue when fire mortality is pushing deadstemc

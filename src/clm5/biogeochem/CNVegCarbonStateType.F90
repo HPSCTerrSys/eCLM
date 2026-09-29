@@ -403,7 +403,6 @@ contains
        call hist_addfld1d (fname='DEADSTEMC_XFER', units='gC/m^2', &
             avgflag='A', long_name='dead stem C transfer', &
             ptr_patch=this%deadstemc_xfer_patch, default='inactive')    
-
        this%deadstemc_soy_patch(begp:endp) = spval
        call hist_addfld1d (fname='DEADSTEMC_SOY', units='gC/m^2', &
             avgflag='A', long_name='dead stem C at start of year', &
@@ -955,7 +954,7 @@ contains
                 this%leafc_patch(p)          = 0._r8
                 this%leafc_storage_patch(p)  = 0._r8
                 this%frootc_patch(p)         = 0._r8            
-                this%frootc_storage_patch(p) = 0._r8   
+                this%frootc_storage_patch(p) = 0._r8    
 !                if (pftcon%perennial(patch%itype(p)) == 1._r8 .and. pftcon%woody(patch%itype(p)) == 1._r8) then
 !                   this%leafc_patch(p)          = 0._r8
 !                   this%leafc_storage_patch(p)  = cnvegcstate_const%initial_vegC * ratio
@@ -974,6 +973,7 @@ contains
           this%leafc_xfer_patch(p) = 0._r8
           this%leafc_storage_xfer_acc_patch(p)  = 0._r8
           this%storage_cdemand_patch(p)         = 0._r8
+
           if (MM_Nuptake_opt .eqv. .false.) then  ! if not running in floating CN ratio option 
              this%frootc_patch(p)            = 0._r8 
              this%frootc_storage_patch(p)    = 0._r8 
@@ -986,7 +986,7 @@ contains
 
           if (pftcon%woody(patch%itype(p)) == 1._r8) then
              if (patch%itype(p) < npcropmin)then ! (added by O.Dombrowski)
-                this%deadstemc_patch(p) = 0.1_r8 * ratio
+             this%deadstemc_patch(p) = 0.1_r8 * ratio
              else
                 this%deadstemc_patch(p) = 0._r8 ! (added by O.Dombrowski)
              end if
@@ -1220,7 +1220,6 @@ contains
        call restartvar(ncid=ncid, flag=flag, varname='deadstemc_storage_soy', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%deadstemc_storage_soy_patch)
-
        call restartvar(ncid=ncid, flag=flag, varname='livecrootc', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%livecrootc_patch) 
@@ -1427,7 +1426,6 @@ contains
                    ! on the first), so the soy/fruit-tree reference pools were
                    ! reset on the wrong patches.
                    l = patch%landunit(i)
-
                    if (lun%itype(l) == istcrop .and. pftcon%perennial(patch%itype(i)) == 1._r8) then
                      this%deadstemc_soy_patch(i) = 0._r8
                      this%deadstemc_storage_soy_patch(i) = 0._r8
@@ -1473,9 +1471,9 @@ contains
 
                       if (pftcon%woody(patch%itype(i)) == 1._r8) then
                          if (patch%itype(p) < npcropmin) then
-                            this%deadstemc_patch(i) = 0.1_r8 * ratio
-                         else
-                            this%deadstemc_patch(i) = 0._r8 
+                         this%deadstemc_patch(i) = 0.1_r8 * ratio
+                      else
+                         this%deadstemc_patch(i) = 0._r8 
                          end if
                       end if
                       this%deadstemc_storage_patch(i)  = 0._r8 
@@ -2536,6 +2534,7 @@ contains
             this%deadstemc_patch(p)  + &
             this%livecrootc_patch(p) + &
             this%deadcrootc_patch(p)
+
        ! stored vegetation carbon, excluding cpool (STORVEGC)
        this%storvegc_patch(p) =                &
             this%cpool_patch(p)              + &
@@ -2564,16 +2563,18 @@ contains
                this%dispvegc_patch(p)       + &
                this%grainc_patch(p)
        end if
-       
+
        ! total vegetation carbon, excluding cpool (TOTVEGC)
        this%totvegc_patch(p) = &
             this%dispvegc_patch(p) + &
             this%storvegc_patch(p)
+
        ! total patch-level carbon, including xsmrpool, ctrunc
        this%totc_patch(p) = &
             this%totvegc_patch(p) + &
             this%xsmrpool_patch(p) + &
             this%ctrunc_patch(p)
+
        if (use_crop) then 
           this%totc_patch(p) = this%totc_patch(p) + this%cropseedc_deficit_patch(p) + &
                this%xsmrpool_loss_patch(p)
@@ -2616,6 +2617,7 @@ contains
             soilbiogeochem_totlitc_col(c)   + &
             soilbiogeochem_totsomc_col(c)   + &
             soilbiogeochem_ctrunc_col(c)
+
     end do
 
   end subroutine Summary_carbonstate

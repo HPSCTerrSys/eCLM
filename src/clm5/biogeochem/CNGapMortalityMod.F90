@@ -128,7 +128,7 @@ contains
     associate(                                         & 
          ivt        =>    patch%itype                  , & ! Input:  [integer  (:) ]  patch vegetation type                                
 
-         woody      =>    pftcon%woody               , & ! Input:  binary flag for woody lifeform         
+         woody      =>    pftcon%woody               , & ! Input:  binary flag for woody lifeform                    
          perennial  =>    pftcon%perennial           , & ! Input:  binary flag for perennial crop types           
          
          greffic    =>    dgvs_inst%greffic_patch    , & ! Input:  [real(r8) (:) ]                                                    

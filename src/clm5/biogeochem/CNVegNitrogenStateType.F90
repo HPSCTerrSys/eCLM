@@ -286,7 +286,6 @@ contains
     call hist_addfld1d (fname='DEADSTEMN_XFER', units='gN/m^2', &
          avgflag='A', long_name='dead stem N transfer', &
          ptr_patch=this%deadstemn_xfer_patch, default='inactive')    
-
     this%deadstemn_soy_patch(begp:endp) = spval
     call hist_addfld1d (fname='DEADSTEMN_SOY', units='gN/m^2', &
          avgflag='A', long_name='dead stem N at start of year', &
@@ -486,7 +485,7 @@ contains
 
           if (pftcon%woody(patch%itype(p)) == 1._r8) then
              if (patch%itype(p) < npcropmin) then
-                this%deadstemn_patch(p) = deadstemc_patch(p) / pftcon%deadwdcn(patch%itype(p))
+             this%deadstemn_patch(p) = deadstemc_patch(p) / pftcon%deadwdcn(patch%itype(p))
              else
                 this%deadstemn_patch(p) =  0._r8
              end if
@@ -657,7 +656,6 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='deadstemn_storage_soy', xtype=ncd_double,  &         
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadstemn_storage_soy_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='livecrootn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livecrootn_patch) 
@@ -815,7 +813,7 @@ contains
    
              if (pftcon%woody(patch%itype(p)) == 1._r8) then
                 if (patch%itype(p) < npcropmin) then   
-                   this%deadstemn_patch(p) = deadstemc_patch(p) / pftcon%deadwdcn(patch%itype(p))
+                this%deadstemn_patch(p) = deadstemc_patch(p) / pftcon%deadwdcn(patch%itype(p))
                 else
                    this%deadstemn_patch(p) = 0._r8  
                 end if

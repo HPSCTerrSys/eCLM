@@ -97,6 +97,7 @@ contains
 
     allocate(this%actual_leafcn(bounds%begp:bounds%endp))         ; this%actual_leafcn(:)         = nan
     allocate(this%actual_storage_leafcn(bounds%begp:bounds%endp)) ; this%actual_storage_leafcn(:) = nan
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -324,6 +325,7 @@ contains
          perennial                    => pftcon%perennial                                          , & ! Input:  binary flag for perennial crop phenology (0 or 1) (added by O.Dombrowski)
 
          croplive                     => crop_inst%croplive_patch                                  , & ! Input:  [logical  (:)   ]  flag, true if planted, not harvested
+
          hui                          => crop_inst%gddplant_patch                                  , & ! Input:  [real(r8) (:)   ]  =gdd since planting (gddplant)
          gddmaturity                  => cnveg_state_inst%gddmaturity_patch                        , & ! Input:  [real(r8) (:)   ]  gdd until harvest
          peaklai                      => cnveg_state_inst%peaklai_patch                            , & ! Input:  [integer  (:)   ]  1: max allowed lai; 0: not at max
@@ -332,6 +334,7 @@ contains
          c_allometry                  => cnveg_state_inst%c_allometry_patch                        , & ! Output: [real(r8) (:)   ]  C allocation index (DIM)
          n_allometry                  => cnveg_state_inst%n_allometry_patch                        , & ! Output: [real(r8) (:)   ]  N allocation index (DIM)
          downreg                      => cnveg_state_inst%downreg_patch                            , & ! Output: [real(r8) (:)   ]  fractional reduction in GPP due to N limitation (DIM)
+
          harvest_flag                 => cnveg_state_inst%harvest_flag_patch                       , & ! Output: [real(r8) (:)    ] harvest flag for perennial crops
          storage_flag                 => cnveg_state_inst%storage_flag_patch                       , & ! Output: [real(r8) (:)    ]  flag to switch to storage growth for perennials
          annsum_npp                   => cnveg_carbonflux_inst%annsum_npp_patch                    , & ! Input:  [real(r8) (:)   ]  annual sum of NPP, for wood allocation
@@ -403,12 +406,14 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
+
       ! patch loop to distribute the available N between the competing patches
       ! on the basis of relative demand, and allocate C and N to new growth and storage
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          c = patch%column(p)
+
          ! set some local allocation variables
          f1 = froot_leaf(ivt(p))
          f2 = croot_stem(ivt(p))
@@ -517,6 +522,7 @@ contains
          ! transfer pools
 
          nlc = plant_calloc(p) / c_allometry(p)
+
          cpool_to_leafc(p)          = nlc * fcur
          cpool_to_leafc_storage(p)  = nlc * (1._r8 - fcur)
          cpool_to_frootc(p)         = nlc * f1 * fcur
@@ -543,6 +549,7 @@ contains
             cpool_to_grainc(p)             = nlc * f5 * fcur
             cpool_to_grainc_storage(p)     = nlc * f5 * (1._r8 -fcur)
          end if
+
          ! allocation for deciduous fruit trees (added by O.Dombrowski)
          ! for this crop type, storage growth is considered next to photosynthetic growth
          ! after harvest photosynthates are allocated to storage pool for refilling of C reserves
@@ -886,6 +893,8 @@ contains
                             + cpool_to_grainc_storage(p) 
          end if
          cpool_to_gresp_storage(p) = gresp_storage * g1 * (1._r8 - g2)
+
+
          ! computing 1.) fractional N demand and 2.) N allocation after uptake for different plant parts
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          if (downreg_opt .eqv. .false. .AND. CN_partition_opt == 1) then
@@ -960,10 +969,9 @@ contains
                     npool_to_deadstemn_storage_demand(p)  + &
                     npool_to_livecrootn_demand(p) + npool_to_livecrootn_storage_demand(p) + npool_to_deadcrootn_demand(p) + &
                     npool_to_deadcrootn_storage_demand(p) + &
-                    npool_to_grainn_demand(p) + npool_to_grainn_storage_demand(p)
+                 npool_to_grainn_demand(p) + npool_to_grainn_storage_demand(p)
 
             end if
-
 
             if (total_plant_Ndemand(p) == 0.0_r8) then    ! removing division by zero
 
@@ -1467,6 +1475,7 @@ contains
          tempmax_retransn      => cnveg_state_inst%tempmax_retransn_patch           , & ! Output: [real(r8) (:)   ]  temporary annual max of retranslocated N pool (gN/m2)
          annsum_potential_gpp  => cnveg_state_inst%annsum_potential_gpp_patch       , & ! Output: [real(r8) (:)   ]  annual sum of potential GPP
          annmax_retransn       => cnveg_state_inst%annmax_retransn_patch            , & ! Output: [real(r8) (:)   ]  annual max of retranslocated N pool
+
          dormant_flag          => cnveg_state_inst%dormant_flag_patch               , & ! Output: [real(r8) (:)   ]  dormancy flag
          harvest_flag          => cnveg_state_inst%harvest_flag_patch               , & ! Input: [real(r8) (:)   ]  harvest flag
          xsmrpool              => cnveg_carbonstate_inst%xsmrpool_patch             , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool
@@ -1568,7 +1577,6 @@ contains
          else if (ivt(p) >= npcropmin) then
             if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
          end if     ! carbon flux available for allocation
-
          ! carbon flux available for allocation
          availc(p) = gpp(p) - mr
 
@@ -1594,11 +1602,13 @@ contains
 
          ! no allocation when available c is negative
          availc(p) = max(availc(p),0.0_r8)
+
          ! test for an xsmrpool deficit
          if (xsmrpool(p) < 0.0_r8) then
             ! Running a deficit in the xsmrpool, so the first priority is to let
             ! some availc from this timestep accumulate in xsmrpool.
             ! Determine rate of recovery for xsmrpool deficit
+
             xsmrpool_recover(p) = -xsmrpool(p)/(dayscrecover*secspday)
             if (xsmrpool_recover(p) < availc(p)) then
                ! available carbon reduced by amount for xsmrpool recovery
@@ -1753,74 +1763,74 @@ contains
                      grain_flag(p) = 0._r8 !set to 0 before the next grainfill starts  
                   end if
                else ! normal crops
-                  ! same phases appear in subroutine CropPhenology
+               ! same phases appear in subroutine CropPhenology
 
-                  ! Phase 1 completed:
-                  ! ==================
+               ! Phase 1 completed:
+               ! ==================
                   ! if hui is less than the number of gdd needed for filling of
                   ! grain
                   ! leaf emergence also has to have taken place for lai changes to
                   ! occur
-                  ! and carbon assimilation
-                  ! Next phase: leaf emergence to start of leaf decline
+               ! and carbon assimilation
+               ! Next phase: leaf emergence to start of leaf decline
 
-                  if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p)) then
-   
-                     ! allocation rules for crops based on maturity and linear decrease
-                     ! of amount allocated to roots over course of the growing season
+               if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p)) then
 
-                     if (peaklai(p) == 1) then ! lai at maximum allowed
-                        arepr(p) = 0._r8
-                        aleaf(p) = 1.e-5_r8
-                        astem(p) = 0._r8
-                        aroot(p) = 1._r8 - arepr(p) - aleaf(p) - astem(p)
-                     else
-                        arepr(p) = 0._r8
-                        aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
-                             (arooti(ivt(p)) - arootf(ivt(p))) *  &
-                             min(1._r8, hui(p)/gddmaturity(p))))
-                        fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
-                             exp(-bfact(ivt(p))*hui(p)/huigrain(p))) / &
-                             (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
-                        aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
-                        astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
-                     end if
+                  ! allocation rules for crops based on maturity and linear decrease
+                  ! of amount allocated to roots over course of the growing season
 
-                     ! AgroIBIS included here an immediate adjustment to aleaf & astem if the
-                     ! predicted lai from the above allocation coefficients exceeded laimx.
-                     ! We have decided to live with lais slightly higher than laimx by
-                     ! enforcing the cap in the following tstep through the peaklai logic above.
+                  if (peaklai(p) == 1) then ! lai at maximum allowed
+                     arepr(p) = 0._r8
+                     aleaf(p) = 1.e-5_r8
+                     astem(p) = 0._r8
+                     aroot(p) = 1._r8 - arepr(p) - aleaf(p) - astem(p)
+                  else
+                     arepr(p) = 0._r8
+                     aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
+                          (arooti(ivt(p)) - arootf(ivt(p))) *  &
+                          min(1._r8, hui(p)/gddmaturity(p))))
+                     fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
+                          exp(-bfact(ivt(p))*hui(p)/huigrain(p))) / &
+                          (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
+                     aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
+                     astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
+                  end if
 
-                     astemi(p) = astem(p) ! save for use by equations after shift
-                     aleafi(p) = aleaf(p) ! to reproductive phenology stage begins
-                     grain_flag(p) = 0._r8 ! setting to 0 while in phase 2
+                  ! AgroIBIS included here an immediate adjustment to aleaf & astem if the
+                  ! predicted lai from the above allocation coefficients exceeded laimx.
+                  ! We have decided to live with lais slightly higher than laimx by
+                  ! enforcing the cap in the following tstep through the peaklai logic above.
 
-                     ! Phase 2 completed:
-                     ! ==================
+                  astemi(p) = astem(p) ! save for use by equations after shift
+                  aleafi(p) = aleaf(p) ! to reproductive phenology stage begins
+                  grain_flag(p) = 0._r8 ! setting to 0 while in phase 2
+
+                  ! Phase 2 completed:
+                  ! ==================
                      ! shift allocation either when enough gdd are accumulated or
                      ! maximum number
-                     ! of days has elapsed since planting
+                  ! of days has elapsed since planting
 
-                  else if (hui(p) >= huigrain(p)) then
-                     aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) - &
-                          (arooti(ivt(p)) - arootf(ivt(p))) * min(1._r8, hui(p)/gddmaturity(p))))
-                     if (astemi(p) > astemf(ivt(p))) then
-                        astem(p) = max(0._r8, max(astemf(ivt(p)), astem(p) * &
-                             (1._r8 - min((hui(p)-                 &
-                             huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
-                             huigrain(p)),1._r8)**allconss(ivt(p)) )))
-                     end if
+               else if (hui(p) >= huigrain(p)) then
+                  aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) - &
+                       (arooti(ivt(p)) - arootf(ivt(p))) * min(1._r8, hui(p)/gddmaturity(p))))
+                  if (astemi(p) > astemf(ivt(p))) then
+                     astem(p) = max(0._r8, max(astemf(ivt(p)), astem(p) * &
+                          (1._r8 - min((hui(p)-                 &
+                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
+                          huigrain(p)),1._r8)**allconss(ivt(p)) )))
+                  end if
 
                      ! If crops have hit peaklai, then set leaf allocation to small
                      ! value
-                     if (peaklai(p) == 1) then 
-                        aleaf(p) = 1.e-5_r8
-                     else if (aleafi(p) > aleaff(ivt(p))) then
-                        aleaf(p) = max(1.e-5_r8, max(aleaff(ivt(p)), aleaf(p) * &
-                             (1._r8 - min((hui(p)-                    &
-                             huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
-                             huigrain(p)),1._r8)**allconsl(ivt(p)) )))
-                     end if
+                  if (peaklai(p) == 1) then 
+                     aleaf(p) = 1.e-5_r8
+                  else if (aleafi(p) > aleaff(ivt(p))) then
+                     aleaf(p) = max(1.e-5_r8, max(aleaff(ivt(p)), aleaf(p) * &
+                          (1._r8 - min((hui(p)-                    &
+                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
+                          huigrain(p)),1._r8)**allconsl(ivt(p)) )))
+                  end if
 
 
                   if (astem(p) == astemf(ivt(p)) .or. &
@@ -1840,19 +1850,19 @@ contains
 
                   arepr(p) = 1._r8 - aroot(p) - astem(p) - aleaf(p)
 
-                  else                   ! pre emergence
-                     aleaf(p) = 1.e-5_r8 ! allocation coefficients should be irrelevant
-                     astem(p) = 0._r8    ! because crops have no live carbon pools;
-                     aroot(p) = 0._r8    ! this applies to this "else" and to the "else"
-                     arepr(p) = 0._r8    ! a few lines down
-                  end if
+               else                   ! pre emergence
+                  aleaf(p) = 1.e-5_r8 ! allocation coefficients should be irrelevant
+                  astem(p) = 0._r8    ! because crops have no live carbon pools;
+                  aroot(p) = 0._r8    ! this applies to this "else" and to the "else"
+                  arepr(p) = 0._r8    ! a few lines down
+               end if
                end if ! perennial or normal crop
 
                f1 = aroot(p) / aleaf(p)
                f3 = astem(p) / aleaf(p)
                f5 = arepr(p) / aleaf(p)
                g1 = 0.25_r8
-               
+
                if (perennial(ivt(p)) == 1._r8 .and. dormant_flag(p) == 1._r8) then !dormant tree has no allocation to any organs (similar to .not. croplive)
                   f1 = 0._r8
                   f3 = 0._r8
@@ -1878,9 +1888,9 @@ contains
                        n_allometry(p) = 1._r8/cnl + f1/cnfr + f5/cng + (f3*f4*(1._r8+f2))/cnlw + &
                             (f3*(1._r8-f4)*(1._r8+f2))/cndw
                     else
-                       c_allometry(p) = (1._r8)*(1._r8+f1+f3*(1._r8+f2))
-                       n_allometry(p) = 1._r8/cnl + f1/cnfr + (f3*f4*(1._r8+f2))/cnlw + &
-                            (f3*(1._r8-f4)*(1._r8+f2))/cndw
+	            c_allometry(p) = (1._r8)*(1._r8+f1+f3*(1._r8+f2))
+	            n_allometry(p) = 1._r8/cnl + f1/cnfr + (f3*f4*(1._r8+f2))/cnlw + &
+	                 (f3*(1._r8-f4)*(1._r8+f2))/cndw
                     end if
 	         else if (ivt(p) >= npcropmin .and. perennial(ivt(p)) == 0.0_r8) then ! skip generic crops
 	            cng = graincn(ivt(p))
@@ -2009,6 +2019,7 @@ contains
          else
             avail_retransn(p) = 0.0_r8
          end if
+
          ! make sure available retrans N doesn't exceed storage
          avail_retransn(p) = min(avail_retransn(p), retransn(p)/dt)
 
