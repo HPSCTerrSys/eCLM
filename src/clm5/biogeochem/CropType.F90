@@ -623,7 +623,6 @@ contains
           if (masterproc) write(iulog,*) subname// &
                ': cold-hardening state absent from restart file - reset to planting defaults'
        end if
-
        if (flag=='read' )then
           call this%checkDates( )  ! Check that restart date is same calendar date (even if year is different)
                                    ! This is so that it properly goes through

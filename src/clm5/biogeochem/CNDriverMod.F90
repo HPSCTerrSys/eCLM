@@ -285,7 +285,6 @@ contains
        call CNNFert(bounds, num_soilc,filter_soilc, &
             cnveg_nitrogenflux_inst, soilbiogeochem_nitrogenflux_inst)
 
-
        if (.not. use_fun) then  ! if FUN is active, then soy fixation handled by FUN
           call  CNSoyfix (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                waterstate_inst, crop_inst, cnveg_state_inst, cnveg_nitrogenflux_inst , &

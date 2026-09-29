@@ -176,6 +176,7 @@ contains
          ivt            =>    patch%itype                                 , & ! Input:  [integer  (:)   ]  patch vegetation type                                
 
          woody          =>    pftcon%woody                              , & ! Input:  binary flag for woody lifeform (1=woody, 0=not woody)
+
          perennial      =>    pftcon%perennial                          , & ! Input:  binary flag for perennial crop types (1=perennial, 0= not perennial)
          frac_veg_nosno =>    canopystate_inst%frac_veg_nosno_patch     , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          laisun         =>    canopystate_inst%laisun_patch             , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index                  

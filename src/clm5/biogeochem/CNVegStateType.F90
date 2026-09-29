@@ -43,7 +43,6 @@ module CNVegStateType
      real(r8) , pointer :: arooti2_patch               (:)     ! patch saved root allocation coefficient from phase 2
      real(r8) , pointer :: arooti3_patch               (:)     ! patch saved root allocation coefficient from phase 3
      real(r8) , pointer :: aleafi3_patch               (:)     ! patch saved leaf allocation coefficient from phase 3
-
      real(r8) , pointer :: aleaf_patch                 (:)     ! patch leaf allocation coefficient
      real(r8) , pointer :: astem_patch                 (:)     ! patch stem allocation coefficient
      real(r8) , pointer :: htmx_patch                  (:)     ! patch max hgt attained by a crop during yr (m)
@@ -422,7 +421,6 @@ contains
     call hist_addfld1d (fname='OFFSET2_FLAG', units='none', &
          avgflag='A', long_name='orchard rotation flag', &
          ptr_patch=this%offset2_flag_patch, default='inactive')
-
     this%offset_counter_patch(begp:endp) = spval
     call hist_addfld1d (fname='OFFSET_COUNTER', units='days', &
          avgflag='A', long_name='offset days counter', &
@@ -487,7 +485,6 @@ contains
     call hist_addfld1d (fname='STORAGE_FLAG', units='none', &
          avgflag='A', long_name='storage growth flag (perennial crops)', &
          ptr_patch=this%storage_flag_patch, default='inactive')
-
     this%tempsum_potential_gpp_patch(begp:endp) = spval
     call hist_addfld1d (fname='TEMPSUM_POTENTIAL_GPP', units='gC/m^2/yr', &
          avgflag='A', long_name='temporary annual sum of potential GPP', &
@@ -522,7 +519,6 @@ contains
     call hist_addfld1d (fname='PLANTCN', units='unitless', &
          avgflag='A', long_name='Plant C:N used by FUN', &
          ptr_patch=this%plantCN_patch, default='inactive')
-
     this%aleaf_patch(begp:endp)       = spval
     call hist_addfld1d (fname='A_LEAF', units='unitless', &
          avgflag='A', long_name='Leaf allocation coefficient', &
@@ -542,8 +538,6 @@ contains
 !    call hist_addfld1d (fname='A_ROOT', units='unitless', &
 !         avgflag='A', long_name='Root allocation coefficient', &
 !         ptr_patch=this%aroot_patch, default='inactive')
-
-
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -839,7 +833,6 @@ contains
          dim1name='pft', &
          long_name='offset flag', units='unitless' , &
          interpinic_flag='interp', readvar=readvar, data=this%offset_flag_patch) 
-
     call restartvar(ncid=ncid, flag=flag, varname='offset2_flag', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='orchard rotation flag', units='unitless' , &
@@ -985,7 +978,6 @@ contains
        call restartvar(ncid=ncid, flag=flag,  varname='aleafi3', xtype=ncd_double,  &
             dim1name='pft', long_name='Saved leaf allocation coefficient from phase 3', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%aleafi3_patch)
-
        call restartvar(ncid=ncid, flag=flag,  varname='astem', xtype=ncd_double,  &
             dim1name='pft', long_name='stem allocation coefficient', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%astem_patch)
@@ -1021,11 +1013,9 @@ contains
        call restartvar(ncid=ncid, flag=flag,  varname='huiripe', xtype=ncd_double,  &
             dim1name='pft', long_name='heat unit index needed to reach fruit cell expansion', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%huiripe_patch)
-
        call restartvar(ncid=ncid, flag=flag, varname='grain_flag', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%grain_flag_patch)
-
        call restartvar(ncid=ncid, flag=flag, varname='chill_day', xtype=ncd_double,  &   
             dim1name='pft', long_name='', units='days', &
             interpinic_flag='interp', readvar=readvar, data=this%chill_day_patch)
@@ -1049,9 +1039,6 @@ contains
        call restartvar(ncid=ncid, flag=flag, varname='storage_flag', xtype=ncd_double,  &   
             dim1name='pft', long_name='storage growth flag for perenneial crops', units='unitless', &
             interpinic_flag='interp', readvar=readvar, data=this%storage_flag_patch)
-
-
-
     end if
     if ( flag == 'read' .and. num_reseed_patch > 0 )then
        if ( masterproc ) write(iulog, *) 'Reseed dead plants for CNVegState'
@@ -1077,6 +1064,7 @@ contains
           this%annavg_t2m_patch(p)     = 280._r8
           this%tempavg_t2m_patch(p)    = 0._r8
           this%grain_flag_patch(p)     = 0._r8
+
           this%harvest_flag_patch(p)   = 0._r8 
           this%prune_flag_patch(p)     = 0._r8 
           this%storage_flag_patch(p)   = 0._r8 
