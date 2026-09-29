@@ -12,11 +12,3 @@ docs/_build/*
 *.py[cod]
 build
 bld
-*.bak_*
-build.log
-build_output.log
-install/
-apply_fym_fixes.py
-src/clm5/variables.txt
-*.nc
-docs/
