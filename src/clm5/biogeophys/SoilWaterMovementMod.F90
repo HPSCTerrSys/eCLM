@@ -1503,7 +1503,7 @@ contains
          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col     , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)
          smpmin            =>    soilstate_inst%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
          pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
-         pfl_top_sync      =>    waterstate_inst%pfl_top_sync_col   , & ! Output: [real(r8) (:)   ]  liquid+ice of soil layer 1 after exchange (kg/m2)
+         qflx_pfl_top      =>    waterflux_inst%qflx_pfl_top_col    , & ! Output: [real(r8) (:)   ]  water added to soil layer 1 after exchange (mm H2O/s)
          pfl_psi           =>    waterstate_inst%pfl_psi_col          & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
          )  ! end associate statement
 
@@ -1522,9 +1522,8 @@ contains
                smp_l(c,j) = max(smpmin(c), min(0._r8, pfl_psi(c,j)))
             end do
 
-            ! Remember the top layer mass after the exchange. Any later change by eCLM
-            ! (condensation, sublimation, snow layer combination) is passed to Parflow.
-            pfl_top_sync(c) = h2osoi_liq(c,1) + h2osoi_ice(c,1)
+            ! Reset flux after passing ParFlow state to eCLM
+            qflx_pfl_top(c) = 0._r8
 
             ! ParFlow replaces the eCLM soil water solver. Recompute hk_l from the
             ! ParFlow water content using the same formulation as compute_hydraulic_properties.

@@ -845,6 +845,9 @@ contains
          snw_rds          => waterstate_inst%snw_rds_col         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
 
          qflx_sl_top_soil => waterflux_inst%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
+#ifdef COUP_OAS_PFL
+         qflx_pfl_top     => waterflux_inst%qflx_pfl_top_col     , & ! Output: [real(r8) (:)   ] water added to soil layer 1 after ParFlow exchange (mm H2O/s)
+#endif
 
          snl              => col%snl                             , & ! Output: [integer  (:)   ] number of snow layers
          dz               => col%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)
@@ -888,7 +891,16 @@ contains
           ! use 0.01 to avoid runaway ice buildup
           if (h2osoi_ice(c,j) <= .01_r8) then
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
+#ifdef COUP_OAS_PFL
+                if (j == 0 .and. col%hydrologically_active(c)) then
+                   ! Pass the snow water to ParFlow. The ice phase is kept in eCLM.
+                   qflx_pfl_top(c) = qflx_pfl_top(c) + (h2osoi_liq(c,j) + h2osoi_ice(c,j))/dtime
+                else
+#endif
                 h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
+#ifdef COUP_OAS_PFL
+                end if
+#endif
                 h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
 
                 if (j == 0) then
@@ -1010,7 +1022,16 @@ contains
              ! this is where water is transfered from layer 0 (snow) to layer 1 (soil)
              if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                 h2osoi_liq(c,0) = 0.0_r8
+#ifdef COUP_OAS_PFL
+                if (col%hydrologically_active(c)) then
+                   ! Pass the snow water to ParFlow
+                   qflx_pfl_top(c) = qflx_pfl_top(c) + zwliq(c)/dtime
+                else
+#endif
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
+#ifdef COUP_OAS_PFL
+                end if
+#endif
              end if
              if (ltype(l) == istwet) then
                 h2osoi_liq(c,0) = 0.0_r8
