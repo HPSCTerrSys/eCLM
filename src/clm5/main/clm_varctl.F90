@@ -10,7 +10,7 @@ use shr_sys_mod , only: shr_sys_abort ! cannot use endrun here due to circular d
 !
 ! !PUBLIC MEMBER FUNCTIONS:
 implicit none
-public :: clm_varctl_set ! Set variables
+public :: clm_varctl_set    ! Set variables
 public :: cnallocate_carbon_only_set
 public :: cnallocate_carbon_only
 !
@@ -19,228 +19,348 @@ save
 !
 ! !PUBLIC TYPES:
 !
-integer , parameter, public :: iundef = -9999999
-real(r8), parameter, public :: rundef = -9999999._r8
-integer , parameter, public :: fname_len = SHR_KIND_CL ! max length of file names in this module
-
+integer , parameter, public ::  iundef = -9999999
+real(r8), parameter, public ::  rundef = -9999999._r8
+integer , parameter, public ::  fname_len = SHR_KIND_CL   ! max length of file names in this module
 !----------------------------------------------------------
+!
 ! Run control variables
-!----------------------------------------------------------
-character(len=256), public :: caseid  = ' '
-character(len=256), public :: ctitle  = ' '
-integer, public :: nsrest             = iundef
-logical, public :: is_cold_start      = .false.
-logical, public :: is_interpolated_start = .false.
-integer, public, parameter :: nsrStartup  = 0
-integer, public, parameter :: nsrContinue = 1
-integer, public, parameter :: nsrBranch   = 2
-logical, public :: brnch_retain_casename = .false.
-logical, public :: noland             = .false.
-character(len=256), public :: hostname = ' '
-character(len=256), public :: username = ' '
-character(len=256), public :: source   = "Community Land Model CLM4.0"
-character(len=256), public :: version  = " "
-character(len=256), public :: conventions = "CF-1.0"
+!
+! case id
+character(len=256), public :: caseid  = ' '                            
+
+! case title
+character(len=256), public :: ctitle  = ' '                            
+
+! Type of run
+integer, public :: nsrest                = iundef                         
+logical, public :: is_cold_start         = .false.
+logical, public :: is_interpolated_start = .false. ! True if we're starting from initial conditions that have been run through init_interp
+
+! Startup from initial conditions
+integer, public, parameter :: nsrStartup  = 0                          
+
+! Continue from restart files
+integer, public, parameter :: nsrContinue = 1                          
+
+! Branch from restart files
+integer, public, parameter :: nsrBranch   = 2                          
+
+! true => allow case name to remain the same for branch run
+! by default this is not allowed
+logical, public :: brnch_retain_casename = .false.                     
+
+!true => no valid land points -- do NOT run
+logical, public :: noland = .false.                                    
+
+! Hostname of machine running on
+character(len=256), public :: hostname = ' '                           
+
+! username of user running program
+character(len=256), public :: username = ' '                           
+
+! description of this source
+character(len=256), public :: source   = "Community Land Model CLM4.0" 
+
+! version of program
+character(len=256), public :: version  = " "                           
+
+! dataset conventions
+character(len=256), public :: conventions = "CF-1.0"                   
 
 !----------------------------------------------------------
 ! Unit Numbers
 !----------------------------------------------------------
-integer, public :: iulog = 6
+!
+integer, public :: iulog = 6        ! "stdout" log file unit number, default is 6
 
 !----------------------------------------------------------
 ! Output NetCDF files
 !----------------------------------------------------------
-logical, public :: outnc_large_files = .true.
+
+logical, public :: outnc_large_files = .true.         ! large file support for output NetCDF files
 
 !----------------------------------------------------------
 ! Run input files
 !----------------------------------------------------------
-character(len=fname_len), public :: finidat    = ' '
-character(len=fname_len), public :: fsurdat    = ' '
-character(len=fname_len), public :: fatmgrid   = ' '
-character(len=fname_len), public :: fatmlndfrc = ' '
-character(len=fname_len), public :: paramfile  = ' '
-character(len=fname_len), public :: nrevsn     = ' '
-character(len=fname_len), public :: fsnowoptics = ' '
-character(len=fname_len), public :: fsnowaging  = ' '
+
+character(len=fname_len), public :: finidat    = ' '        ! initial conditions file name
+character(len=fname_len), public :: fsurdat    = ' '        ! surface data file name
+character(len=fname_len), public :: fatmgrid   = ' '        ! atm grid file name
+character(len=fname_len), public :: fatmlndfrc = ' '        ! lnd frac file on atm grid
+character(len=fname_len), public :: paramfile  = ' '        ! ASCII data file with PFT physiological constants
+character(len=fname_len), public :: nrevsn     = ' '        ! restart data file name for branch run
+character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
+character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
 
 !----------------------------------------------------------
 ! Flag to read ndep rather than obtain it from coupler
 !----------------------------------------------------------
+
 logical, public :: ndep_from_cpl = .false.
 
 !----------------------------------------------------------
 ! Interpolation of finidat if requested
 !----------------------------------------------------------
-logical, public :: bound_h2osoi = .true.
+
+logical, public :: bound_h2osoi = .true. ! for debugging 
+
+! If finidat_interp_source is non-blank and finidat is blank then interpolation will be
+! done from finidat_interp_source to finidat_interp_dest. Note that
+! finidat_interp_source is not read in directly from the namelist - rather, it is set
+! from finidat if use_init_interp is .true.
+
 character(len=fname_len), public :: finidat_interp_source = ' '
 character(len=fname_len), public :: finidat_interp_dest   = ''
 
 !----------------------------------------------------------
 ! Crop & Irrigation logic
 !----------------------------------------------------------
-logical, public :: use_crop             = .false.
+
+! If prognostic crops are turned on
+logical, public :: use_crop = .false.
+
 logical, public :: use_covercropping    = .false.
 logical, public :: use_fruittree        = .false.  ! tboas: apple/perennial crop phenology
 character(len=256), public :: transient_landuse_file = ' '  ! tboas
 character(len=fname_len), public :: covercrop_paramfile = ' '  ! tboas
-logical, public :: create_crop_landunit = .false.
-logical, public :: irrigate             = .false.
+
+! true => separate crop landunit is not created by default
+logical, public :: create_crop_landunit = .false.     
+
+! do not irrigate by default
+logical, public :: irrigate = .false.            
 
 !----------------------------------------------------------
 ! Other subgrid logic
 !----------------------------------------------------------
+
+! true => allocate and run urban landunits everywhere where we have valid urban data
 logical, public :: run_zero_weight_urban = .false.
-logical, public :: all_active            = .false.
+
+! true => make ALL patches, cols & landunits active (even if weight is 0)
+logical, public :: all_active = .false.          
 
 !----------------------------------------------------------
 ! BGC logic and datasets
 !----------------------------------------------------------
-character(len=16), public :: co2_type    = 'constant'
-integer, public :: spinup_state          = 0
-logical, public :: anoxia                = .true.
-logical, public :: override_bgc_restart_mismatch_dump = .false.
-logical, private:: carbon_only
-real(r8), public :: nfix_timeconst       = -1.2345_r8
+
+! values of 'prognostic','diagnostic','constant'
+character(len=16), public :: co2_type = 'constant'    
+
+! State of the model for the accelerated decomposition (AD) spinup. 
+! 0 (default) = normal model; 1 = AD SPINUP
+integer, public :: spinup_state = 0 
+
+! true => anoxia is applied to heterotrophic respiration also considered in CH4 model
+! default value reset in controlMod
+logical, public :: anoxia  = .true. 
+
+! used to override an error check on reading in restart files
+logical, public :: override_bgc_restart_mismatch_dump = .false. 
+
+! Set in CNAllocationInit (TODO - had to move it here to avoid circular dependency)
+logical, private:: carbon_only      
+
+! Set in CNNDynamicsInit 
+! NOTE (mvertens, 2014-9 had to move it here to avoid confusion when carbon data types
+! wehre split - TODO - should move it our of this module) 
+! NOTE(bandre, 2013-10) according to Charlie Koven, nfix_timeconst
+! is currently used as a flag and rate constant. 
+! Rate constant: time over which to exponentially relax the npp flux for N fixation term
+! (days) time over which to exponentially relax the npp flux for N fixation term
+! flag: (if  <=  0. or  >=  365; use old annual method). 
+! Default value is junk that should always be overwritten by the namelist or init function!
+!
+real(r8), public :: nfix_timeconst = -1.2345_r8 
 
 !----------------------------------------------------------
 ! Physics
 !----------------------------------------------------------
-integer, public  :: subgridflag = 1
-logical, public  :: wrtdia      = .false.
-real(r8), public :: co2_ppmv    = 355._r8
+
+! use subgrid fluxes
+integer,  public :: subgridflag = 1                   
+
+! which snow thermal conductivity parameterization to use
+character(len=25), public :: snow_thermal_cond_method
+character(len=25), public :: snow_thermal_cond_glc_method
+character(len=25), public :: snow_thermal_cond_lake_method
+
+! true => write global average diagnostics to std out
+logical,  public :: wrtdia       = .false.            
+
+! atmospheric CO2 molar ratio (by volume) (umol/mol)
+real(r8), public :: co2_ppmv     = 355._r8            !
 
 !----------------------------------------------------------
 ! C isotopes
 !----------------------------------------------------------
-logical, public :: use_c13 = .false.
-logical, public :: use_c14 = .false.
+
+logical, public :: use_c13 = .false.                  ! true => use C-13 model
+logical, public :: use_c14 = .false.                  ! true => use C-14 model
+
+! BUG(wjs, 2018-10-25, ESCOMP/ctsm#67) There is a bug that causes incorrect values for C
+! isotopes if running init_interp from a case without C isotopes to a case with C
+! isotopes (https://github.com/ESCOMP/ctsm/issues/67). Normally, an error-check prevents
+! you from doing this interpolation (until we have fixed that bug). However, we
+! sometimes want to bypass this error-check in system tests. This namelist flag bypasses
+! this error-check.
 logical, public :: for_testing_allow_interp_non_ciso_to_ciso = .false.
 
 !----------------------------------------------------------
-! FATES switches
+!  FATES switches
 !----------------------------------------------------------
-logical, public :: use_fates                      = .false.
-integer, public :: fates_parteh_mode              = -9
-logical, public :: use_fates_spitfire             = .false.
-logical, public :: use_fates_logging              = .false.
-logical, public :: use_fates_planthydro           = .false.
-logical, public :: use_fates_ed_st3               = .false.
-logical, public :: use_fates_ed_prescribed_phys   = .false.
-logical, public :: use_fates_inventory_init        = .false.
-character(len=256), public :: fates_inventory_ctrl_filename = ''
+
+logical, public :: use_fates = .false.            ! true => use fates
+
+! These are INTERNAL to the FATES module
+integer, public            :: fates_parteh_mode = -9                 ! 1 => carbon only
+! 2 => C+N+P (not enabled yet)
+! no others enabled
+logical, public            :: use_fates_spitfire = .false.           ! true => use spitfire model
+logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
+logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro
+logical, public            :: use_fates_ed_st3   = .false.           ! true => static stand structure
+logical, public            :: use_fates_ed_prescribed_phys = .false. ! true => prescribed physiology
+logical, public            :: use_fates_inventory_init = .false.     ! true => initialize fates from inventory
+character(len=256), public :: fates_inventory_ctrl_filename = ''     ! filename for inventory control
 
 !----------------------------------------------------------
-! LUNA switches
+!  LUNA switches		
 !----------------------------------------------------------
-logical, public :: use_luna = .false.
+
+logical, public :: use_luna = .false.            ! true => use  LUNA
 
 !----------------------------------------------------------
-! flexibleCN
+!  flexibleCN
 !----------------------------------------------------------
-logical, public :: use_flexibleCN     = .false.
-logical, public :: MM_Nuptake_opt     = .false.
-logical, public :: downreg_opt        = .true.
-integer, public :: plant_ndemand_opt  = 0
+!  TODO(bja, 2015-08) some of these need to be moved into the
+!  appropriate module.
+logical, public :: use_flexibleCN = .false.
+logical, public :: MM_Nuptake_opt = .false.
+logical, public :: downreg_opt = .true.
+integer, public :: plant_ndemand_opt = 0
 logical, public :: substrate_term_opt = .true.
-logical, public :: nscalar_opt        = .true.
-logical, public :: temp_scalar_opt    = .true.
-logical, public :: CNratio_floating   = .false.
-logical, public :: lnc_opt            = .false.
+logical, public :: nscalar_opt = .true.
+logical, public :: temp_scalar_opt = .true.
+logical, public :: CNratio_floating = .false.
+logical, public :: lnc_opt = .false.
 logical, public :: reduce_dayl_factor = .false.
-integer, public :: vcmax_opt          = 0
-integer, public :: CN_residual_opt    = 0
-integer, public :: CN_partition_opt   = 0
+integer, public :: vcmax_opt = 0
+integer, public :: CN_residual_opt = 0
+integer, public :: CN_partition_opt = 0
 integer, public :: CN_evergreen_phenology_opt = 0
-integer, public :: carbon_resp_opt    = 0
+integer, public :: carbon_resp_opt = 0
 
 !----------------------------------------------------------
-! prescribed soil moisture streams switch
+! prescribed soil moisture streams switch 
 !----------------------------------------------------------
-logical, public :: use_soil_moisture_streams = .false.
+
+logical, public :: use_soil_moisture_streams = .false. ! true => use prescribed soil moisture stream
 
 !----------------------------------------------------------
 ! lai streams switch for Sat. Phenology
 !----------------------------------------------------------
-logical, public :: use_lai_streams = .false.
+
+logical, public :: use_lai_streams = .false. ! true => use lai streams in SatellitePhenologyMod.F90
 
 !----------------------------------------------------------
 ! bedrock / soil depth switch
 !----------------------------------------------------------
-logical, public :: use_bedrock = .false.
+
+logical,           public :: use_bedrock = .false. ! true => use spatially variable soil depth
 character(len=16), public :: soil_layerstruct = '10SL_3.5m'
 
 !----------------------------------------------------------
 ! plant hydraulic stress switch
 !----------------------------------------------------------
-logical, public :: use_hydrstress = .false.
+
+logical, public :: use_hydrstress = .false. ! true => use plant hydraulic stress calculation
 
 !----------------------------------------------------------
 ! dynamic root switch
 !----------------------------------------------------------
-logical, public :: use_dynroot = .false.
+
+logical, public :: use_dynroot = .false. ! true => use dynamic root module
 
 !----------------------------------------------------------
-! glacier_mec control variables
+! glacier_mec control variables: default values (may be overwritten by namelist)
 !----------------------------------------------------------
-logical , public :: glc_do_dynglacier          = .false.
-integer , public :: glc_snow_persistence_max_days = 7300
 
+! true => CLM glacier area & topography changes dynamically 
+logical , public :: glc_do_dynglacier = .false.           
+
+! number of days before one considers the perennially snow-covered point 'land ice'
+integer , public :: glc_snow_persistence_max_days = 7300  
+
+!
 !----------------------------------------------------------
 ! single column control variables
 !----------------------------------------------------------
-logical, public  :: single_column = .false.
-real(r8), public :: scmlat        = rundef
-real(r8), public :: scmlon        = rundef
+
+logical,  public :: single_column = .false. ! true => single column mode
+real(r8), public :: scmlat        = rundef  ! single column lat
+real(r8), public :: scmlon        = rundef  ! single column lon
 
 !----------------------------------------------------------
 ! instance control
 !----------------------------------------------------------
-integer, public           :: inst_index
+
+integer, public :: inst_index
 character(len=16), public :: inst_name
 character(len=16), public :: inst_suffix
 
 !----------------------------------------------------------
 ! Decomp control variables
 !----------------------------------------------------------
-integer, public :: nsegspc = 20
+
+! number of segments per clump for decomp
+integer, public :: nsegspc = 20                       
 
 !----------------------------------------------------------
 ! Derived variables (run, history and restart file)
 !----------------------------------------------------------
-character(len=256), public :: rpntdir = '.'
-character(len=256), public :: rpntfil = 'rpointer.lnd'
-logical, public :: hist_wrtch4diag = .false.
+
+! directory name for local restart pointer file
+character(len=256), public :: rpntdir = '.'            
+
+! file name for local restart pointer file
+character(len=256), public :: rpntfil = 'rpointer.lnd' 
+
+! moved hist_wrtch4diag from histFileMod.F90 to here - caused compiler error with intel
+! namelist: write CH4 extra diagnostic output
+logical, public :: hist_wrtch4diag = .false.         
 
 !----------------------------------------------------------
 ! FATES
 !----------------------------------------------------------
-character(len=fname_len), public :: fates_paramfile = ' '
-
+character(len=fname_len), public :: fates_paramfile  = ' '
 !----------------------------------------------------------
 ! SSRE diagnostic
 !----------------------------------------------------------
-logical, public :: use_SSRE = .false.
+logical, public :: use_SSRE = .false.   ! flag for SSRE diagnostic
 
 !----------------------------------------------------------
 ! Migration of CPP variables
 !----------------------------------------------------------
-logical, public :: use_lch4             = .false.
-logical, public :: use_nitrif_denitrif  = .false.
-logical, public :: use_vertsoilc        = .false.
-logical, public :: use_extralakelayers  = .false.
-logical, public :: use_vichydro         = .false.
-logical, public :: use_century_decomp   = .false.
-logical, public :: use_cn               = .false.
-logical, public :: use_cndv             = .false.
-logical, public :: use_grainproduct     = .false.
-logical, public :: use_fertilizer       = .false.
-logical, public :: use_ozone            = .false.
-logical, public :: use_snicar_frc       = .false.
-logical, public :: use_vancouver        = .false.
-logical, public :: use_mexicocity       = .false.
-logical, public :: use_noio             = .false.
-logical, public :: use_nguardrail       = .false.
+
+logical, public :: use_lch4            = .false.
+logical, public :: use_nitrif_denitrif = .false.
+logical, public :: use_vertsoilc       = .false.
+logical, public :: use_extralakelayers = .false.
+logical, public :: use_vichydro        = .false.
+logical, public :: use_century_decomp  = .false.
+logical, public :: use_cn              = .false.
+logical, public :: use_cndv            = .false.
+logical, public :: use_grainproduct    = .false.
+logical, public :: use_fertilizer      = .false.
+logical, public :: use_ozone           = .false.
+logical, public :: use_snicar_frc      = .false.
+logical, public :: use_vancouver       = .false.
+logical, public :: use_mexicocity      = .false.
+logical, public :: use_noio            = .false.
+
+logical, public :: use_nguardrail      = .false.
 
 ! tboas-fix: compile-time switch for the per-patch crop-rotation / crop-phenology
 ! debug writes. These fire once per patch, per MPI rank, with no masterproc guard;

@@ -54,6 +54,57 @@ module WaterstateType
      real(r8), pointer :: ice1_grc               (:)   ! grc initial gridcell total h2o ice content
      real(r8), pointer :: ice2_grc               (:)   ! grc post land cover change total ice content
      real(r8), pointer :: tws_grc                (:)   ! grc total water storage (mm H2O)
+#ifdef USE_PDAF
+     ! Yorck additions, variables for getting monthly means which can be compared to a GRACE measurements, other variables will just
+     ! provide instantaneous values
+
+     real(r8), pointer :: h2osno_col_mean             (:)   ! col snow water (mm H2O)
+     real(r8), pointer :: h2osoi_liq_col_mean         (:,:) ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: h2osoi_ice_col_mean         (:,:) ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: h2ocan_patch_mean           (:)   ! patch canopy water (mm H2O)
+     real(r8), pointer :: snocan_patch_mean           (:)   ! patch canopy water (mm H2O)
+     real(r8), pointer :: h2osfc_col_mean             (:)   ! col surface water (mm H2O)
+     real(r8), pointer :: total_plant_stored_h2o_col_mean(:) ! col water that is bound in plants, including roots, sapwood, leaves, etc
+                                                             ! in most cases, the vegetation scheme does not have a dynamic
+                                                             ! water storage in plants, and thus 0.0 is a suitable for the trivial case.
+                                                             ! When FATES is coupled in with plant hydraulics turned on, this storage
+                                                             ! term is set to non-zero. (kg/m2 H2O)
+
+
+     real(r8), pointer :: tws_hactive                 (:)    ! TWS for hydrological active columns
+     real(r8), pointer :: tws_hactive_mean            (:)    ! TWS for hydrological active columns
+
+
+     ! also increments for all variables are added
+     real(r8), pointer :: h2osno_col_inc              (:)   ! col snow water (mm H2O)
+     real(r8), pointer :: h2osoi_liq_col_inc          (:,:) ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: h2osoi_ice_col_inc          (:,:) ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: h2ocan_patch_inc            (:)   ! patch canopy water (mm H2O)
+     real(r8), pointer :: h2osfc_col_inc              (:)   ! col surface water (mm H2O)
+     real(r8), pointer :: total_plant_stored_h2o_col_inc (:) ! col water that is bound in plants, including roots, sapwood, leaves, etc
+                                                             ! in most cases, the vegetation scheme does not have a dynamic
+                                                             ! water storage in plants, and thus 0.0 is a suitable for the trivial case.
+                                                             ! When FATES is coupled in with plant hydraulics turned on, this storage
+                                                             ! term is set to non-zero. (kg/m2 H2O)
+     real(r8), pointer :: tws_grc_inc                  (:)   ! grc total water storage (mm H2O)
+
+     ! for analysis of the statevector, also variables for putting the state inside are initialized
+     real(r8), pointer :: tws_state_before             (:)    ! TWS state
+     real(r8), pointer :: h2osoi_liq_state_before      (:,:)  ! soil liq state
+     real(r8), pointer :: h2osoi_ice_state_before      (:,:)  ! soil ice state
+     real(r8), pointer :: h2osfc_state_before          (:)    ! surface water state
+     real(r8), pointer :: h2osno_state_before          (:)    ! snow state
+     real(r8), pointer :: h2ocan_state_before          (:)    ! canopy state
+
+     real(r8), pointer :: tws_state_after              (:)    ! TWS state
+     real(r8), pointer :: h2osoi_liq_state_after       (:,:)  ! soil liq state
+     real(r8), pointer :: h2osoi_ice_state_after       (:,:)  ! soil ice state
+     real(r8), pointer :: h2osfc_state_after           (:)    ! surface water state
+     real(r8), pointer :: h2osno_state_after           (:)    ! snow state
+     real(r8), pointer :: h2ocan_state_after           (:)    ! canopy state
+
+     ! END Yorck
+#endif
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: pfl_psi_col            (:,:) ! ParFlow pressure head   COUP_OAS_PFL
      real(r8), pointer :: pfl_h2osoi_liq_col     (:,:) ! ParFlow soil liquid     COUP_OAS_PFL
@@ -211,6 +262,42 @@ contains
     allocate(this%ice2_grc               (begg:endg))                     ; this%ice2_grc               (:)   = nan
     allocate(this%tws_grc                (begg:endg))                     ; this%tws_grc                (:)   = nan
 
+#ifdef USE_PDAF
+    ! Yorck additions (see above)
+    allocate(this%h2osoi_ice_col_mean    (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col_mean    (:,:) = nan
+    allocate(this%h2osoi_liq_col_mean    (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col_mean    (:,:) = nan
+    allocate(this%h2osno_col_mean        (begc:endc))                     ; this%h2osno_col_mean        (:)   = nan
+    allocate(this%h2ocan_patch_mean      (begp:endp))                     ; this%h2ocan_patch_mean      (:)   = nan
+    allocate(this%snocan_patch_mean      (begp:endp))                     ; this%snocan_patch_mean      (:)   = nan
+    allocate(this%h2osfc_col_mean        (begc:endc))                     ; this%h2osfc_col_mean        (:)   = nan
+    allocate(this%total_plant_stored_h2o_col_mean(begc:endc))             ; this%total_plant_stored_h2o_col_mean(:) = nan
+
+    allocate(this%tws_hactive            (begg:endg))                     ; this%tws_hactive            (:)   = nan
+    allocate(this%tws_hactive_mean       (begg:endg))                     ; this%tws_hactive_mean       (:)   = nan
+
+    allocate(this%h2osoi_ice_col_inc     (begc:endc,1:nlevsoi))           ; this%h2osoi_ice_col_inc     (:,:) = nan
+    allocate(this%h2osoi_liq_col_inc     (begc:endc,1:nlevsoi))           ; this%h2osoi_liq_col_inc     (:,:) = nan
+    allocate(this%h2osno_col_inc         (begc:endc))                     ; this%h2osno_col_inc         (:)   = nan
+    allocate(this%h2ocan_patch_inc       (begp:endp))                     ; this%h2ocan_patch_inc       (:)   = nan
+    allocate(this%h2osfc_col_inc         (begc:endc))                     ; this%h2osfc_col_inc         (:)   = nan
+    allocate(this%total_plant_stored_h2o_col_inc (begc:endc))             ; this%total_plant_stored_h2o_col_inc (:) = nan
+    allocate(this%tws_grc_inc            (begg:endg))                     ; this%tws_grc_inc            (:)   = nan
+
+    allocate(this%tws_state_before       (begg:endg))                     ; this%tws_state_before       (:)   = nan
+    allocate(this%h2osoi_liq_state_before(begg:endg,1:nlevsoi))           ; this%h2osoi_liq_state_before(:,:) = nan
+    allocate(this%h2osoi_ice_state_before(begg:endg,1:nlevsoi))           ; this%h2osoi_ice_state_before(:,:) = nan
+    allocate(this%h2osno_state_before    (begg:endg))                     ; this%h2osno_state_before    (:)   = nan
+    allocate(this%h2osfc_state_before    (begg:endg))                     ; this%h2osfc_state_before    (:)   = nan
+    allocate(this%h2ocan_state_before    (begg:endg))                     ; this%h2ocan_state_before    (:)   = nan
+
+    allocate(this%tws_state_after        (begg:endg))                     ; this%tws_state_after        (:)   = nan
+    allocate(this%h2osoi_liq_state_after (begg:endg,1:nlevsoi))           ; this%h2osoi_liq_state_after (:,:) = nan
+    allocate(this%h2osoi_ice_state_after (begg:endg,1:nlevsoi))           ; this%h2osoi_ice_state_after (:,:) = nan
+    allocate(this%h2osno_state_after     (begg:endg))                     ; this%h2osno_state_after     (:)   = nan
+    allocate(this%h2osfc_state_after     (begg:endg))                     ; this%h2osfc_state_after     (:)   = nan
+    allocate(this%h2ocan_state_after     (begg:endg))                     ; this%h2ocan_state_after     (:)   = nan
+    ! END Yorck
+#endif
     allocate(this%total_plant_stored_h2o_col(begc:endc))                  ; this%total_plant_stored_h2o_col(:) = nan
 
     allocate(this%snw_rds_col            (begc:endc,-nlevsno+1:0))        ; this%snw_rds_col            (:,:) = nan
@@ -402,6 +489,13 @@ contains
          avgflag='A', long_name='total water storage', &
          ptr_lnd=this%tws_grc)
 
+#ifdef USE_PDAF
+    ! Yorck: add also TWS_hactive in history outputs
+    this%tws_hactive(begg:endg) = spval
+    call hist_addfld1d (fname='TWS_hactive',  units='mm',  &
+         avgflag='A', long_name='total water storage of hydrological active cells', &
+         ptr_lnd=this%tws_hactive)
+#endif
     ! (rgk 02-02-2017) There is intentionally no entry  here for stored plant water
     !                  I think that since the value is zero in all cases except
     !                  for FATES plant hydraulics, it will be confusing for users

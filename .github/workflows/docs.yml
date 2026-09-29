@@ -1,0 +1,71 @@
+name: Build online docs
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'docs/**'
+
+env:
+  BASE_URL: /${{ github.event.repository.name }}
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: 'pip'
+
+      - name: Install pip packages
+        run:  pip install -r ${GITHUB_WORKSPACE}/docs/requirements.txt
+
+      - name: Build eCLM doc homepage
+        working-directory: ./docs
+        run:  |
+          make clean docs
+
+      # TODO: Either skip this or find a way to conditionally run this very slow step
+      - name: Build eCLM Source Code browser
+        working-directory: ./docs
+        run:  |
+          make src-browser
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "docs/_build/html"
+          name: eCLM_docs
+
+  deploy-docs:
+    if: github.event_name != 'pull_request'
+    needs: build-docs
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      with:
+        artifact_name: eCLM_docs

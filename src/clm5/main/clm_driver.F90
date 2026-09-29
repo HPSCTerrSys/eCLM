@@ -1068,6 +1068,9 @@ contains
          solarabs_inst, drydepvel_inst,       &
          vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
          lnd2atm_inst, &
+#ifdef USE_PDAF
+         soilhydrology_inst, soilstate_inst, &
+#endif
          net_carbon_exchange_grc = net_carbon_exchange_grc(bounds_proc%begg:bounds_proc%endg))
     deallocate(net_carbon_exchange_grc)
     call t_stopf('lnd2atm')
@@ -1303,13 +1306,14 @@ contains
       end do
 
 #ifdef COUP_OAS_PFL
-      ! TSMP/bldsva/intf_oas3/clm3_5/mct/receive_fld_2pfl.F90
-      ! COUP_OAS_PFL
-      do f = 1, num_soilc
-        c = filter_soilc(f)
-        g = col%gridcell(c)  
-        pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
-        pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
+      ! Cover every column that soilwater_parflow will later overwrite.
+      do f = 1, num_nolakec
+        c = filter_nolakec(f)
+        if (col%hydrologically_active(c)) then
+          g = col%gridcell(c)
+          pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
+          pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
+        end if
       end do
 #endif
     end associate

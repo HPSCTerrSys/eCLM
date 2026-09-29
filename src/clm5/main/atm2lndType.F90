@@ -147,6 +147,11 @@ module atm2lndType
      real(r8) , pointer :: t_mo_patch                   (:)   => null() ! patch 30-day average temperature (Kelvin)
      real(r8) , pointer :: t_mo_min_patch               (:)   => null() ! patch annual min of t_mo (Kelvin)
 
+#ifdef USE_PDAF
+     ! Yorck
+     real(r8), pointer :: volr_grc_inc                  (:)   => null() ! rof volr total volume increment (m3)
+     real(r8), pointer :: volr_grc_mean                 (:)   => null() ! rof volr total volume mean (m3)
+#endif
    contains
 
      procedure, public  :: Init
@@ -552,6 +557,13 @@ contains
     allocate(this%pfl_psi_grc                   (begg:endg,1:nlevgrnd)); this%pfl_psi_grc            (:,:) = ival
     allocate(this%pfl_h2osoi_liq_grc            (begg:endg,1:nlevgrnd)); this%pfl_h2osoi_liq_grc     (:,:) = ival
 #endif
+
+#ifdef USE_PDAF
+     ! Yorck
+     allocate(this%volr_grc_inc                  (begg:endg))        ; this%volr_grc_inc                  (:)   = ival
+     allocate(this%volr_grc_mean                 (begg:endg))        ; this%volr_grc_mean                 (:)   = ival
+#endif
+
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
     allocate(this%af_precip_grc                 (begg:endg))        ; this%af_precip_grc                 (:)   = ival

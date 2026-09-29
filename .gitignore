@@ -6,6 +6,7 @@ src/externals/mct/Makefile.conf
 src/externals/mct/config.h
 src/externals/mct/config.log
 src/externals/mct/config.status
+docs/_build/*
 
 # Python byte-compiled / optimized / DLL files
 *.py[cod]
