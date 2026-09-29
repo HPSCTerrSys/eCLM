@@ -1503,20 +1503,26 @@ contains
          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col     , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)
          smpmin            =>    soilstate_inst%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
          pfl_h2osoi_liq    =>    waterstate_inst%pfl_h2osoi_liq_col , & ! Input:  [real(r8) (:,:) ]  ParFlow soil water (mm)
-         pfl_psi           =>    waterstate_inst%pfl_psi_col          & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
+         pfl_psi           =>    waterstate_inst%pfl_psi_col        , & ! Input:  [real(r8) (:,:) ]  ParFlow pressure head (mm)
+         h2osoi_ice_prev   =>    waterstate_inst%h2osoi_ice_prev_col, & ! Input:  [real(r8) (:,:) ]  ice lens before PhaseChange (kg/m2)
+         pfl_eff_porosity  =>    soilhydrology_inst%pfl_eff_porosity_col & ! Output: [real(r8) (:,:) ]  effective porosity sent to ParFlow (m3/m3)
          )  ! end associate statement
 
 
          ! Exchange of soil water and pressure head between ParFlow and eCLM
-         ! ParFlow has no ice phase, so that the received water it the total water content.
-         ! Keep the ice what PhaseChanged diagnosed earlier in the time step and
-         ! attribute the remainder to liquid, so that liq and ice matches the received total.
+         ! ParFlow carries the liquid phase only, so the received water is the liquid
+         ! water content and h2osoi_ice stays as PhaseChange left it. ParFlow applies the
+         ! freeze one coupling interval later, so subtract it here to keep eCLM in sync.
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
 
             do j = 1, nlevgrnd
-               h2osoi_ice(c,j) = min(h2osoi_ice(c,j), pfl_h2osoi_liq(c,j))
-               h2osoi_liq(c,j) = max(0._r8, pfl_h2osoi_liq(c,j) - h2osoi_ice(c,j))
+               ! PhaseChange bounds the ice by the available water. Capping the state
+               ! keeps the frozen mass ParFlow derives from it exact.
+               h2osoi_ice(c,j) = min(h2osoi_ice(c,j), watsat(c,j)*dz(c,j)*denice)
+               h2osoi_liq(c,j) = max(0._r8, pfl_h2osoi_liq(c,j) &
+                                            - (h2osoi_ice(c,j) - h2osoi_ice_prev(c,j)))
+               pfl_eff_porosity(c,j) = watsat(c,j) - h2osoi_ice(c,j)/(dz(c,j)*denice)
                if (pfl_psi(c,j) <= 0) then
                   smp_l(c,j) = max(smpmin(c), pfl_psi(c,j))
                end if

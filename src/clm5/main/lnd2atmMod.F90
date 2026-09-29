@@ -43,9 +43,11 @@ module lnd2atmMod
   use landunit_varcon      , only : istice_mec, istsoil, istcrop
 #ifdef USE_PDAF
   use clm_time_manager     , only : get_nstep
+  use PatchType            , only : patch
+#endif
+#if defined(USE_PDAF) || defined(COUP_OAS_PFL)
   use SoilHydrologyType    , only : soilhydrology_type
   use SoilStateType        , only : soilstate_type
-  use PatchType            , only : patch
 #endif
   !
   ! !PUBLIC TYPES:
@@ -59,6 +61,10 @@ module lnd2atmMod
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: handle_ice_runoff
+
+#ifdef COUP_OAS_PFL
+  real(r8), parameter, private :: pfl_uncoupled = -9999._r8
+#endif
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -136,7 +142,7 @@ contains
        solarabs_inst, drydepvel_inst,  &
        vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
        lnd2atm_inst, &
-#ifdef USE_PDAF
+#if defined(USE_PDAF) || defined(COUP_OAS_PFL)
        soilhydrology_inst, soilstate_inst, &
 #endif
        net_carbon_exchange_grc) 
@@ -165,16 +171,17 @@ contains
     type(ch4_type)              , intent(in)    :: ch4_inst
     type(glc_behavior_type)     , intent(in)    :: glc_behavior
     type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst 
-#ifdef USE_PDAF
-    ! Yorck
+#if defined(USE_PDAF) || defined(COUP_OAS_PFL)
     type(soilhydrology_type)    , intent(inout) :: soilhydrology_inst
     type(soilstate_type)        , intent(inout) :: soilstate_inst
-    ! end Yorck
 #endif
     real(r8)                    , intent(in)    :: net_carbon_exchange_grc( bounds%begg: )  ! net carbon exchange between land and atmosphere, positive for source (gC/m2/s)
     !
     ! !LOCAL VARIABLES:
     integer  :: c, g, j  ! indices
+#ifdef COUP_OAS_PFL
+    real(r8) :: pfl_eff_porosity_wt(bounds%begg:bounds%endg) ! summed weight of the hydrologically active columns
+#endif
 #ifdef USE_PDAF
     integer  :: p, l, index, counter  ! indices
 #endif
@@ -466,6 +473,38 @@ contains
          waterflux_inst%qflx_parflow_col (bounds%begc:bounds%endc, :), &
          lnd2atm_inst%qflx_parflow_grc   (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'unity',  l2g_scale_type='unity' )
+
+    ! Porosity does not scale with size, so it cannot use c2g. Average over the hydrologically
+    ! active columns only. Not coupled cells get out of range value, must be <0.
+    pfl_eff_porosity_wt(bounds%begg:bounds%endg) = 0._r8
+    do c = bounds%begc, bounds%endc
+       if (col%hydrologically_active(c) .and. col%wtgcell(c) > 0._r8) then
+          g = col%gridcell(c)
+          pfl_eff_porosity_wt(g) = pfl_eff_porosity_wt(g) + col%wtgcell(c)
+       end if
+    end do
+    do g = bounds%begg, bounds%endg
+       if (pfl_eff_porosity_wt(g) > 0._r8) then
+          lnd2atm_inst%pfl_eff_porosity_grc(g,:) = 0._r8
+       else
+          lnd2atm_inst%pfl_eff_porosity_grc(g,:) = pfl_uncoupled
+       end if
+    end do
+    do c = bounds%begc, bounds%endc
+       if (col%hydrologically_active(c) .and. col%wtgcell(c) > 0._r8) then
+          g = col%gridcell(c)
+          do j = 1, nlevgrnd
+             lnd2atm_inst%pfl_eff_porosity_grc(g,j) = lnd2atm_inst%pfl_eff_porosity_grc(g,j) &
+                  + col%wtgcell(c) * soilhydrology_inst%pfl_eff_porosity_col(c,j)
+          end do
+       end if
+    end do
+    do g = bounds%begg, bounds%endg
+       if (pfl_eff_porosity_wt(g) > 0._r8) then
+          lnd2atm_inst%pfl_eff_porosity_grc(g,:) = lnd2atm_inst%pfl_eff_porosity_grc(g,:) &
+               / pfl_eff_porosity_wt(g)
+       end if
+    end do
 #endif
 
 #ifdef USE_PDAF
