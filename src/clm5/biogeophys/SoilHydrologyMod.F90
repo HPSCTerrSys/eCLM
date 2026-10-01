@@ -451,8 +451,8 @@ contains
              endif
 
 #ifdef COUP_OAS_PFL
-             ! All surface input minus evaporation from soil and surface water is passed
-             ! to ParFlow, without the eCLM infiltration capacity.
+             ! All surface input minus evaporation (and surface runoff) from soil and
+             ! surface water is passed to ParFlow, without the eCLM infiltration capacity.
              qflx_infl(c) = qflx_top_soil(c) - qflx_surf(c) &
                   - (1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c) &
                   - frac_h2osfc(c)*qflx_ev_h2osfc(c)

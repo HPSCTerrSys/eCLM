@@ -288,7 +288,8 @@ contains
     real(r8) :: eff_porosity(bounds%begc:bounds%endc,-nlevsno+1:0) ! effective porosity = porosity - vol_ice
     real(r8) :: mss_liqice(bounds%begc:bounds%endc,-nlevsno+1:0)   ! mass of liquid+ice in a layer
 #ifdef COUP_OAS_PFL
-    real(r8) :: liq_from_soil(bounds%begc:bounds%endc)             ! liquid taken from soil layer 1 to fill snow liquid deficit [mm]
+    real(r8) :: snowliq_to_soil(bounds%begc:bounds%endc)           ! liquid from the bottom snow layer to soil layer [mm]
+                                                                   ! <0: snow liquid deficit refilled from soil
 #endif
     !-----------------------------------------------------------------------
 
@@ -337,7 +338,7 @@ contains
        c = filter_snowc(fc)
        l=col%landunit(c)
 #ifdef COUP_OAS_PFL
-       liq_from_soil(c) = 0._r8
+       snowliq_to_soil(c) = 0._r8
 #endif
 
        wgdif = h2osoi_ice(c,snl(c)+1) &
@@ -361,7 +362,7 @@ contains
 #ifdef COUP_OAS_PFL
              ! Deficit moved from the bottom snow layer into the soil, which is
              ! overwritten by ParFlow. Take it from ParFlow instead.
-             if (j == 0) liq_from_soil(c) = wgdif
+             if (j == 0) snowliq_to_soil(c) = wgdif
 #endif
           enddo
        end if
@@ -560,7 +561,7 @@ contains
        qflx_top_soil(c) = (qout(c) / dtime) &
             + (1.0_r8 - frac_sno_eff(c)) * qflx_rain_grnd(c)
 #ifdef COUP_OAS_PFL
-       qflx_top_soil(c) = qflx_top_soil(c) + liq_from_soil(c) / dtime
+       qflx_top_soil(c) = qflx_top_soil(c) + snowliq_to_soil(c) / dtime
 #endif
        int_snow(c) = int_snow(c) + frac_sno_eff(c) &
                      * (qflx_dew_snow(c) + qflx_dew_grnd(c) + qflx_rain_grnd(c)) * dtime
@@ -896,10 +897,10 @@ contains
                    ! Pass the snow water to ParFlow. The ice phase is kept in eCLM.
                    qflx_pfl_top(c) = qflx_pfl_top(c) + (h2osoi_liq(c,j) + h2osoi_ice(c,j))/dtime
                 else
-#endif
-                h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
-#ifdef COUP_OAS_PFL
+                   h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
                 end if
+#else
+                h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
 #endif
                 h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
 
@@ -1027,10 +1028,10 @@ contains
                    ! Pass the snow water to ParFlow
                    qflx_pfl_top(c) = qflx_pfl_top(c) + zwliq(c)/dtime
                 else
-#endif
-                h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
-#ifdef COUP_OAS_PFL
+                   h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
                 end if
+#else
+                h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
 #endif
              end if
              if (ltype(l) == istwet) then
