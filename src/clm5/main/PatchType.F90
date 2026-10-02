@@ -41,8 +41,8 @@ module PatchType
   !   32 => irrigated_winter_rye
   !   33 => cassava
   !   34 => irrigated_cassava
-  !   35 => citrus
-  !   36 => irrigated_citrus
+  !   35 => apple
+  !   36 => irrigated_apple
   !   37 => cocoa
   !   38 => irrigated_cocoa
   !   39 => coffee
@@ -83,8 +83,8 @@ module PatchType
   !   74 => irrigated_switchgrass
   !   75 => tropical_corn
   !   76 => irrigated_tropical_corn
-  !   77 => tropical_soybean
-  !   78 => irrigated_tropical_soybean
+  !   77 => covercrop_1
+  !   78 => covercrop_2
   ! -------------------------------------------------------- 
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
