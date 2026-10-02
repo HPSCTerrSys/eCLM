@@ -450,6 +450,14 @@ contains
                 qflx_evap(c)=qflx_ev_soil(c)
              endif
 
+#ifdef COUP_OAS_PFL
+             ! All surface input minus evaporation (and surface runoff) from soil and
+             ! surface water is passed to ParFlow, without the eCLM infiltration capacity.
+             qflx_infl(c) = qflx_top_soil(c) - qflx_surf(c) &
+                  - (1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c) &
+                  - frac_h2osfc(c)*qflx_ev_h2osfc(c)
+             qflx_h2osfc_surf(c) = 0._r8
+#else
              !1. partition surface inputs between soil and h2osfc
              qflx_in_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c)  - qflx_surf(c))
              qflx_in_h2osfc(c) = frac_h2osfc(c) * (qflx_top_soil(c)  - qflx_surf(c))          
@@ -545,6 +553,7 @@ contains
              !7. remove drainage from h2osfc and add to qflx_infl
              h2osfc(c) = h2osfc(c) - qflx_h2osfc_drain(c) * dtime
              qflx_infl(c) = qflx_infl(c) + qflx_h2osfc_drain(c)
+#endif
           else
              ! non-vegetated landunits (i.e. urban) use original CLM4 code
              if (snl(c) >= 0) then
@@ -2279,6 +2288,9 @@ contains
      ! !LOCAL VARIABLES:
      integer  :: c,j,fc,i                                ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
+#ifdef COUP_OAS_PFL
+     real(r8) :: h2osoi_ice1_old                         ! ice of soil layer 1 before condensation/sublimation (kg/m2)
+#endif
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
@@ -2288,6 +2300,9 @@ contains
           frac_h2osfc        =>    waterstate_inst%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ]                                                    
           qflx_dew_grnd      =>    waterflux_inst%qflx_dew_grnd_col      , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]      
           qflx_dew_snow      =>    waterflux_inst%qflx_dew_snow_col      , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]    
+#ifdef COUP_OAS_PFL
+          qflx_pfl_top       =>    waterflux_inst%qflx_pfl_top_col       , & ! Output: [real(r8) (:)   ]  water added to soil layer 1 after ParFlow exchange (mm H2O/s)
+#endif
           qflx_sub_snow      =>    waterflux_inst%qflx_sub_snow_col       & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]   
           )
 
@@ -2303,7 +2318,13 @@ contains
           if (snl(c)+1 >= 1) then
 
              ! make consistent with how evap_grnd removed in infiltration
+#ifdef COUP_OAS_PFL
+             ! Pass the dew to ParFlow.
+             qflx_pfl_top(c) = qflx_pfl_top(c) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c)
+             h2osoi_ice1_old = h2osoi_ice(c,1)
+#else
              h2osoi_liq(c,1) = h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
+#endif
              h2osoi_ice(c,1) = h2osoi_ice(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_snow(c) * dtime
              if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
                 qflx_sub_snow(c) = h2osoi_ice(c,1)/dtime
@@ -2311,6 +2332,10 @@ contains
              else
                 h2osoi_ice(c,1) = h2osoi_ice(c,1) - (1._r8 - frac_h2osfc(c)) * qflx_sub_snow(c) * dtime
              end if
+#ifdef COUP_OAS_PFL
+             ! Pass the ice change to ParFlow in addition. SPo: check for eff. poro. coupling
+             qflx_pfl_top(c) = qflx_pfl_top(c) + (h2osoi_ice(c,1) - h2osoi_ice1_old) / dtime
+#endif
           end if
 
        end do
@@ -2369,10 +2394,13 @@ contains
 
      associate(                                                            &
           dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)
+          qflx_pfl_top       =>    waterflux_inst%qflx_pfl_top_col       , & ! Input:  [real(r8) (:)   ] water added to soil layer 1 after ParFlow exchange (mm H2O/s)
+          qflx_h2osfc_to_ice =>    waterflux_inst%qflx_h2osfc_to_ice_col , & ! Input:  [real(r8) (:)   ] surface water converted to ice (mm H2O /s)
           qflx_snwcp_liq     =>    waterflux_inst%qflx_snwcp_liq_col     , & ! excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_drain         =>    waterflux_inst%qflx_drain_col         , & ! sub-surface runoff (mm H2O /s)
           qflx_drain_perched =>    waterflux_inst%qflx_drain_perched_col , & ! perched wt sub-surface runoff (mm H2O /s)         
           qflx_qrgwl         =>    waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes (mm H2O /s)
+          qflx_surf          =>    waterflux_inst%qflx_surf_col          , & ! surface runoff (mm H2O /s)
           qflx_rsub_sat      =>    waterflux_inst%qflx_rsub_sat_col      , & ! soil saturation excess [mm h2o/s]
           qflx_infl          =>    waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)
           qflx_rootsoi       =>    waterflux_inst%qflx_rootsoi_col       , & ! vegetation/soil water exchange (mm H2O/s) (+ = to atm) 
@@ -2395,11 +2423,20 @@ contains
                    qflx_parflow(c,j) = -qflx_rootsoi(c,j) !mm/s
                end if
             end do
+
+            ! Water added to the top soil layer by eCLM after the ParFlow state was applied
+            ! (condensation/sublimation in RenewCondensation, snow water from CombineSnowLayers)
+            qflx_parflow(c,1) = qflx_parflow(c,1) + qflx_pfl_top(c)
+            ! Remove what froze into ice from surface water
+            qflx_parflow(c,1) = qflx_parflow(c,1) - qflx_h2osfc_to_ice(c)
+            ! Excess rainfall due to snow capping pass to ParFlow instead of river routing
+            qflx_parflow(c,1) = qflx_parflow(c,1) + qflx_snwcp_liq(c)
+
             ! Compute subsurface run-off (mm/s)
             qflx_drain(c) = -sum(qflx_parflow(c,:))
             qflx_drain_perched(c) = 0._r8  
             qflx_rsub_sat(c)      = 0._r8
-            qflx_qrgwl(c)         = qflx_snwcp_liq(c)   ! Set imbalance for snow capping
+            qflx_qrgwl(c)         = 0._r8
             ! Convert eCLM fluxes (mm/s) to ParFlow fluxes (1/hr):
             !         1/hr            =           [mm/s]          *   [s/hr]   *  [m/mm]  *         [1/m]
             qflx_parflow(c,1:nlevsoi) = qflx_parflow(c,1:nlevsoi) * sec_per_hr * m_per_mm * (1._r8/dz(c,1:nlevsoi))
@@ -2412,6 +2449,17 @@ contains
                qflx_drain(c) = 0._r8
                ! This must be done for roofs and impervious road (walls will be zero)
                qflx_qrgwl(c) = qflx_snwcp_liq(c)
+
+               ! Instead of leaving as river runoff, impervious urban runoff enters
+               ! ParFlow through layer 1. It is zeroed here so it is not counted twice.
+               qflx_parflow(c,1:nlevsoi) = 0._r8
+               qflx_parflow(c,1)         = qflx_surf(c) + qflx_qrgwl(c)
+               qflx_surf(c)              = 0._r8
+               qflx_qrgwl(c)             = 0._r8
+
+               qflx_drain(c) = -sum(qflx_parflow(c,:))
+
+               qflx_parflow(c,1:nlevsoi) = qflx_parflow(c,1:nlevsoi) * sec_per_hr * m_per_mm * (1._r8/dz(c,1:nlevsoi))
             end if
          end do
      end associate
