@@ -2,6 +2,7 @@
 
 [![helmholtz rsd](https://img.shields.io/badge/helmholtz.software-eclm-00a3e3)](https://helmholtz.software/software/eclm)
 [![latest tag](https://badgen.net/github/tag/HPSCTerrSys/eCLM)](https://github.com/HPSCTerrSys/eCLM/tags)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17967419.svg)](https://doi.org/10.5281/zenodo.17967419)
 
 eCLM is based from [Community Land Model 5.0 (CLM5.0)]. It has the same modelling capabilities as CLM5 but with a more simplified infrastructure for build and namelist generation. The build system is handled entirely by CMake and namelists are generated through a small set of Python scripts. Only Fortran source codes necessary for a functional land model simulation were imported from CLM5. 
 
@@ -26,7 +27,8 @@ If you use this software, please cite:
  author = {Rigor, Paul and Poll, Stefan and González-Nicolás, Ana and Keller, Johannes and van Hulten, Marco and Caviedes-Voullieme, Daniel and Hendricks-Franssen, Harrie-Jan and Goergen, Klaus and Kollet, Stefan},
   title = {enCore Community Land Model (eCLM)},
    year = {2025},
-    url = {https://github.com/HPSCTerrSys/eCLM}
+    url = {https://github.com/HPSCTerrSys/eCLM},
+    doi = {10.5281/ZENODO.17967419}
 }
 ```
 

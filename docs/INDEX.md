@@ -55,6 +55,7 @@ If you use this software, please cite:
  author = {Rigor, Paul and Poll, Stefan and González-Nicolás, Ana and Keller, Johannes and van Hulten, Marco and Caviedes-Voullieme, Daniel and Hendricks-Franssen, Harrie-Jan and Goergen, Klaus and Kollet, Stefan},
   title = {enCore Community Land Model (eCLM)},
    year = {2025},
-    url = {https://github.com/HPSCTerrSys/eCLM}
+    url = {https://github.com/HPSCTerrSys/eCLM},
+    doi = {10.5281/ZENODO.17967419}
 }
 ```
