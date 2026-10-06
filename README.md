@@ -17,6 +17,19 @@ Feel free to post your questions and problems via the [issue tracker]. We also w
 
 For general inquiries, leave us a message on our [eCLM Matrix channel].
 
+## Citing
+
+If you use this software, please cite:
+
+```bibtex
+@software{eclm,
+ author = {Rigor, Paul and Poll, Stefan and González-Nicolás, Ana and Keller, Johannes and van Hulten, Marco and Caviedes-Voullieme, Daniel and Hendricks-Franssen, Harrie-Jan and Goergen, Klaus and Kollet, Stefan},
+  title = {enCore Community Land Model (eCLM)},
+   year = {2025},
+    url = {https://github.com/HPSCTerrSys/eCLM}
+}
+```
+
 [Community Land Model 5.0 (CLM5.0)]: https://github.com/ESCOMP/CTSM/tree/release-clm5.0
 [issue tracker]: https://github.com/HPSCTerrSys/eCLM/issues
 [pull requests]: https://github.com/HPSCTerrSys/eCLM/pulls
