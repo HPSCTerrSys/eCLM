@@ -20,7 +20,7 @@ ExternalProject_Add(gptl_external
     SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/gptl
     BUILD_IN_SOURCE   FALSE
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND     make install -f ${CMAKE_CURRENT_SOURCE_DIR}/gptl/Makefile         
+    BUILD_COMMAND     $(MAKE) install -f ${CMAKE_CURRENT_SOURCE_DIR}/gptl/Makefile
                       MACFILE=${GPTL_BLD_DIR}/Macros.make
                       GPTL_DIR=${CMAKE_CURRENT_SOURCE_DIR}/gptl
                       SHAREDPATH=${GPTL_BLD_DIR}
@@ -57,7 +57,7 @@ if (BUILD_MCT)
                         MPIFC=${CMAKE_Fortran_COMPILER}
                         CFLAGS=${CMAKE_C_FLAGS}
                         FCFLAGS=${CMAKE_Fortran_FLAGS}
-        BUILD_COMMAND     make clean install
+        BUILD_COMMAND     $(MAKE) clean install
         BUILD_ALWAYS      YES
         BUILD_BYPRODUCTS  ${GPTL_BLD_DIR}/lib/libmct.a ${GPTL_BLD_DIR}/lib/libmpeu.a
     )
