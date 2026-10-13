@@ -53,4 +53,4 @@ url: 'https://helmholtz.software/software/eclm'
 repository: 'https://hpscterrsys.github.io/eCLM'
 keywords:
   - 'land surface model, Earth system model, Fortran, HPC'
-license: BSD-3-Clause
+license: University of Illinois/NCSA Open Source License
