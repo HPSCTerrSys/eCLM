@@ -3,7 +3,11 @@ module oas_sendReceiveMod
   use clm_time_manager , only: get_nstep, get_step_size
   use decompMod        , only: bounds_type
   use clm_varpar       , only: nlevgrnd
-  use clm_varctl       , only: iulog, loascplscheme_exchcoef
+  use clm_varctl       , only: iulog
+#ifdef COUP_OAS_ICON
+  use clm_varctl       , only: loascplscheme_exchcoef
+#endif
+
   use oas_vardefMod
   use mod_oasis
   implicit none
