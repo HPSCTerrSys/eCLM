@@ -14,8 +14,8 @@ contains
     use clm_varpar   , only : nlevsoi, nlevgrnd
 #ifdef COUP_OAS_ICON
     use clm_varpar   , only : numrad
-#endif
     use clm_varctl   , only : loascplscheme_exchcoef
+#endif
     use decompMod    , only : ldecomp, bounds_type
     use oas_vardefMod
 
