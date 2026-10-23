@@ -1224,6 +1224,9 @@ contains
     use WaterStateType     , only : waterstate_type
     use WaterFluxType      , only : waterflux_type
     use EnergyFluxType     , only : energyflux_type
+#ifdef COUP_OAS_PFL
+    use landunit_varcon    , only : istsoil, istcrop
+#endif
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
@@ -1257,6 +1260,7 @@ contains
 #ifdef COUP_OAS_PFL
          pfl_psi            => waterstate_inst%pfl_psi_col               , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
          pfl_h2osoi_liq     => waterstate_inst%pfl_h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ]  COUP_OAS_PFL
+         h2osfc             => waterstate_inst%h2osfc_col                , & ! Output: [real(r8) (:)   ]  surface water (mm)
 #endif
          elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
          esai               => canopystate_inst%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow    
@@ -1313,6 +1317,11 @@ contains
           g = col%gridcell(c)
           pfl_psi(c,:) = atm2lnd_inst%pfl_psi_grc(g,:)
           pfl_h2osoi_liq(c,:) = atm2lnd_inst%pfl_h2osoi_liq_grc(g,:)
+          ! ParFlow's positive pressure head of the top cell is the ponding depth.
+          ! Surface water is diagnosed from it to sync eCLM and ParFlow state.
+          if (lun%itype(col%landunit(c)) == istsoil .or. lun%itype(col%landunit(c)) == istcrop) then
+            h2osfc(c) = max(0._r8, pfl_psi(c,1))
+          end if
         end if
       end do
 #endif

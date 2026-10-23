@@ -74,6 +74,7 @@ module WaterfluxType
      real(r8), pointer :: qflx_rootsoi_col         (:,:) ! col root and soil water exchange [mm H2O/s] [+ into root]
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: qflx_parflow_col         (:,:) ! col source/sink flux per soil layer sent to ParFlow [1/hr] [- out from root]
+     real(r8), pointer :: qflx_pfl_top_col         (:)   ! col water added to soil layer 1 by eCLM within time step, sent to ParFlow (mm H2O/s)
 #endif
      real(r8), pointer :: qflx_infl_col            (:)   ! col infiltration (mm H2O /s)
      real(r8), pointer :: qflx_surf_col            (:)   ! col surface runoff (mm H2O /s)
@@ -219,6 +220,7 @@ contains
     allocate(this%qflx_rootsoi_col         (begc:endc,1:nlevsoi))    ; this%qflx_rootsoi_col         (:,:) = nan
 #ifdef COUP_OAS_PFL    
     allocate(this%qflx_parflow_col         (begc:endc,1:nlevsoi))    ; this%qflx_parflow_col         (:,:) = nan
+    allocate(this%qflx_pfl_top_col         (begc:endc))              ; this%qflx_pfl_top_col         (:)   = nan
 #endif  
     allocate(this%qflx_infl_col            (begc:endc))              ; this%qflx_infl_col            (:)   = nan
     allocate(this%qflx_surf_col            (begc:endc))              ; this%qflx_surf_col            (:)   = nan

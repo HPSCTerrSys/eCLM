@@ -46,3 +46,16 @@ Each time step the model solves the surface energy balance, water balance, and c
 Configuration of the CLM subgrid hierarchy. Box in upper right shows hypothetical subgrid distribution for a single grid cell. Note that the Crop land unit is only used when the model is run with the crop model active. Abbreviations: TBD – Tall Building District; HD – High Density; MD – Medium Density, G – Glacier, L – Lake, U – Urban, C – Crop, V – Vegetated, PFT – Plant Functional Type, Irr – Irrigated, UIrr – Unirrigated. Red arrows indicate allowed land unit transitions. Purple arrows indicate allowed patch-level transitions. From <a href="https://escomp.github.io/ctsm-docs/versions/release-clm5.0/html/tech_note/Ecosystem/CLM50_Tech_Note_Ecosystem.html#id14" target="_blank">CLM5 Technical Note</a>.
 ```
 
+## Citing
+
+If you use this software, please cite:
+
+```bibtex
+@software{eclm,
+ author = {Rigor, Paul and Poll, Stefan and González-Nicolás, Ana and Keller, Johannes and van Hulten, Marco and Caviedes-Voullieme, Daniel and Hendricks-Franssen, Harrie-Jan and Goergen, Klaus and Kollet, Stefan},
+  title = {enCore Community Land Model (eCLM)},
+   year = {2025},
+    url = {https://github.com/HPSCTerrSys/eCLM},
+    doi = {10.5281/ZENODO.17967419}
+}
+```

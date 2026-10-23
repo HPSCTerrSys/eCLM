@@ -47,6 +47,90 @@ mpirun -np 1 eclm.exe
 
 ## Setting up eCLM on HPC systems
 
+### HPC at Forschungszentrum Jülich (Jülich Supercomputing Centre, JSC)
+
+The steps are similar to above. The only difference is the build step and running step.
+
+1. Download TSMP2 build system.
+
+```sh
+# eCLM can be easily built via the TSMP2 build system. The following step will download TSMP2.
+git clone https://github.com/HPSCTerrSys/TSMP2.git
+```
+
+2. Build eCLM
+
+```sh
+# Build eCLM
+cd TSMP2
+./build_tsmp2.sh eCLM
+```
+
+3. Clone namelist files for the simulation experiment Wüstebach.
+
+```sh
+cd ..
+
+# Download Wüstebach namelist configuration (internal repository, login needed)
+git clone https://icg4geo.icg.kfa-juelich.de/Configurations/CLM/wtb_eclm.git 1x1_wuestebach
+```
+
+4. Set up the executable and environment file with symlinks.
+
+```sh
+cd 1x1_wuestebach
+
+# Symlink the eCLM executable and the JSC environment file
+ln -s ../TSMP2/bin/JUWELS_eCLM/bin/eclm.exe eclm.exe
+ln -s ../TSMP2/bin/JUWELS_eCLM/jsc.2025.intel.psmpi loadenvs
+```
+
+5. Activate your JSC account
+
+```sh
+# Select a compute project with a non-empty 'budget-accounts'. If you don't have 
+# one, request access via JuDOOR: https://judoor.fz-juelich.de
+jutil user projects -u $USER
+
+# Activate project
+jutil env activate -p <account>
+
+# Check if $BUDGET_ACCOUNTS was set
+echo $BUDGET_ACCOUNTS
+```
+
+6. Write the job script including your account information
+(automatically if `$BUDGET_ACCOUNTS` is set).
+
+```sh
+
+cat > jobscript.slurm << EOF
+#!/usr/bin/env bash
+#SBATCH --job-name=1x1_wuestebach
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=48
+#SBATCH --account=${BUDGET_ACCOUNTS}
+#SBATCH --partition=dc-cpu
+#SBATCH --time=0:30:00
+#SBATCH --output=logs/%j.eclm.1x1_wuestebach.out
+#SBATCH --error=logs/%j.eclm.1x1_wuestebach.err
+
+# Load environment
+source loadenvs
+
+# Run model
+srun -n 1 eclm.exe
+EOF
+```
+
+6. Run eCLM using the jobscript:
+```sh
+# On JSC systems (submit via Slurm):
+sbatch jobscript.slurm
+```
+
+### Generic HPC
+
 The steps are similar to above. The only difference is the build step and running step.
 
 1. Download TSMP2 build system.
@@ -79,42 +163,7 @@ git lfs pull
 cd static.resources
 ```
 
-4a. (ONLY on JSC systems) Set up the run directory with symlinks and a
-job script.
-
-```sh
-cd 1x1_wuestebach
-
-# Symlink the eCLM executable and the JSC environment file
-ln -s ../../../TSMP2/bin/JUWELS_eCLM/bin/eclm.exe eclm.exe
-ln -s ../../../TSMP2/bin/JUWELS_eCLM/jsc.2025.intel.psmpi loadenvs
-
-cat > jobscript.slurm << 'EOF'
-#!/usr/bin/env bash
-#SBATCH --job-name=1x1_wuestebach
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=48
-#SBATCH --account=jibg36
-#SBATCH --partition=batch
-#SBATCH --time=0:30:00
-#SBATCH --output=logs/%j.eclm.1x1_wuestebach.out
-#SBATCH --error=logs/%j.eclm.1x1_wuestebach.err
-
-# Load environment
-source loadenvs
-
-# Run model
-srun -n $SLURM_NTASKS eclm.exe
-EOF
-```
-
-Run eCLM:
-```sh
-# On JSC systems (submit via Slurm):
-sbatch jobscript.slurm
-```
-
-4b. (GENERIC HPC) Run eCLM.
+4b. Run eCLM.
 
 ```sh
 cd 1x1_wuestebach
