@@ -174,6 +174,7 @@ target_sources(${PROJECT_NAME}
         dyn_subgrid/dynColumnTemplateMod.F90
         dyn_subgrid/dynConsBiogeophysMod.F90
         dyn_subgrid/dyncropFileMod.F90
+        dyn_subgrid/dynCovercropFileMod.F90
         dyn_subgrid/dynEDMod.F90
         dyn_subgrid/dynFileMod.F90
         dyn_subgrid/dynInitColumnsMod.F90

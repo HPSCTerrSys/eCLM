@@ -38,6 +38,18 @@ module CropType
      real(r8), pointer :: vf_patch                (:)   ! patch vernalization factor for cereal
      real(r8), pointer :: cphase_patch            (:)   ! phenology phase
      real(r8), pointer :: latbaset_patch          (:)   ! Latitude vary baset for gddplant (degree C)
+     integer , pointer :: yrop_patch              (:)   ! year of planting
+     real(r8), pointer :: lt50_patch              (:)   ! lethal temperature at which 50% of the individuals are damaged
+     real(r8), pointer :: wdd_patch               (:)   ! winter wheat weighted cumulated degree days
+     real(r8), pointer :: rateh_patch             (:)   ! increase of tolerance caused by hardening
+     real(r8), pointer :: rated_patch             (:)   ! loss of tolerance caused by dehardening
+     real(r8), pointer :: rates_patch             (:)   ! loss of tolerance caused by low temperature
+     real(r8), pointer :: rater_patch             (:)   ! loss of tolerance caused by respiration under snow
+     real(r8), pointer :: fsurv_patch             (:)   ! winter wheat survival rate
+     real(r8), pointer :: accfsurv_patch          (:)   ! accumulated winter wheat survival rate
+     real(r8), pointer :: countfsurv_patch        (:)   ! numbers of accumulated winter wheat survival rate
+     real(r8), pointer :: ck_patch                (:)   ! fraction of green leaf area killed
+     real(r8), pointer :: tcrown_patch            (:)   ! crown temperature
      character(len=20) :: baset_mapping
      real(r8) :: baset_latvary_intercept
      real(r8) :: baset_latvary_slope
@@ -199,6 +211,18 @@ contains
     allocate(this%vf_patch       (begp:endp)) ; this%vf_patch       (:) = 0.0_r8
     allocate(this%cphase_patch   (begp:endp)) ; this%cphase_patch   (:) = 0.0_r8
     allocate(this%latbaset_patch (begp:endp)) ; this%latbaset_patch (:) = spval
+    allocate(this%yrop_patch     (begp:endp)) ; this%yrop_patch     (:) = huge(1)
+    allocate(this%lt50_patch     (begp:endp)) ; this%lt50_patch     (:) = spval
+    allocate(this%wdd_patch      (begp:endp)) ; this%wdd_patch      (:) = spval
+    allocate(this%rateh_patch    (begp:endp)) ; this%rateh_patch    (:) = spval
+    allocate(this%rated_patch    (begp:endp)) ; this%rated_patch    (:) = spval
+    allocate(this%rates_patch    (begp:endp)) ; this%rates_patch    (:) = spval
+    allocate(this%rater_patch    (begp:endp)) ; this%rater_patch    (:) = spval
+    allocate(this%fsurv_patch    (begp:endp)) ; this%fsurv_patch    (:) = spval
+    allocate(this%accfsurv_patch (begp:endp)) ; this%accfsurv_patch (:) = spval
+    allocate(this%countfsurv_patch (begp:endp)) ; this%countfsurv_patch (:) = spval
+    allocate(this%ck_patch       (begp:endp)) ; this%ck_patch       (:) = spval
+    allocate(this%tcrown_patch   (begp:endp)) ; this%tcrown_patch   (:) = spval
 
   end subroutine InitAllocate
 
@@ -401,6 +425,7 @@ contains
     use ncdio_pio
     use PatchType, only : patch
     use pftconMod, only : npcropmin, npcropmax
+    use clm_time_manager, only : get_curr_date   ! tboas-fix: yrop backwards compatibility
     !
     ! !ARGUMENTS:
     class(crop_type), intent(inout)  :: this
@@ -413,6 +438,8 @@ contains
     integer :: restyear
     integer :: p
     logical :: readvar   ! determine if variable is on initial file
+    logical :: readvar_hard  ! tboas-fix: cold-hardening block present on restart file
+    integer :: kyr, kmo, kda, mcsec  ! tboas-fix: current date for yrop fallback
 
     character(len=*), parameter :: subname = 'Restart'
     !-----------------------------------------------------------------------
@@ -505,6 +532,97 @@ contains
             dim1name='pft', long_name='crop phenology phase', &
             units='0-not planted, 1-planted, 2-leaf emerge, 3-grain fill, 4-harvest', &
             interpinic_flag='interp', readvar=readvar, data=this%cphase_patch)
+       !--------------------------------------------------------------------
+       ! tboas-fix: the winter-cereal cold-hardening state (Lu 2017 scheme,
+       ! evolved every timestep in CNPhenologyMod::coldtolerance) and the
+       ! perennial planting year are prognostic and MUST survive a restart.
+       ! Before this fix they were allocated with spval / huge(1) defaults and
+       ! never written, so every restart fed spval into
+       !     rateh = Hparam*(10-tcrown)*(lt50-lt50max)
+       !     fsurv = 2**(-(|tcrown|/|lt50|)**4)
+       ! and huge(1) into  idpp = dayspyr*(kyr-yrop) + jday - idop,
+       ! silently corrupting litterfall and perennial crop age.
+       !--------------------------------------------------------------------
+       call restartvar(ncid=ncid, flag=flag, varname='yrop', xtype=ncd_int, &
+            dim1name='pft', long_name='year of planting', units='yr', &
+            interpinic_flag='interp', readvar=readvar, data=this%yrop_patch)
+       if (flag == 'read' .and. .not. readvar) then
+          ! BACKWARDS_COMPATIBILITY: pre-fix restart files carry no yrop.
+          ! huge(1) would overflow (kyr - yrop), so fall back to the current
+          ! year, i.e. treat every perennial as newly planted.
+          call get_curr_date(kyr, kmo, kda, mcsec)
+          do p = bounds%begp, bounds%endp
+             if (this%yrop_patch(p) == huge(1)) this%yrop_patch(p) = kyr
+          end do
+          if (masterproc) write(iulog,*) subname// &
+               ': yrop absent from restart file - reset to current year ', kyr
+       end if
+
+       call restartvar(ncid=ncid, flag=flag, varname='lt50', xtype=ncd_double, &
+            dim1name='pft', long_name='lethal temperature at which 50% of individuals are damaged', &
+            units='degC', interpinic_flag='interp', readvar=readvar_hard, data=this%lt50_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='wdd', xtype=ncd_double, &
+            dim1name='pft', long_name='winter cereal weighted cumulative degree days', &
+            units='ddays', interpinic_flag='interp', readvar=readvar, data=this%wdd_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='rateh', xtype=ncd_double, &
+            dim1name='pft', long_name='gain of frost tolerance by hardening', &
+            units='degC/hr', interpinic_flag='interp', readvar=readvar, data=this%rateh_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='rated', xtype=ncd_double, &
+            dim1name='pft', long_name='loss of frost tolerance by dehardening', &
+            units='degC/hr', interpinic_flag='interp', readvar=readvar, data=this%rated_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='rates', xtype=ncd_double, &
+            dim1name='pft', long_name='loss of frost tolerance by low temperature', &
+            units='degC/hr', interpinic_flag='interp', readvar=readvar, data=this%rates_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='rater', xtype=ncd_double, &
+            dim1name='pft', long_name='loss of frost tolerance by respiration under snow', &
+            units='degC/hr', interpinic_flag='interp', readvar=readvar, data=this%rater_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fsurv', xtype=ncd_double, &
+            dim1name='pft', long_name='winter cereal survival rate', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fsurv_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='accfsurv', xtype=ncd_double, &
+            dim1name='pft', long_name='accumulated winter cereal survival rate', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%accfsurv_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='countfsurv', xtype=ncd_double, &
+            dim1name='pft', long_name='count of accumulated survival rate samples', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%countfsurv_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='ck', xtype=ncd_double, &
+            dim1name='pft', long_name='fraction of green leaf area killed by frost', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%ck_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tcrown', xtype=ncd_double, &
+            dim1name='pft', long_name='crown temperature', units='degC', &
+            interpinic_flag='interp', readvar=readvar, data=this%tcrown_patch)
+
+       if (flag == 'read' .and. .not. readvar_hard) then
+          ! BACKWARDS_COMPATIBILITY: pre-fix restart files carry none of the
+          ! cold-hardening state. Seed it with the same values CropPhenology
+          ! assigns at planting (CNPhenologyMod ~2374 and ~2430) rather than
+          ! leaving spval, which is not a valid operand for the rate equations.
+          do p = bounds%begp, bounds%endp
+             this%lt50_patch(p)       = -5._r8
+             this%wdd_patch(p)        =  0._r8
+             this%rateh_patch(p)      =  0._r8
+             this%rated_patch(p)      =  0._r8
+             this%rates_patch(p)      =  0._r8
+             this%rater_patch(p)      =  0._r8
+             this%fsurv_patch(p)      =  1._r8
+             this%accfsurv_patch(p)   =  1._r8
+             this%countfsurv_patch(p) =  1._r8
+             this%ck_patch(p)         =  0._r8
+             this%tcrown_patch(p)     =  0._r8
+          end do
+          if (masterproc) write(iulog,*) subname// &
+               ': cold-hardening state absent from restart file - reset to planting defaults'
+       end if
        if (flag=='read' )then
           call this%checkDates( )  ! Check that restart date is same calendar date (even if year is different)
                                    ! This is so that it properly goes through

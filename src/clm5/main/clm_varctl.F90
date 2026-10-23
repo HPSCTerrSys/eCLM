@@ -119,6 +119,10 @@ module clm_varctl
 
   ! If prognostic crops are turned on
   logical, public :: use_crop = .false.
+logical, public :: use_covercropping    = .false.
+logical, public :: use_fruittree        = .false.  ! tboas: apple/perennial crop phenology
+character(len=256), public :: transient_landuse_file = ' '  ! tboas
+character(len=fname_len), public :: covercrop_paramfile = ' '  ! tboas
 
   ! true => separate crop landunit is not created by default
   logical, public :: create_crop_landunit = .false.     
@@ -357,6 +361,39 @@ module clm_varctl
 
   logical, public :: use_nguardrail      = .false.
 
+! tboas-fix: compile-time switch for the per-patch crop-rotation / crop-phenology
+! debug writes. These fire once per patch, per MPI rank, with no masterproc guard;
+! at regional resolution that is O(10^5) log lines per rank on every rotation date
+! (and every timestep for the coldtolerance trace). Declared as a PARAMETER so the
+! compiler eliminates the write statements entirely when it is .false.
+! Set to .true. only for single-point debugging, then rebuild.
+logical, public, parameter :: debug_covercrop = .false.
+
+! tboas-fix: C and N mass-conservation error tolerances (gC or gN /m2/timestep).
+! These are the thresholds above which CNBalanceCheckMod aborts the run. The
+! defaults are the stock CLM5 values; they are exposed here only so that a
+! tolerance can be widened DELIBERATELY and visibly while debugging, instead of
+! being hardcoded loose in the source. A loosened value is logged at startup.
+real(r8), public :: cn_balance_tol_c     = 1.e-7_r8
+real(r8), public :: cn_balance_tol_n     = 1.e-7_r8
+
+! tboas: namelist parameter for optional organic carbon fertilizer from manure
+logical, public :: use_cfert            = .false.
+  real(r8), public :: manure_CN_ratio      = 25.0_r8  ! tboas: C:N ratio for farmyard manure (cfert_inparm)
+  ! tboas-fix: ammoniacal (immediately plant-available) fraction of the applied
+  ! manure N. The remainder enters the litter pools as organic N together with
+  ! the manure C at manure_CN_ratio, and is mineralised by the decomposition
+  ! cascade. 0.25 is typical for solid farmyard manure; ~0.5-0.6 for slurry.
+  ! Setting this to 1.0 reproduces the previous behaviour (all manure N applied
+  ! as mineral N) but then no organic N accompanies the manure C.
+  real(r8), public :: manure_nh4_frac      = 0.25_r8  ! tboas-fix: NH4-N fraction of manure N (cfert_inparm)
+  real(r8), public :: manure_fmet          = 0.60_r8  ! tboas: metabolic litter fraction of manure C (cfert_inparm)
+  real(r8), public :: manure_fcel          = 0.30_r8  ! tboas: cellulose litter fraction of manure C (cfert_inparm)
+  real(r8), public :: manure_flig          = 0.10_r8  ! tboas: lignin litter fraction of manure C (cfert_inparm)
+  real(r8), public :: manure_injection_depth = 0.0_r8 ! tboas: manure C injection depth [m] (cfert_inparm); 0=surface only
+  integer,  public :: manure_freq_years    = 1       ! tboas: apply manure every N years (cfert_inparm); 1=every year
+  integer,  public :: manure_apply_month   = 0       ! tboas: calendar month for manure application (cfert_inparm); 0=at planting
+  integer,  public :: manure_apply_day     = 1       ! tboas: calendar day for manure application (cfert_inparm)
   !----------------------------------------------------------
   ! To retrieve namelist
   !----------------------------------------------------------
@@ -371,22 +408,16 @@ contains
   subroutine clm_varctl_set( caseid_in, ctitle_in, brnch_retain_casename_in,    &
        single_column_in, scmlat_in, scmlon_in, nsrest_in, &
        version_in, hostname_in, username_in)
-    !
-    ! !DESCRIPTION:
-    ! Set input control variables.
-    !
-    ! !ARGUMENTS:
-    character(len=256), optional, intent(IN) :: caseid_in                ! case id
-    character(len=256), optional, intent(IN) :: ctitle_in                ! case title
-    logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to remain the 
-                                                                         ! same for branch run
-    logical,            optional, intent(IN) :: single_column_in         ! true => single column mode
-    real(r8),           optional, intent(IN) :: scmlat_in                ! single column lat
-    real(r8),           optional, intent(IN) :: scmlon_in                ! single column lon
-    integer,            optional, intent(IN) :: nsrest_in                ! 0: initial run. 1: restart: 3: branch
-    character(len=256), optional, intent(IN) :: version_in               ! model version
-    character(len=256), optional, intent(IN) :: hostname_in              ! hostname running on
-    character(len=256), optional, intent(IN) :: username_in              ! username running job
+  character(len=256), optional, intent(IN) :: caseid_in
+  character(len=256), optional, intent(IN) :: ctitle_in
+  logical,            optional, intent(IN) :: brnch_retain_casename_in
+  logical,            optional, intent(IN) :: single_column_in
+  real(r8),           optional, intent(IN) :: scmlat_in
+  real(r8),           optional, intent(IN) :: scmlon_in
+  integer,            optional, intent(IN) :: nsrest_in
+  character(len=256), optional, intent(IN) :: version_in
+  character(len=256), optional, intent(IN) :: hostname_in
+  character(len=256), optional, intent(IN) :: username_in
     !-----------------------------------------------------------------------
 
     if ( clmvarctl_isset )then

@@ -9,7 +9,7 @@ module pftconMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use abortutils  , only : endrun
   use clm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
-  use clm_varctl  , only : iulog, use_cndv, use_vertsoilc, use_crop
+  use clm_varctl  , only : iulog, use_cndv, use_vertsoilc, use_crop, use_covercropping, covercrop_paramfile, use_fruittree
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -51,8 +51,10 @@ module pftconMod
   integer :: nirrig_wrye            ! value for winter rye (ir)
   integer :: ncassava               ! ...and so on
   integer :: nirrig_cassava
-  integer :: ncitrus
-  integer :: nirrig_citrus
+  integer :: napple       = -1  ! tboas: -1 = inactive (use_fruittree=.false.)
+  integer :: nirrig_apple = -1  ! tboas: -1 = inactive
+  integer :: ncitrus            ! citrus PFT (backward compat with old param file)
+  integer :: nirrig_citrus      ! irrigated citrus (backward compat)
   integer :: ncocoa
   integer :: nirrig_cocoa
   integer :: ncoffee
@@ -95,6 +97,8 @@ module pftconMod
   integer :: nirrig_trp_corn        !value for tropical corn (ir)
   integer :: ntrp_soybean           !value for tropical soybean (rf)
   integer :: nirrig_trp_soybean     !value for tropical soybean (ir)
+  integer :: ncovercrop_1 = 0       ! optional cover-crop PFT index for rotation logic
+  integer :: ncovercrop_2 = 0       ! optional cover-crop PFT index for rotation logic
   integer :: npcropmax              ! value for last prognostic crop in list
   integer :: nc3crop                ! value for generic crop (rf)
   integer :: nc3irrig               ! value for irrigated generic crop (ir)
@@ -163,9 +167,11 @@ module pftconMod
      real(r8), allocatable :: bfact         (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: aleaff        (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: arootf        (:)   ! parameter used in CNAllocation
+     real(r8), allocatable :: arootf2       (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: astemf        (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: arooti        (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: fleafi        (:)   ! parameter used in CNAllocation
+     real(r8), allocatable :: aleafstor     (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: allconsl      (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: allconss      (:)   ! parameter used in CNAllocation
      real(r8), allocatable :: ztopmx        (:)   ! parameter used in CNVegStructUpdate
@@ -175,13 +181,21 @@ module pftconMod
      real(r8), allocatable :: lfemerg       (:)   ! parameter used in CNPhenology
      real(r8), allocatable :: grnfill       (:)   ! parameter used in CNPhenology
      integer , allocatable :: mxmat         (:)   ! parameter used in CNPhenology
+     real(r8), allocatable :: transplant    (:)   ! parameter used in CNPhenology (added by O.Dombrowski)
+     real(r8), allocatable :: lfmat         (:)   ! parameter used in CNPhenology (added by O.Dombrowski)
+     real(r8), allocatable :: grnrp         (:)   ! parameter used in CNPhenology (added by O.Dombrowski)
+     real(r8), allocatable :: crequ         (:)   ! Chill requirements for fruit tree crops (added by O.Dombrowski)
+     real(r8), allocatable :: crit_temp     (:)   ! Critical temperature to initiate leaf offset for fruit tree crops (added by O.Dombrowski)
+     real(r8), allocatable :: ndays_stor    (:)   ! Length of period for storage growth for fruit tree crops (added by O.Dombrowski)
      real(r8), allocatable :: mbbopt        (:)   ! Ball-Berry equation slope used in Photosynthesis
      real(r8), allocatable :: medlynslope   (:)   ! Medlyn equation slope used in Photosynthesis
      real(r8), allocatable :: medlynintercept(:)  ! Medlyn equation intercept used in Photosynthesis
      integer , allocatable :: mnNHplantdate (:)   ! minimum planting date for NorthHemisphere (YYYYMMDD)
      integer , allocatable :: mxNHplantdate (:)   ! maximum planting date for NorthHemisphere (YYYYMMDD)
+     integer , allocatable :: mxNHharvdate  (:)   ! maximum harvest date for NorthHemishere (YYYYMMDD) (added by O.Dombrowski)
      integer , allocatable :: mnSHplantdate (:)   ! minimum planting date for SouthHemisphere (YYYYMMDD)
      integer , allocatable :: mxSHplantdate (:)   ! maximum planting date for SouthHemisphere (YYYYMMDD)
+     integer , allocatable :: mxSHharvdate  (:)   ! maximum harvest date for SouthHemishere (YYYYMMDD) (added by O.Dombrowski)
      real(r8), allocatable :: planttemp     (:)   ! planting temperature used in CNPhenology (K)
      real(r8), allocatable :: minplanttemp  (:)   ! mininum planting temperature used in CNPhenology (K)
      real(r8), allocatable :: froot_leaf    (:)   ! allocation parameter: new fine root C per new leaf C (gC/gC) 
@@ -200,11 +214,16 @@ module pftconMod
      real(r8), allocatable :: evergreen     (:)   ! binary flag for evergreen leaf habit (0 or 1)
      real(r8), allocatable :: stress_decid  (:)   ! binary flag for stress-deciduous leaf habit (0 or 1)
      real(r8), allocatable :: season_decid  (:)   ! binary flag for seasonal-deciduous leaf habit (0 or 1)
+     real(r8), allocatable :: perennial     (:)   ! binary flag for perennial crop phenology (0 or 1) (added by O.Dombrowski)
+     real(r8), allocatable :: mulch_pruning (:)   ! binary flag for mulching or exporting pruning material (0 or 1) (added by O.Dombrowski)
      real(r8), allocatable :: pconv         (:)   ! proportion of deadstem to conversion flux
      real(r8), allocatable :: pprod10       (:)   ! proportion of deadstem to 10-yr product pool
      real(r8), allocatable :: pprod100      (:)   ! proportion of deadstem to 100-yr product pool
      real(r8), allocatable :: pprodharv10   (:)   ! harvest mortality proportion of deadstem to 10-yr pool
 
+     real(r8), allocatable :: prune_fr      (:)   ! fraction of deadstem that is pruned (added by O.Dombrowski)
+     real(r8), allocatable :: nstem         (:)   ! stem density (#/m2) (added by O.Dombrowski)
+     real(r8), allocatable :: taper         (:)   ! tapering ratio of height:radius_breast_height (added by O.Dombrowski)
      ! pft paraemeters for fire code
      real(r8), allocatable :: cc_leaf       (:)
      real(r8), allocatable :: cc_lstem      (:)
@@ -256,9 +275,12 @@ module pftconMod
      real(r8), allocatable :: fun_cn_flex_c (:)   ! Parameter b of FUN-flexcn link code (def 80)         
      real(r8), allocatable :: FUN_fracfixers(:)   ! Fraction of C that can be used for fixation.    
 
+     integer , allocatable :: covercrop     (:)   ! Cover crop flag
 
      ! pft parameters for dynamic root code
      real(r8), allocatable :: root_dmx(:)     !maximum root depth
+     ! pft parameters for cover crop routine
+     !integer, allocatable :: covercrop(:)     !cover crop flag
 
    contains
 
@@ -273,6 +295,7 @@ module pftconMod
   end type pftcon_type
 
   type(pftcon_type), public :: pftcon ! pft type constants structure
+  public :: is_covercrop   ! tboas
 
   integer, parameter :: pftname_len = 40         ! max length of pftname       
   character(len=pftname_len) :: pftname(0:mxpft) ! PFT description
@@ -372,9 +395,11 @@ contains
     allocate( this%bfact         (0:mxpft) )        
     allocate( this%aleaff        (0:mxpft) )       
     allocate( this%arootf        (0:mxpft) )       
+    allocate( this%arootf2       (0:mxpft) )
     allocate( this%astemf        (0:mxpft) )       
     allocate( this%arooti        (0:mxpft) )       
     allocate( this%fleafi        (0:mxpft) )       
+    allocate( this%aleafstor     (0:mxpft) )
     allocate( this%allconsl      (0:mxpft) )     
     allocate( this%allconss      (0:mxpft) )     
     allocate( this%ztopmx        (0:mxpft) )       
@@ -387,10 +412,18 @@ contains
     allocate( this%medlynslope   (0:mxpft) )      
     allocate( this%medlynintercept(0:mxpft) )      
     allocate( this%mxmat         (0:mxpft) )        
+    allocate( this%transplant    (0:mxpft) )
+    allocate( this%lfmat         (0:mxpft) )
+    allocate( this%grnrp         (0:mxpft) )
+    allocate( this%crequ         (0:mxpft) )
+    allocate( this%crit_temp     (0:mxpft) )
+    allocate( this%ndays_stor    (0:mxpft) )
     allocate( this%mnNHplantdate (0:mxpft) )
     allocate( this%mxNHplantdate (0:mxpft) )
+    allocate( this%mxNHharvdate  (0:mxpft) )
     allocate( this%mnSHplantdate (0:mxpft) )
     allocate( this%mxSHplantdate (0:mxpft) )
+    allocate( this%mxSHharvdate  (0:mxpft) )
     allocate( this%planttemp     (0:mxpft) )    
     allocate( this%minplanttemp  (0:mxpft) ) 
     allocate( this%froot_leaf    (0:mxpft) )   
@@ -409,6 +442,8 @@ contains
     allocate( this%evergreen     (0:mxpft) )    
     allocate( this%stress_decid  (0:mxpft) ) 
     allocate( this%season_decid  (0:mxpft) ) 
+    allocate( this%perennial     (0:mxpft) )
+    allocate( this%mulch_pruning (0:mxpft) )
     allocate( this%dwood         (0:mxpft) )
     allocate( this%root_density  (0:mxpft) )
     allocate( this%root_radius   (0:mxpft) )
@@ -416,6 +451,9 @@ contains
     allocate( this%pprod10       (0:mxpft) )      
     allocate( this%pprod100      (0:mxpft) )     
     allocate( this%pprodharv10   (0:mxpft) )  
+    allocate( this%prune_fr      (0:mxpft) )
+    allocate( this%nstem         (0:mxpft) )
+    allocate( this%taper         (0:mxpft) )
     allocate( this%cc_leaf       (0:mxpft) )
     allocate( this%cc_lstem      (0:mxpft) )
     allocate( this%cc_dstem      (0:mxpft) )
@@ -460,6 +498,7 @@ contains
     allocate( this%fun_cn_flex_c (0:mxpft) )
     allocate( this%FUN_fracfixers(0:mxpft) )
     
+    allocate( this%covercrop     (0:mxpft) )
  
   end subroutine InitAllocate
 
@@ -489,10 +528,12 @@ contains
     integer            :: dimid                ! netCDF dimension id
     integer            :: npft                 ! number of pfts on pft-physiology file
     logical            :: readv                ! read variable in or not
+    logical            :: readv_taper, readv_nstem ! tboas-fix: optional woody allometry params
     character(len=32)  :: subname = 'InitRead' ! subroutine name
     character(len=pftname_len) :: expected_pftnames(0:mxpft) 
     character(len=512) :: msg
     !-----------------------------------------------------------------------
+    expected_pftnames(:) = ' '  ! tboas: init blank so unset slots skip validation
     !
     ! Expected PFT names: The names expected on the paramfile file and the order they are expected to be in.
     ! NOTE: similar types are assumed to be together, first trees (ending with broadleaf_deciduous_boreal_tree
@@ -500,6 +541,7 @@ contains
     !       and finally crops, ending with irrigated_tropical_soybean
     ! DO NOT CHANGE THE ORDER -- WITHOUT MODIFYING OTHER PARTS OF THE CODE WHERE THE ORDER MATTERS!
 
+    expected_pftnames(:) = ' '  ! tboas: init blank so unset slots skip validation
     expected_pftnames( 0) = 'not_vegetated                      '
     expected_pftnames( 1) = 'needleleaf_evergreen_temperate_tree'
     expected_pftnames( 2) = 'needleleaf_evergreen_boreal_tree   '
@@ -535,8 +577,13 @@ contains
     expected_pftnames(32) = 'irrigated_winter_rye               '
     expected_pftnames(33) = 'cassava                            '
     expected_pftnames(34) = 'irrigated_cassava                  '
+    if (use_fruittree) then
+       expected_pftnames(35) = 'apple                              '
+       expected_pftnames(36) = 'irrigated_apple                    '
+    else
     expected_pftnames(35) = 'citrus                             '
     expected_pftnames(36) = 'irrigated_citrus                   '
+    end if
     expected_pftnames(37) = 'cocoa                              '
     expected_pftnames(38) = 'irrigated_cocoa                    '
     expected_pftnames(39) = 'coffee                             '
@@ -577,8 +624,13 @@ contains
     expected_pftnames(74) = 'irrigated_switchgrass              '
     expected_pftnames(75) = 'tropical_corn                      '
     expected_pftnames(76) = 'irrigated_tropical_corn            '
+    if (use_covercropping) then
+       expected_pftnames(77) = 'covercrop_1                        '
+       expected_pftnames(78) = 'covercrop_2                        '
+    else
     expected_pftnames(77) = 'tropical_soybean                   '
     expected_pftnames(78) = 'irrigated_tropical_soybean         '
+    end if
 
     ! Set specific vegetation type values
 
@@ -739,10 +791,22 @@ contains
     call ncd_io('season_decid', this%season_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
+    if (use_fruittree) then
+       call ncd_io('perennial', this%perennial, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+       if ( .not. readv ) call endrun(msg=' ERROR: perennial not in param file'//errMsg(sourcefile, __LINE__))
+       call ncd_io('mulch_pruning', this%mulch_pruning, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+       if ( .not. readv ) call endrun(msg=' ERROR: mulch_pruning not in param file'//errMsg(sourcefile, __LINE__))
     call ncd_io('pftpar20', this%pftpar20, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+       if ( .not. readv ) call endrun(msg=' ERROR: pftpar20 not in param file'//errMsg(sourcefile, __LINE__))
 
     call ncd_io('pftpar28', this%pftpar28, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+       if ( .not. readv ) call endrun(msg=' ERROR: pftpar28 not in param file'//errMsg(sourcefile, __LINE__))
+    else
+       this%perennial(:)     = 0._r8
+       this%mulch_pruning(:) = 0._r8
+       this%pftpar20(:)      = 0._r8
+       this%pftpar28(:)      = 0._r8
+    end if
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
     call ncd_io('pftpar29', this%pftpar29, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -850,6 +914,12 @@ contains
     call ncd_io('arootf', this%arootf, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
+    if (use_fruittree) then
+       call ncd_io('arootf2', this%arootf2, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: arootf2 not in param file'//errMsg(sourcefile, __LINE__))
+    else
+       this%arootf2(:) = 0._r8
+    end if
     call ncd_io('astemf', this%astemf, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
@@ -858,6 +928,12 @@ contains
 
     call ncd_io('fleafi', this%fleafi, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    if (use_fruittree) then
+       call ncd_io('aleafstor', this%aleafstor, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: aleafstor not in param file'//errMsg(sourcefile, __LINE__))
+    else
+       this%aleafstor(:) = 0._r8
+    end if
 
     call ncd_io('allconsl', this%allconsl, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
@@ -906,43 +982,30 @@ contains
     call ncd_io('mxmat', this%mxmat, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
-    call ncd_io('cc_leaf', this% cc_leaf, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    if (use_fruittree) then
+       call ncd_io('transplant', this%transplant, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: transplant not in param file'//errMsg(sourcefile, __LINE__))
+       call ncd_io('lfmat', this%lfmat, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: lfmat not in param file'//errMsg(sourcefile, __LINE__))
+       call ncd_io('grnrp', this%grnrp, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: grnrp not in param file'//errMsg(sourcefile, __LINE__))
+       call ncd_io('crequ', this%crequ, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: crequ not in param file'//errMsg(sourcefile, __LINE__))
+       call ncd_io('crit_temp', this%crit_temp, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: crit_temp not in param file'//errMsg(sourcefile, __LINE__))
+       call ncd_io('ndays_stor', this%ndays_stor, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: ndays_stor not in param file'//errMsg(sourcefile, __LINE__))
+    else
+       this%transplant(:) = 0._r8
+       this%lfmat(:)      = 0._r8
+       this%grnrp(:)      = 0._r8
+       this%crequ(:)      = 0._r8
+       this%crit_temp(:)  = 0._r8
+       this%ndays_stor(:) = 0._r8
+    end if
 
-    call ncd_io('cc_lstem', this%cc_lstem, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('cc_dstem', this%cc_dstem, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('cc_other', this%cc_other, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fm_leaf', this% fm_leaf, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fm_lstem', this%fm_lstem, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fm_dstem', this%fm_dstem, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fm_other', this%fm_other, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fm_root', this% fm_root, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fm_lroot', this%fm_lroot, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fm_droot', this%fm_droot, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fsr_pft', this% fsr_pft, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
-
-    call ncd_io('fd_pft', this%  fd_pft, 'read', ncid, readvar=readv)  
+    if (use_fruittree) then
+       call ncd_io('prune_fr', this%prune_fr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
     call ncd_io('planting_temp', this%planttemp, 'read', ncid, readvar=readv)  
@@ -960,8 +1023,106 @@ contains
     call ncd_io('max_NH_planting_date', this%mxNHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
 
+       call ncd_io('max_NH_harvest_date', this%mxNHharvdate, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+   
+       call ncd_io('max_SH_harvest_date', this%mxSHharvdate, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
     call ncd_io('max_SH_planting_date', this%mxSHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    else
+       this%prune_fr(:)      = 0._r8
+    end if
+
+    !--------------------------------------------------------------------------
+    ! tboas-fix: fire behaviour and woody allometry are NOT fruit-tree features.
+    ! These parameters used to be read inside the use_fruittree block and zeroed
+    ! in its else branch, so with the default use_fruittree = .false. every
+    ! combustion completeness and fire mortality parameter was identically zero
+    ! (fire silently disabled), and taper = nstem = 0 made the woody height
+    ! allometry
+    !     htop = (3*deadstemc*taper^2 / (pi*nstem*dwood))^(1/3)
+    ! evaluate 0/0 for every tree and shrub. They are read unconditionally now,
+    ! as in the base model.
+    !--------------------------------------------------------------------------
+    call ncd_io('cc_leaf',  this%cc_leaf,  'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('cc_lstem', this%cc_lstem, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('cc_dstem', this%cc_dstem, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('cc_other', this%cc_other, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fm_leaf',  this%fm_leaf,  'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fm_lstem', this%fm_lstem, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fm_dstem', this%fm_dstem, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fm_other', this%fm_other, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fm_root',  this%fm_root,  'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fm_lroot', this%fm_lroot, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fm_droot', this%fm_droot, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fsr_pft',  this%fsr_pft,  'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('fd_pft',   this%fd_pft,   'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+
+    ! taper and nstem are optional: the fruit-tree parameter files supply them,
+    ! the standard CLM5 file does not. The fallback is applied further down,
+    ! once the shrub PFT indices have been resolved from pftname.
+    call ncd_io('taper', this%taper, 'read', ncid, readvar=readv_taper)
+    call ncd_io('nstem', this%nstem, 'read', ncid, readvar=readv_nstem)
+    ! Read crop planting/harvest params for all crops (not fruittree-specific) --- tboas
+    call ncd_io('planting_temp', this%planttemp, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('min_planting_temp', this%minplanttemp, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('min_NH_planting_date', this%mnNHplantdate, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('min_SH_planting_date', this%mnSHplantdate, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('max_NH_planting_date', this%mxNHplantdate, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    call ncd_io('max_SH_planting_date', this%mxSHplantdate, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(sourcefile, __LINE__))
+    ! harvest dates only in apple param file --- tboas
+    call ncd_io('max_NH_harvest_date', this%mxNHharvdate, 'read', ncid, readvar=readv)
+    if ( .not. readv ) this%mxNHharvdate(:) = 1231  ! default: Dec 31
+    call ncd_io('max_SH_harvest_date', this%mxSHharvdate, 'read', ncid, readvar=readv)
+    if ( .not. readv ) this%mxSHharvdate(:) = 631   ! default: Jun 30 (SH)
+
+!Cover crop flag read-in --- tboas
+    ! Default: zero array - backward compatible with standard 79-PFT param file.
+    ! If use_covercropping=.true.: open covercrop_paramfile separately and read
+    ! covercrop flag from there. Standard paramfile is never touched.
+    this%covercrop(:) = 0._r8
+    if (use_covercropping) then
+       if (trim(covercrop_paramfile) == '' .or. &
+           trim(covercrop_paramfile) == ' ') then
+          call endrun(msg=' ERROR: use_covercropping=.true. but covercrop_paramfile' // &
+               ' is not set in lnd_in. Add: covercrop_paramfile = /path/to/file.nc' // &
+               errMsg(sourcefile, __LINE__))
+       end if
+       if (masterproc) write(iulog,*) &
+            'pftconMod: reading covercrop PFT params from: ', trim(covercrop_paramfile)
+       block
+         type(file_desc_t) :: ncid_cc
+         character(len=256) :: locfn_cc
+         call getfil(covercrop_paramfile, locfn_cc, 0)
+         call ncd_pio_openfile(ncid_cc, trim(locfn_cc), 0)
+         call ncd_io('covercrop', this%covercrop, 'read', ncid_cc, readvar=readv)
+         if (.not. readv) call endrun( &
+              msg=' ERROR: variable covercrop not found in covercrop_paramfile' // &
+              errMsg(sourcefile, __LINE__))
+         if (masterproc) write(iulog,*) 'pftconMod: covercrop flag read OK'
+         call ncd_pio_closefile(ncid_cc)
+       end block
+    end if
 
     !
     ! Constants
@@ -1009,7 +1170,8 @@ contains
 
     do i = 0, mxpft
        if (.not. use_fates)then
-          if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
+          if ( trim(expected_pftnames(i)) /= ' ' .and. &
+               trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
              call endrun(msg='pftconrd: bad name for pft on paramfile dataset'//errMsg(sourcefile, __LINE__))
@@ -1051,8 +1213,13 @@ contains
        if ( trim(pftname(i)) == 'irrigated_winter_rye'                ) nirrig_wrye          = i
        if ( trim(pftname(i)) == 'cassava'                             ) ncassava             = i
        if ( trim(pftname(i)) == 'irrigated_cassava'                   ) nirrig_cassava       = i
+       if (use_fruittree) then
+          if ( trim(pftname(i)) == 'apple'          ) napple        = i
+          if ( trim(pftname(i)) == 'irrigated_apple') nirrig_apple  = i
+       else
        if ( trim(pftname(i)) == 'citrus'                              ) ncitrus              = i
        if ( trim(pftname(i)) == 'irrigated_citrus'                    ) nirrig_citrus        = i
+       end if
        if ( trim(pftname(i)) == 'cocoa'                               ) ncocoa               = i
        if ( trim(pftname(i)) == 'irrigated_cocoa'                     ) nirrig_cocoa         = i
        if ( trim(pftname(i)) == 'coffee'                              ) ncoffee              = i
@@ -1095,11 +1262,30 @@ contains
        if ( trim(pftname(i)) == 'irrigated_tropical_corn'             ) nirrig_trp_corn      = i
        if ( trim(pftname(i)) == 'tropical_soybean'                    ) ntrp_soybean         = i
        if ( trim(pftname(i)) == 'irrigated_tropical_soybean'          ) nirrig_trp_soybean   = i
+       if (use_covercropping) then
+          if ( trim(pftname(i)) == 'covercrop_1'                      ) ncovercrop_1         = i
+          if ( trim(pftname(i)) == 'covercrop_2'                      ) ncovercrop_2         = i
+       end if
     end do
 
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
     npcropmin            = ntmp_corn            ! first prognostic crop
     npcropmax            = mxpft                ! last prognostic crop in list
+    ! tboas-fix: deferred fallback for the optional woody-allometry parameters.
+    ! Placed here because it needs nbrdlf_evr_shrub / nbrdlf_dcd_brl_shrub, which
+    ! are only resolved by the pftname loop above. Values are the ones the base
+    ! model hardwired: taper 200, shrubs 10, stocking 1000 stems per hectare.
+    if ( .not. readv_taper ) then
+       this%taper(:) = 200._r8
+       this%taper(nbrdlf_evr_shrub:nbrdlf_dcd_brl_shrub) = 10._r8
+       if (masterproc) write(iulog,*) trim(subname)// &
+            ': taper absent from the parameter file - using base-model values (200, shrubs 10)'
+    end if
+    if ( .not. readv_nstem ) then
+       this%nstem(:) = 0.1_r8
+       if (masterproc) write(iulog,*) trim(subname)// &
+            ': nstem absent from the parameter file - using base-model stocking (1000 ha-1)'
+    end if
 
     call this%set_is_pft_known_to_model()
     call this%set_num_cfts_known_to_model()
@@ -1125,6 +1311,7 @@ contains
                 i == nirrig_barley          .or. i == nirrig_wbarley     .or. &
                 i == nirrig_rye             .or. i == nirrig_wrye        .or. &
                 i == nirrig_cassava         .or.                              &
+                i == nirrig_apple           .or.                              &
                 i == nirrig_citrus          .or.                              &
                 i == nirrig_cocoa           .or. i == nirrig_coffee      .or. &
                 i == nirrig_cotton          .or.                              &
@@ -1178,12 +1365,16 @@ contains
     ! Set is_pft_known_to_model based on mergetoclmpft
     !
     ! !USES:
+    use shr_log_mod , only : errMsg => shr_log_errMsg   ! tboas-fix
+    use spmdMod     , only : masterproc                 ! tboas-fix
     !
     ! !ARGUMENTS:
     class(pftcon_type), intent(inout) :: this
     !
     ! !LOCAL VARIABLES:
     integer :: m, merge_type
+    integer :: extra_known_pft(16)   ! tboas-fix: PFTs marked known by name, not by literal index
+    character(len=512) :: msg        ! tboas-fix
 
     character(len=*), parameter :: subname = 'set_is_pft_known_to_model'
     !-----------------------------------------------------------------------
@@ -1194,6 +1385,58 @@ contains
     ! so we can't handle it in the general loop below. But CLM always uses type 0, so
     ! handle it specially here.
     this%is_pft_known_to_model(0) = .true.
+    !--------------------------------------------------------------------------
+    ! tboas-fix: the crops added by this fork have no usable mergetoclmpft entry
+    ! in the parameter file, so they must be marked known explicitly. This used
+    ! to be a list of literal indices:
+    !     27, 28, 55, 56, 59, 60, 65, 66, 78, 79
+    ! which had two problems.
+    !
+    ! 1. mxpft = 78 and is_pft_known_to_model is allocated (0:mxpft), so
+    !    element 79 was an OUT-OF-BOUNDS WRITE. A DEBUG build with -fcheck=bounds
+    !    traps it; a RELEASE build silently corrupts whatever follows the array.
+    ! 2. Per expected_pftnames in InitRead, covercrop_1/covercrop_2 sit at 77/78,
+    !    not 78/79, so the intended cover-crop pair was off by one: index 78 was
+    !    covercrop_2 and covercrop_1 at 77 was never marked at all.
+    !
+    ! The indices are now resolved by name through the same n<crop> variables that
+    ! InitRead fills, which is the idiom already used elsewhere in this module
+    ! (see 'apple' and 'covercrop_1'). This keeps working when the parameter file
+    ! ordering changes -- e.g. the 81-PFT covercrop_paramfile versus the standard
+    ! file -- instead of silently marking the wrong slots.
+    !
+    ! The list covers every CFT used in the German rotations: maize, spring
+    ! barley, winter barley, winter rye, potatoes, rapeseed, sugar beet (each
+    ! rainfed + irrigated) and the two cover crops. Extend it here when a new
+    ! CFT enters a rotation, using the n<crop> name-resolved index.
+    !--------------------------------------------------------------------------
+    extra_known_pft = (/ ntmp_corn,  nirrig_tmp_corn,  &   ! maize
+                         nbarley,    nirrig_barley,    &   ! spring barley
+                         nwbarley,   nirrig_wbarley,   &   ! winter barley
+                         nwrye,      nirrig_wrye,      &   ! winter rye
+                         npotatoes,  nirrig_potatoes,  &
+                         nrapeseed,  nirrig_rapeseed,  &
+                         nsugarbeet, nirrig_sugarbeet, &
+                         ncovercrop_1, ncovercrop_2 /)
+
+    do m = 1, size(extra_known_pft)
+       ! index 0 means the name was not found in this parameter file (the
+       ! cover-crop PFTs only exist when use_covercropping = .true.)
+       if (extra_known_pft(m) <= 0) cycle
+       ! every entry above is a prognostic crop; anything else means the name
+       ! lookup in InitRead did not run or the parameter file is inconsistent
+       if (extra_known_pft(m) > mxpft .or. extra_known_pft(m) < npcropmin) then
+          write(msg,'(a,i0,a,i0,a,i0,a)') trim(subname)//': resolved PFT index ', &
+               extra_known_pft(m), ' is outside the crop range [', npcropmin, &
+               ',', mxpft, ']. The parameter file does not match this build.'
+          call endrun(msg=trim(msg)//errMsg(sourcefile, __LINE__))
+       end if
+       this%is_pft_known_to_model(extra_known_pft(m)) = .true.
+       if (masterproc) then
+          write(iulog,*) trim(subname)//': marking PFT known to model: index ', &
+               extra_known_pft(m), ' name ', trim(pftname(extra_known_pft(m)))
+       end if
+    end do
 
     ! NOTE(wjs, 2015-10-04) Currently, mergetoclmpft is only used for crop types.
     ! However, we handle it more generally here (treating ALL pft types), in case its use
@@ -1287,9 +1530,11 @@ contains
     deallocate( this%bfact)
     deallocate( this%aleaff)
     deallocate( this%arootf)
+    deallocate( this%arootf2)
     deallocate( this%astemf)
     deallocate( this%arooti)
     deallocate( this%fleafi)
+    deallocate( this%aleafstor)
     deallocate( this%allconsl)
     deallocate( this%allconss)
     deallocate( this%ztopmx)
@@ -1302,10 +1547,21 @@ contains
     deallocate( this%medlynslope)
     deallocate( this%medlynintercept)
     deallocate( this%mxmat)
+    deallocate( this%transplant)
+    deallocate( this%lfmat)
+    deallocate( this%grnrp)
+    deallocate( this%crequ)
+    deallocate( this%crit_temp)
+    deallocate( this%ndays_stor)
+    deallocate( this%prune_fr)
+    deallocate( this%nstem)
+    deallocate( this%taper)
     deallocate( this%mnNHplantdate)
     deallocate( this%mxNHplantdate)
+    deallocate( this%mxNHharvdate)
     deallocate( this%mnSHplantdate)
     deallocate( this%mxSHplantdate)
+    deallocate( this%mxSHharvdate)
     deallocate( this%planttemp)
     deallocate( this%minplanttemp)
     deallocate( this%froot_leaf)
@@ -1324,6 +1580,8 @@ contains
     deallocate( this%evergreen)
     deallocate( this%stress_decid)
     deallocate( this%season_decid)
+    deallocate( this%perennial)
+    deallocate( this%mulch_pruning)
     deallocate( this%dwood)
     deallocate( this%root_density)
     deallocate( this%root_radius)
@@ -1374,8 +1632,23 @@ contains
     deallocate( this%fun_cn_flex_b)
     deallocate( this%fun_cn_flex_c)
     deallocate( this%FUN_fracfixers)
+    deallocate( this%covercrop)
     
   end subroutine Clean
 
+  !-----------------------------------------------------------------------
+  logical function is_covercrop(ivt)
+    ! tboas: true if this PFT is a cover crop. Used instead of mutating the
+    ! global use_grainproduct flag, which is a namelist setting and must not
+    ! be rewritten per patch.
+    integer, intent(in) :: ivt
+    is_covercrop = .false.
+    if (ncovercrop_1 > 0) then
+       if (ivt == ncovercrop_1) is_covercrop = .true.
+    end if
+    if (ncovercrop_2 > 0) then
+       if (ivt == ncovercrop_2) is_covercrop = .true.
+    end if
+  end function is_covercrop
 end module pftconMod
 
