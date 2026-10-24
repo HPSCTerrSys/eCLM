@@ -63,8 +63,10 @@ module lnd2atmType
      real(r8), pointer :: flux_ch4_grc       (:)   => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
 #ifdef COUP_OAS_ICON
      real(r8), pointer :: t_sf_grc           (:)   => null() ! surface temperature (Kelvin)
-!     real(r8), pointer :: q_sf_grc           (:)   => null() ! surface humidity (kg/kg)
-!     real(r8), pointer :: rah1_grc           (:)   => null() ! aerodynamical resistance for heat (s/m)
+     real(r8), pointer :: q_sf_grc           (:)   => null() ! surface humidity (kg/kg)
+     real(r8), pointer :: rah1_grc           (:)   => null() ! aerodynamical resistance for heat (s/m)
+     real(r8), pointer :: raw1_grc           (:)   => null() ! aerodynamical resistance for moisture (s/m)
+     real(r8), pointer :: ram1_cpl_grc       (:)   => null() ! aerodynamical resistance for momentum, conductance-weighted (s/m)
 #endif
      ! lnd->rof
      real(r8), pointer :: qflx_rofliq_grc         (:)   => null() ! rof liq forcing
@@ -178,8 +180,10 @@ contains
     allocate(this%flux_ch4_grc       (begg:endg))            ; this%flux_ch4_grc       (:)   =ival
 #ifdef COUP_OAS_ICON
     allocate(this%t_sf_grc           (begg:endg))            ; this%t_sf_grc           (:)   =ival
-!    allocate(this%q_sf_grc           (begg:endg))            ; this%q_sf_grc           (:)   =ival
-!    allocate(this%rah1_grc           (begg:endg))            ; this%rah1_grc           (:)   =ival
+    allocate(this%q_sf_grc           (begg:endg))            ; this%q_sf_grc           (:)   =ival
+    allocate(this%rah1_grc           (begg:endg))            ; this%rah1_grc           (:)   =ival
+    allocate(this%raw1_grc           (begg:endg))            ; this%raw1_grc           (:)   =ival
+    allocate(this%ram1_cpl_grc       (begg:endg))            ; this%ram1_cpl_grc       (:)   =ival
 #endif
     allocate(this%qflx_rofliq_grc    (begg:endg))            ; this%qflx_rofliq_grc    (:)   =ival
     allocate(this%qflx_rofliq_qsur_grc    (begg:endg))       ; this%qflx_rofliq_qsur_grc    (:)   =ival
