@@ -26,6 +26,7 @@ module oas_vardefMod
   integer ::   oas_id_lw     ! longwave downward radiation (W/m2) 
   integer ::   oas_id_cr     ! rain precipitation      (kg/m2*s)
   integer ::   oas_id_gr     ! snow precipitation      (kg/m2*s)
+  integer ::   oas_id_tp     ! atm. surface orographic height (m)
 
   integer ::   oas_id_it      ! radiation temperature (K)
   integer ::   oas_id_ad      ! direct albedo (%)
@@ -35,6 +36,11 @@ module oas_vardefMod
   integer ::   oas_id_sh      ! sensible heat flux (W/m2)
   integer ::   oas_id_lh      ! latent heat flux (W/m2)
   integer ::   oas_id_st      ! surface temperature (K)
+
+  integer ::   oas_id_rm      ! resistance of momentum transfer (s/m)
+  integer ::   oas_id_rh      ! resistance of heat transfer (s/m)
+  integer ::   oas_id_rw      ! resistance of water transfer (s/m)
+  integer ::   oas_id_qs      ! surface specific humidity (kg/kg)
 #endif
 
 end module oas_vardefMod

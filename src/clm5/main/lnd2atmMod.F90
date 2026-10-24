@@ -200,6 +200,16 @@ contains
     logical, allocatable :: found(:)
     logical, allocatable :: found_patch(:)
 #endif
+#ifdef COUP_OAS_ICON
+    ! patch-level aerodynamic conductances (1/resistance) for rah1/raw1/ram1: 
+    ! combine parallel resistances by area-weighting their conductances
+    integer  :: pp
+    real(r8) :: rah1_cond_patch(bounds%begp:bounds%endp)
+    real(r8) :: raw1_cond_patch(bounds%begp:bounds%endp)
+    real(r8) :: ram1_cond_patch(bounds%begp:bounds%endp)
+    ! resistance where no land patch contribute
+    real(r8), parameter :: rmax_oascoupling = 1.e6_r8
+#endif
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(net_carbon_exchange_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
@@ -357,15 +367,55 @@ contains
          lnd2atm_inst%t_sf_grc       (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
-!    call p2g(bounds, &
-!         waterstate_inst%q_sf_patch (bounds%begp:bounds%endp), &
-!         lnd2atm_inst%q_sf_grc      (bounds%begg:bounds%endg), &
-!         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+    call p2g(bounds, &
+         waterstate_inst%q_sf_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%q_sf_grc      (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
-!    call p2g(bounds, &
-!         frictionvel_inst%rah1_patch (bounds%begp:bounds%endp), &
-!         lnd2atm_inst%rah1_grc       (bounds%begg:bounds%endg), &
-!         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+    ! combine parallel resistances by area-weighting conductances (1/R)
+    ! unset / nan or non-positive resistances stay spval and are skipped by p2g
+    rah1_cond_patch(bounds%begp:bounds%endp) = spval
+    raw1_cond_patch(bounds%begp:bounds%endp) = spval
+    ram1_cond_patch(bounds%begp:bounds%endp) = spval
+    do pp = bounds%begp, bounds%endp
+       if (frictionvel_inst%rah1_patch(pp) > 0._r8) rah1_cond_patch(pp) = 1._r8 / frictionvel_inst%rah1_patch(pp)
+       if (frictionvel_inst%raw1_patch(pp) > 0._r8) raw1_cond_patch(pp) = 1._r8 / frictionvel_inst%raw1_patch(pp)
+       if (frictionvel_inst%ram1_patch(pp) > 0._r8) ram1_cond_patch(pp) = 1._r8 / frictionvel_inst%ram1_patch(pp)
+    end do
+
+    call p2g(bounds, &
+         rah1_cond_patch       (bounds%begp:bounds%endp), &
+         lnd2atm_inst%rah1_grc (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    call p2g(bounds, &
+         raw1_cond_patch       (bounds%begp:bounds%endp), &
+         lnd2atm_inst%raw1_grc (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    call p2g(bounds, &
+         ram1_cond_patch           (bounds%begp:bounds%endp), &
+         lnd2atm_inst%ram1_cpl_grc (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    ! back to resistancy after aggregation. Limit p2g for non-contributing patch
+    do g = bounds%begg, bounds%endg
+       if (lnd2atm_inst%rah1_grc(g) /= spval .and. lnd2atm_inst%rah1_grc(g) > 0._r8) then
+          lnd2atm_inst%rah1_grc(g)     = 1._r8 / lnd2atm_inst%rah1_grc(g)
+       else
+          lnd2atm_inst%rah1_grc(g)     = rmax_oascoupling
+       end if
+       if (lnd2atm_inst%raw1_grc(g) /= spval .and. lnd2atm_inst%raw1_grc(g) > 0._r8) then
+          lnd2atm_inst%raw1_grc(g)     = 1._r8 / lnd2atm_inst%raw1_grc(g)
+       else
+          lnd2atm_inst%raw1_grc(g)     = rmax_oascoupling
+       end if
+       if (lnd2atm_inst%ram1_cpl_grc(g) /= spval .and. lnd2atm_inst%ram1_cpl_grc(g) > 0._r8) then
+          lnd2atm_inst%ram1_cpl_grc(g) = 1._r8 / lnd2atm_inst%ram1_cpl_grc(g)
+       else
+          lnd2atm_inst%ram1_cpl_grc(g) = rmax_oascoupling
+       end if
+    end do
 
 #endif
 

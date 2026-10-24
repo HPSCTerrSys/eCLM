@@ -3,7 +3,7 @@ module oas_sendReceiveMod
   use clm_time_manager , only: get_nstep, get_step_size
   use decompMod        , only: bounds_type
   use clm_varpar       , only: nlevgrnd
-  use clm_varctl       , only: iulog
+  use clm_varctl       , only: iulog, use_exchcoef_oascoupling
   use oas_vardefMod
   use mod_oasis
   implicit none
@@ -56,6 +56,7 @@ contains
   subroutine oas_receive_icon(bounds, seconds_elapsed, x2l)
     use atm2lndType, only: atm2lnd_type
     use clm_cpl_indices
+    use clm_varpar , only: numrad
 
     type(bounds_type),  intent(in)    :: bounds
     integer          ,  intent(in)    :: seconds_elapsed
@@ -67,7 +68,7 @@ contains
 
 
     num_grid_points = (bounds%endg - bounds%begg) + 1
-    allocate(buffer(num_grid_points, 1))
+    allocate(buffer(num_grid_points, numrad))
 
     !    call oasis_get(oas_id_t, seconds_elapsed, oas_rcv_meta(:,:,oas_id_t), info)
     call oasis_get(oas_id_t,  seconds_elapsed, x2l(index_x2l_Sa_tbot,:), info)
@@ -76,21 +77,24 @@ contains
     call oasis_get(oas_id_qv, seconds_elapsed, x2l(index_x2l_Sa_shum,:), info)
     call oasis_get(oas_id_ht, seconds_elapsed, x2l(index_x2l_Sa_z,:), info)
     call oasis_get(oas_id_pr, seconds_elapsed, x2l(index_x2l_Sa_pbot,:), info)
-    call oasis_get(oas_id_rs, seconds_elapsed, x2l(index_x2l_Faxa_swvdr,:), info)
-    call oasis_get(oas_id_fs, seconds_elapsed, x2l(index_x2l_Faxa_swvdf,:), info)
+    call oasis_get(oas_id_rs, seconds_elapsed, buffer, info)
+    do g=bounds%begg,bounds%endg
+       i = 1 + (g - bounds%begg)
+       x2l(index_x2l_Faxa_swvdr,i) = buffer(i,1)
+       x2l(index_x2l_Faxa_swndr,i) = buffer(i,2)
+    enddo
+    call oasis_get(oas_id_fs, seconds_elapsed, buffer, info)
+    do g=bounds%begg,bounds%endg
+       i = 1 + (g - bounds%begg)
+       x2l(index_x2l_Faxa_swvdf,i) = buffer(i,1)
+       x2l(index_x2l_Faxa_swndf,i) = buffer(i,2)
+    enddo
     call oasis_get(oas_id_lw, seconds_elapsed, x2l(index_x2l_Faxa_lwdn,:), info)
     call oasis_get(oas_id_cr, seconds_elapsed, x2l(index_x2l_Faxa_rainl,:), info)
     call oasis_get(oas_id_gr, seconds_elapsed, x2l(index_x2l_Faxa_snowl,:), info)
+    call oasis_get(oas_id_tp, seconds_elapsed, x2l(index_x2l_Sa_topo,:), info)
     x2l(index_x2l_Faxa_rainc,:) = 0.
     x2l(index_x2l_Faxa_snowc,:) = 0.
-
-    do g=bounds%begg,bounds%endg
-       i = 1 + (g - bounds%begg)
-       x2l(index_x2l_Faxa_swvdr,i) = 0.5_r8 * x2l(index_x2l_Faxa_swvdr,i)
-       x2l(index_x2l_Faxa_swndr,i) = x2l(index_x2l_Faxa_swvdr,i)
-       x2l(index_x2l_Faxa_swvdf,i) = 0.5_r8 * x2l(index_x2l_Faxa_swvdf,i)
-       x2l(index_x2l_Faxa_swndf,i) = x2l(index_x2l_Faxa_swvdf,i)
-    enddo
 
   end subroutine oas_receive_icon
 
@@ -109,14 +113,21 @@ contains
     num_grid_points = (bounds%endg - bounds%begg) + 1
     allocate(aux_buffer(num_grid_points, 1))
 
-     call oasis_put(oas_id_it, seconds_elapsed,lnd2atm_inst%t_rad_grc, info)         ! "CLM_INFRA"
-     call oasis_put(oas_id_ad, seconds_elapsed,lnd2atm_inst%albd_grc(:,1), info)     ! "CLM_ALBED"
-     call oasis_put(oas_id_ai, seconds_elapsed,lnd2atm_inst%albi_grc(:,1), info)     ! "CLM_ALBEI"
-     call oasis_put(oas_id_tx, seconds_elapsed,lnd2atm_inst%taux_grc, info)          ! "CLM_TAUX"
-     call oasis_put(oas_id_ty, seconds_elapsed,lnd2atm_inst%tauy_grc, info)          ! "CLM_TAUY"
-     call oasis_put(oas_id_sh, seconds_elapsed,lnd2atm_inst%eflx_sh_tot_grc, info)   ! "CLM_SHFLX"
-     call oasis_put(oas_id_lh, seconds_elapsed,lnd2atm_inst%eflx_lh_tot_grc, info)   ! "CLM_LHFLX"
-     call oasis_put(oas_id_st, seconds_elapsed,lnd2atm_inst%t_sf_grc, info)          ! "CLM_TGRND"
+    call oasis_put(oas_id_it, seconds_elapsed,lnd2atm_inst%t_rad_grc, info)         ! "CLM_INFRA"
+    call oasis_put(oas_id_ad, seconds_elapsed,lnd2atm_inst%albd_grc, info)         ! "CLM_ALBED"
+    call oasis_put(oas_id_ai, seconds_elapsed,lnd2atm_inst%albi_grc, info)         ! "CLM_ALBEI"
+    if ( use_exchcoef_oascoupling ) then
+       call oasis_put(oas_id_rm, seconds_elapsed,lnd2atm_inst%ram1_cpl_grc, info)   ! "CLM_RAM1"
+       call oasis_put(oas_id_rh, seconds_elapsed,lnd2atm_inst%rah1_grc, info)       ! "CLM_RAH1"
+       call oasis_put(oas_id_rw, seconds_elapsed,lnd2atm_inst%raw1_grc, info)       ! "CLM_RAW1"
+       call oasis_put(oas_id_qs, seconds_elapsed,lnd2atm_inst%q_sf_grc, info)       ! "CLMQVSFC"
+    else
+       call oasis_put(oas_id_tx, seconds_elapsed,lnd2atm_inst%taux_grc, info)          ! "CLM_TAUX"
+       call oasis_put(oas_id_ty, seconds_elapsed,lnd2atm_inst%tauy_grc, info)          ! "CLM_TAUY"
+       call oasis_put(oas_id_sh, seconds_elapsed,lnd2atm_inst%eflx_sh_tot_grc, info)   ! "CLM_SHFLX"
+       call oasis_put(oas_id_lh, seconds_elapsed,lnd2atm_inst%eflx_lh_tot_grc, info)   ! "CLM_LHFLX"
+    end if
+    call oasis_put(oas_id_st, seconds_elapsed,lnd2atm_inst%t_sf_grc, info)          ! "CLM_TGRND"
 
   end subroutine oas_send_icon
 #endif
