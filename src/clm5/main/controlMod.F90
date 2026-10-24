@@ -259,6 +259,11 @@ contains
     ! max number of plant functional types in naturally vegetated landunit
     namelist /clm_inparm/ maxpatch_pft
 
+#ifdef COUP_OAS_ICON
+    ! Enable exchange-coefficient coupling scheme when using OASIS ECLM coupling
+    namelist /clm_inparm/ use_exchcoef_oascoupling
+#endif
+
     ! flag for SSRE diagnostic
     namelist /clm_inparm/ use_SSRE
 
@@ -600,6 +605,9 @@ contains
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_SSRE, 1, MPI_LOGICAL, 0, mpicom, ier)
+#ifdef COUP_OAS_ICON
+    call mpi_bcast (use_exchcoef_oascoupling, 1, MPI_LOGICAL, 0, mpicom, ier)
+#endif
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)

@@ -197,7 +197,9 @@ contains
          t_veg                  => temperature_inst%t_veg_patch                 , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
 #ifdef COUP_OAS_ICON
          t_sf_patch             => temperature_inst%t_sf_patch                  , & ! Output: [real(r8) (:)   ]  patch surface temperature (K)
-!         q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         q_sf_patch             => waterstate_inst%q_sf_patch                   , & ! Output: [real(r8) (:)   ]  patch surface humidity (kg/kg)
+         rah1                   => frictionvel_inst%rah1_patch                  , & ! Output: [real(r8) (:)   ]  heat resistance (s/m)
+         raw1                   => frictionvel_inst%raw1_patch                  , & ! Output: [real(r8) (:)   ]  moisture resistance (s/m)
 #endif
          q_ref2m                => waterstate_inst%q_ref2m_patch                , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)                          
          rh_ref2m_r             => waterstate_inst%rh_ref2m_r_patch             , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)                        
@@ -378,8 +380,16 @@ contains
          qflx_ev_h2osfc(p) = -raiw*(forc_q(c) - qg_h2osfc(c))
 
 #ifdef COUP_OAS_ICON
+         !pass value to global variable
          t_sf_patch(p)     = t_grnd(c)
-!         q_sf_patch(p)     = qg(c)
+         q_sf_patch(p)     = qg(c) ! sfc specific humidity for cplscheme_exchcoef
+         rah1(p) = rah  ! heat resistance for cplscheme_exchcoef
+         ! effective moisture resistance
+         if (raiw > 0._r8) then
+            raw1(p) = forc_rho(c)/raiw
+         else
+            raw1(p) = 1.e6_r8 ! soilresis imprevious ground
+         end if
 #endif
 
          ! 2 m height air temperature
