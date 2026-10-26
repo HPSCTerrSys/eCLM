@@ -71,6 +71,7 @@ jobs:
       INSTALL_DIR: ${{ github.workspace }}/install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
       OASIS_MIRROR_1: https://datapub.fz-juelich.de/slts/sw_hpscterrys/oasis3-mct-tsmp-patches-v0.2.tar.gz
+      OASIS_TAG: tsmp-patches-v0.2
       WTB_MIRROR_1: https://datapub.fz-juelich.de/slts/sw_hpscterrys/extpar_eclm_wuestebach_sp-0.5.tar.gz
       WTB_REPO_NAME: extpar_eclm_wuestebach_sp
       WTB_REPO_TAG: 0.5
@@ -115,7 +116,7 @@ jobs:
         run: |
           wget -O oasis3-mct.tar.gz ${OASIS_MIRROR_1}
           tar xf oasis3-mct.tar.gz
-          cd oasis3-mct
+          cd oasis3-mct-${OASIS_TAG}
           export OASIS_ROOT=$(pwd)
           echo "OASIS_ROOT=${OASIS_ROOT}"
           echo "DEPENDENCIES_DIR=${DEPENDENCIES_DIR}"
