@@ -111,7 +111,7 @@ jobs:
       - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
         name: Install OASIS3-MCT
         run: |
-          git clone https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
+          time git clone --filter=blob:none https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
           cd oasis3-mct
           export OASIS_ROOT=$(pwd)
           echo "OASIS_ROOT=${OASIS_ROOT}"
