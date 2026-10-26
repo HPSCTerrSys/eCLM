@@ -70,6 +70,8 @@ jobs:
       BUILD_DIR: ${{ github.workspace }}/bld
       INSTALL_DIR: ${{ github.workspace }}/install
       CMAKE_BUILD_PARALLEL_LEVEL: 4
+      OASIS_MIRROR_1: https://datapub.fz-juelich.de/slts/sw_hpscterrys/oasis3-mct-tsmp-patches-v0.2.tar.gz
+      WTB_MIRROR_1: https://datapub.fz-juelich.de/slts/sw_hpscterrys/extpar_eclm_wuestebach_sp-0.5.tar.gz
       WTB_REPO_NAME: extpar_eclm_wuestebach_sp
       WTB_REPO_TAG: 0.5
 
@@ -111,8 +113,8 @@ jobs:
       - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
         name: Install OASIS3-MCT
         run: |
-          ping -c 15 icg4geo.icg.kfa-juelich.de
-          time git clone --verbose --filter=blob:none https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/oasis3-mct.git
+          wget -O oasis3-mct.tar.gz ${OASIS_MIRROR_1}
+          tar xf oasis3-mct.tar.gz
           cd oasis3-mct
           export OASIS_ROOT=$(pwd)
           echo "OASIS_ROOT=${OASIS_ROOT}"
@@ -159,23 +161,23 @@ jobs:
         name: Download Wuestebach test files
         working-directory: ${{ github.workspace }}
         run: |
-          git clone -b ${WTB_REPO_TAG} https://icg4geo.icg.kfa-juelich.de/ExternalReposPublic/tsmp2-static-files/${WTB_REPO_NAME}.git
-          du -ch ${WTB_REPO_NAME}
-          git lfs fsck
+          wget -O ${WTB_REPO_NAME}-${WTB_REPO_TAG}.tar.gz ${WTB_MIRROR_1}
+          tar xf ${WTB_REPO_NAME}-${WTB_REPO_TAG}.tar.gz
+          du -ch ${WTB_REPO_NAME}-${WTB_REPO_TAG}
 
       - if: matrix.config.name == 'eCLM-Standalone_DEBUG' && steps.cache-wtb-restore.outputs.cache-hit != 'true'
         name: Save Wuestebach static files
         uses: actions/cache/save@v4
         id: cache-wtb-save
         with:
-          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}
+          path: ${{ github.workspace }}/${{ env.WTB_REPO_NAME }}-${WTB_REPO_TAG}
           key: ${{ env.WTB_REPO_NAME }}-${{ env.WTB_REPO_TAG }}
 
       - if: matrix.config.name == 'eCLM-Standalone_DEBUG'
         name: Run 1x1 Wuestebach test case
         working-directory: ${{ github.workspace }}
         run: |
-          yes | ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
+          yes | ${GITHUB_WORKSPACE}/${WTB_REPO_NAME}-${WTB_REPO_TAG}/static.resources/generate_wtb_namelists.sh 1x1_wuestebach
           cd 1x1_wuestebach
           mpirun -np 1 ${INSTALL_DIR}/bin/eclm.exe
 
