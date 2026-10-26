@@ -72,9 +72,9 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 4
       OASIS_MIRROR_1: https://datapub.fz-juelich.de/slts/sw_hpscterrys/oasis3-mct-tsmp-patches-v0.1.tar.gz
       OASIS_TAG: tsmp-patches-v0.1
-      WTB_MIRROR_1: https://datapub.fz-juelich.de/slts/sw_hpscterrys/extpar_eclm_wuestebach_sp-0.5.tar.gz
+      WTB_MIRROR_1: https://datapub.fz-juelich.de/slts/sw_hpscterrys/extpar_eclm_wuestebach_sp-0.6.tar.gz
       WTB_REPO_NAME: extpar_eclm_wuestebach_sp
-      WTB_REPO_TAG: 0.5
+      WTB_REPO_TAG: 0.6
 
     steps:
       - uses: actions/checkout@v4
@@ -114,7 +114,7 @@ jobs:
       - if: matrix.config.use_oasis == 'True' && steps.cache-deps.outputs.cache-hit != 'true'
         name: Install OASIS3-MCT
         run: |
-          wget -O oasis3-mct.tar.gz ${OASIS_MIRROR_1}
+          wget --quiet -O oasis3-mct.tar.gz ${OASIS_MIRROR_1}
           tar xf oasis3-mct.tar.gz
           cd oasis3-mct-${OASIS_TAG}
           export OASIS_ROOT=$(pwd)
@@ -162,7 +162,7 @@ jobs:
         name: Download Wuestebach test files
         working-directory: ${{ github.workspace }}
         run: |
-          wget -O ${WTB_REPO_NAME}-${WTB_REPO_TAG}.tar.gz ${WTB_MIRROR_1}
+          wget --quiet -O ${WTB_REPO_NAME}-${WTB_REPO_TAG}.tar.gz ${WTB_MIRROR_1}
           tar xf ${WTB_REPO_NAME}-${WTB_REPO_TAG}.tar.gz
           du -ch ${WTB_REPO_NAME}-${WTB_REPO_TAG}
 
