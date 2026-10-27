@@ -67,6 +67,8 @@ module histFileMod
   integer,           private :: da_tape_bef_idx = 0   ! tape index of PDAF 'before DA' tape; 0 if not set
   integer,           private :: da_tape_aft_idx = 0   ! tape index of PDAF 'after DA' tape; 0 if not set
   character(len=3),  private :: da_tape_phase   = 'bef' ! current DA phase: 'bef' or 'aft'
+  integer,           private :: ntapes_restart  = 0   ! ntapes frozen before DA tapes are appended; used
+                                                       ! in hist_restart_ncd to exclude DA tapes from restart
 #endif
   !
   ! Namelist
@@ -863,6 +865,12 @@ contains
 
     htapes_defined = .true.
 
+#if defined USE_PDAF
+    ! Freeze the watermark used by hist_restart_ncd to exclude DA tapes from restart I/O.
+    ! DA tapes are appended after cime_init() via hist_init_da_tape(), which is called
+    ! after this subroutine, so ntapes here contains only the regular namelist tapes.
+    ntapes_restart = ntapes
+#endif
 
   end subroutine htapes_fieldlist
 
@@ -3794,7 +3802,11 @@ contains
        ! On master restart file add ntapes/max_chars dimension
        ! and then add the history and history restart filenames
        !
+#if defined USE_PDAF
+       call ncd_defdim( ncid, 'ntapes'       , ntapes_restart, dimid)
+#else
        call ncd_defdim( ncid, 'ntapes'       , ntapes      , dimid)
+#endif
        call ncd_defdim( ncid, 'max_chars'    , max_chars   , dimid)
 
        call ncd_defvar(ncid=ncid, varname='history_tape_in_use', xtype=ncd_log, &
@@ -3825,7 +3837,11 @@ contains
        ! Loop over tapes - write out namelist information to each restart-history tape
        ! only read/write accumulators and counters if needed
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
@@ -4002,7 +4018,11 @@ contains
     !================================================
 
        ! Add history filenames to master restart file
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           call ncd_io('history_tape_in_use', history_tape_in_use(t), 'write', ncid, nt=t)
           if (history_tape_in_use(t)) then
              my_locfnh  = locfnh(t)
@@ -4047,7 +4067,11 @@ contains
        !
        allocate(itemp(max_nflds))
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
@@ -4118,15 +4142,25 @@ contains
 
        call ncd_inqdlen(ncid,dimid,ntapes_onfile, name='ntapes')
        if (is_restart()) then
+#if defined USE_PDAF
+          if (ntapes_onfile /= ntapes_restart) then
+             write(iulog,*) 'ntapes_restart = ', ntapes_restart, ' ntapes_onfile = ', ntapes_onfile
+#else
           if (ntapes_onfile /= ntapes) then
              write(iulog,*) 'ntapes = ', ntapes, ' ntapes_onfile = ', ntapes_onfile
+#endif
              call endrun(msg=' ERROR: number of ntapes differs from restart file. '// &
                   'You can NOT change history options on restart.', &
                   additional_msg=errMsg(sourcefile, __LINE__))
           end if
 
+#if defined USE_PDAF
+          if (ntapes_restart > 0) then
+             allocate(history_tape_in_use_onfile(ntapes_restart))
+#else
           if (ntapes > 0) then
              allocate(history_tape_in_use_onfile(ntapes))
+#endif
              call ncd_io('history_tape_in_use', history_tape_in_use_onfile, 'read', ncid, &
                   readvar=readvar)
              if (.not. readvar) then
@@ -4135,7 +4169,11 @@ contains
                 ! true for all tapes <= ntapes.
                 history_tape_in_use_onfile(:) = .true.
              end if
+#if defined USE_PDAF
+             do t = 1, ntapes_restart
+#else
              do t = 1, ntapes
+#endif
                 if (history_tape_in_use_onfile(t) .neqv. history_tape_in_use(t)) then
                    write(iulog,*) subname//' ERROR: history_tape_in_use on restart file'
                    write(iulog,*) 'disagrees with current run: For tape ', t
@@ -4150,9 +4188,15 @@ contains
                 end if
              end do
 
+#if defined USE_PDAF
+             call ncd_io('locfnh',  locfnh(1:ntapes_restart),  'read', ncid )
+             call ncd_io('locfnhr', locrest(1:ntapes_restart), 'read', ncid )
+             do t = 1,ntapes_restart
+#else
              call ncd_io('locfnh',  locfnh(1:ntapes),  'read', ncid )
              call ncd_io('locfnhr', locrest(1:ntapes), 'read', ncid )
              do t = 1,ntapes
+#endif
                 call strip_null(locrest(t))
                 call strip_null(locfnh(t))
              end do
@@ -4164,7 +4208,11 @@ contains
        start(1)=1
 
        if ( is_restart() )then
+#if defined USE_PDAF
+          do t = 1,ntapes_restart
+#else
           do t = 1,ntapes
+#endif
              if (.not. history_tape_in_use(t)) then
                 cycle
              end if
@@ -4372,7 +4420,11 @@ contains
     
     if (flag == 'write') then     
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
@@ -4427,7 +4479,11 @@ contains
 
        ! Read history restart information if history files are not full
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
