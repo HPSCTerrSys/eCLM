@@ -81,6 +81,7 @@ contains
     call oasis_get(oas_id_lw, seconds_elapsed, x2l(index_x2l_Faxa_lwdn,:), info)
     call oasis_get(oas_id_cr, seconds_elapsed, x2l(index_x2l_Faxa_rainl,:), info)
     call oasis_get(oas_id_gr, seconds_elapsed, x2l(index_x2l_Faxa_snowl,:), info)
+    call oasis_get(oas_id_tp, seconds_elapsed, x2l(index_x2l_Sa_topo,:), info)
     x2l(index_x2l_Faxa_rainc,:) = 0.
     x2l(index_x2l_Faxa_snowc,:) = 0.
 
