@@ -63,6 +63,13 @@ module histFileMod
   ! no fields on the h2 tape). In this case, ntapes will be 4 (for h0, h1, h2 and h3,
   ! since h3 is the last requested file), not 3 (the number of files actually produced).
   integer , private :: ntapes = 0        ! index of max history file requested
+#if defined USE_PDAF
+  integer,           private :: da_tape_bef_idx = 0   ! tape index of PDAF 'before DA' tape; 0 if not set
+  integer,           private :: da_tape_aft_idx = 0   ! tape index of PDAF 'after DA' tape; 0 if not set
+  character(len=3),  private :: da_tape_phase   = 'bef' ! current DA phase: 'bef' or 'aft'
+  integer,           private :: ntapes_restart  = 0   ! ntapes frozen before DA tapes are appended; used
+                                                       ! in hist_restart_ncd to exclude DA tapes from restart
+#endif
   !
   ! Namelist
   !
@@ -143,6 +150,11 @@ module histFileMod
   public :: hist_htapes_wrapup   ! Write history tape(s)
   public :: hist_restart_ncd     ! Read/write history file restart data
   public :: htapes_fieldlist     ! Define the contents of each history file based on namelist
+#if defined USE_PDAF
+  public :: hist_init_da_tape      ! Initialize dedicated PDAF DA output tape
+  public :: hist_update_hbuf_da    ! Update history buffers for DA tape only
+  public :: hist_set_da_tape_phase ! Set DA tape phase string ('bef' or 'aft')
+#endif
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: is_mapping_upto_subgrid   ! Is this field being mapped up to a higher subgrid level?
@@ -853,6 +865,12 @@ contains
 
     htapes_defined = .true.
 
+#if defined USE_PDAF
+    ! Freeze the watermark used by hist_restart_ncd to exclude DA tapes from restart I/O.
+    ! DA tapes are appended after cime_init() via hist_init_da_tape(), which is called
+    ! after this subroutine, so ntapes here contains only the regular namelist tapes.
+    ntapes_restart = ntapes
+#endif
 
   end subroutine htapes_fieldlist
 
@@ -3376,7 +3394,11 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine hist_htapes_wrapup( rstwr, nlend, bounds, &
+#if defined USE_PDAF
+       watsat_col, sucsat_col, bsw_col, hksat_col, da_call)
+#else
        watsat_col, sucsat_col, bsw_col, hksat_col)
+#endif
     !
     ! !DESCRIPTION:
     ! Write history tape(s)
@@ -3412,6 +3434,9 @@ contains
     real(r8)          , intent(in) :: sucsat_col( bounds%begc:,1: ) 
     real(r8)          , intent(in) :: bsw_col( bounds%begc:,1: ) 
     real(r8)          , intent(in) :: hksat_col( bounds%begc:,1: ) 
+#if defined USE_PDAF
+    logical, optional, intent(in) :: da_call   ! true => called from PDAF DA; only write DA tape
+#endif
     !
     ! !LOCAL VARIABLES:
     integer :: t                          ! tape index
@@ -3470,11 +3495,23 @@ contains
 
        ! Determine if end of history interval
        tape(t)%is_endhist = .false.
+#if defined USE_PDAF
+       if (present(da_call) .and. da_call) then
+          ! DA call: fire only the tape matching the current phase
+          tape(t)%is_endhist = (t == da_tape_bef_idx .and. da_tape_phase == 'bef') .or. &
+                               (t == da_tape_aft_idx  .and. da_tape_phase == 'aft')
+       else if (t == da_tape_bef_idx .or. t == da_tape_aft_idx) then
+          ! Normal CLM call: skip DA tapes; they roll over with tape 1 below
+       else
+#endif
        if (tape(t)%nhtfrq==0) then   !monthly average
           if (mon /= monm1) tape(t)%is_endhist = .true.
        else
           if (mod(nstep,tape(t)%nhtfrq) == 0) tape(t)%is_endhist = .true.
        end if
+#if defined USE_PDAF
+       end if
+#endif
 
        ! If end of history interval
 
@@ -3496,8 +3533,18 @@ contains
 
           if (tape(t)%ntimes == 1) then
              call t_startf('hist_htapes_wrapup_define')
+#if defined USE_PDAF
+             if (t == da_tape_bef_idx) then
+                locfnh(t) = set_da_hist_filename('bef')
+             else if (t == da_tape_aft_idx) then
+                locfnh(t) = set_da_hist_filename('aft')
+             else
+#endif
              locfnh(t) = set_hist_filename (hist_freq=tape(t)%nhtfrq, &
                                             hist_mfilt=tape(t)%mfilt, hist_file=t)
+#if defined USE_PDAF
+             end if
+#endif
              if (masterproc) then
                 write(iulog,*) trim(subname),' : Creating history file ', trim(locfnh(t)), &
                      ' at nstep = ',get_nstep()
@@ -3564,6 +3611,16 @@ contains
 
     call hist_do_disp (ntapes, tape(:)%ntimes, tape(:)%mfilt, if_stop, if_disphist, rstwr, nlend)
 
+#if defined USE_PDAF
+    ! DA tapes roll over together with tape 1 during normal CLM calls.
+    ! Propagate tape-1 dispatch flag so the standard close and reset loops below
+    ! handle DA tapes without a separate rollover block.
+    if (.not. present(da_call) .or. .not. da_call) then
+       if (da_tape_bef_idx > 0) if_disphist(da_tape_bef_idx) = if_disphist(1)
+       if (da_tape_aft_idx > 0) if_disphist(da_tape_aft_idx) = if_disphist(1)
+    end if
+#endif
+
     ! Close open history file
     ! Auxilary files may have been closed and saved off without being full,
     ! must reopen the files
@@ -3584,7 +3641,12 @@ contains
 
             call ncd_pio_closefile(nfid(t))
 
+#if defined USE_PDAF
+             if (.not.if_stop .and. (tape(t)%ntimes/=tape(t)%mfilt) .and. &
+                  t /= da_tape_bef_idx .and. t /= da_tape_aft_idx) then
+#else
              if (.not.if_stop .and. (tape(t)%ntimes/=tape(t)%mfilt)) then
+#endif
                 call ncd_pio_openfile (nfid(t), trim(locfnh(t)), ncd_write)
              end if
           else
@@ -3602,7 +3664,13 @@ contains
           cycle
        end if
 
+#if defined USE_PDAF
+       ! DA tapes never fill by sample count; reset whenever they are dispatched
+       if (if_disphist(t) .and. (tape(t)%ntimes==tape(t)%mfilt .or. &
+           t==da_tape_bef_idx .or. t==da_tape_aft_idx)) then
+#else
        if (if_disphist(t) .and. tape(t)%ntimes==tape(t)%mfilt) then
+#endif
           tape(t)%ntimes = 0
        end if
     end do
@@ -3734,7 +3802,11 @@ contains
        ! On master restart file add ntapes/max_chars dimension
        ! and then add the history and history restart filenames
        !
+#if defined USE_PDAF
+       call ncd_defdim( ncid, 'ntapes'       , ntapes_restart, dimid)
+#else
        call ncd_defdim( ncid, 'ntapes'       , ntapes      , dimid)
+#endif
        call ncd_defdim( ncid, 'max_chars'    , max_chars   , dimid)
 
        call ncd_defvar(ncid=ncid, varname='history_tape_in_use', xtype=ncd_log, &
@@ -3765,7 +3837,11 @@ contains
        ! Loop over tapes - write out namelist information to each restart-history tape
        ! only read/write accumulators and counters if needed
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
@@ -3942,7 +4018,11 @@ contains
     !================================================
 
        ! Add history filenames to master restart file
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           call ncd_io('history_tape_in_use', history_tape_in_use(t), 'write', ncid, nt=t)
           if (history_tape_in_use(t)) then
              my_locfnh  = locfnh(t)
@@ -3987,7 +4067,11 @@ contains
        !
        allocate(itemp(max_nflds))
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
@@ -4058,15 +4142,25 @@ contains
 
        call ncd_inqdlen(ncid,dimid,ntapes_onfile, name='ntapes')
        if (is_restart()) then
+#if defined USE_PDAF
+          if (ntapes_onfile /= ntapes_restart) then
+             write(iulog,*) 'ntapes_restart = ', ntapes_restart, ' ntapes_onfile = ', ntapes_onfile
+#else
           if (ntapes_onfile /= ntapes) then
              write(iulog,*) 'ntapes = ', ntapes, ' ntapes_onfile = ', ntapes_onfile
+#endif
              call endrun(msg=' ERROR: number of ntapes differs from restart file. '// &
                   'You can NOT change history options on restart.', &
                   additional_msg=errMsg(sourcefile, __LINE__))
           end if
 
+#if defined USE_PDAF
+          if (ntapes_restart > 0) then
+             allocate(history_tape_in_use_onfile(ntapes_restart))
+#else
           if (ntapes > 0) then
              allocate(history_tape_in_use_onfile(ntapes))
+#endif
              call ncd_io('history_tape_in_use', history_tape_in_use_onfile, 'read', ncid, &
                   readvar=readvar)
              if (.not. readvar) then
@@ -4075,7 +4169,11 @@ contains
                 ! true for all tapes <= ntapes.
                 history_tape_in_use_onfile(:) = .true.
              end if
+#if defined USE_PDAF
+             do t = 1, ntapes_restart
+#else
              do t = 1, ntapes
+#endif
                 if (history_tape_in_use_onfile(t) .neqv. history_tape_in_use(t)) then
                    write(iulog,*) subname//' ERROR: history_tape_in_use on restart file'
                    write(iulog,*) 'disagrees with current run: For tape ', t
@@ -4090,9 +4188,15 @@ contains
                 end if
              end do
 
+#if defined USE_PDAF
+             call ncd_io('locfnh',  locfnh(1:ntapes_restart),  'read', ncid )
+             call ncd_io('locfnhr', locrest(1:ntapes_restart), 'read', ncid )
+             do t = 1,ntapes_restart
+#else
              call ncd_io('locfnh',  locfnh(1:ntapes),  'read', ncid )
              call ncd_io('locfnhr', locrest(1:ntapes), 'read', ncid )
              do t = 1,ntapes
+#endif
                 call strip_null(locrest(t))
                 call strip_null(locfnh(t))
              end do
@@ -4104,7 +4208,11 @@ contains
        start(1)=1
 
        if ( is_restart() )then
+#if defined USE_PDAF
+          do t = 1,ntapes_restart
+#else
           do t = 1,ntapes
+#endif
              if (.not. history_tape_in_use(t)) then
                 cycle
              end if
@@ -4312,7 +4420,11 @@ contains
     
     if (flag == 'write') then     
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
@@ -4367,7 +4479,11 @@ contains
 
        ! Read history restart information if history files are not full
 
+#if defined USE_PDAF
+       do t = 1,ntapes_restart
+#else
        do t = 1,ntapes
+#endif
           if (.not. history_tape_in_use(t)) then
              cycle
           end if
@@ -5363,6 +5479,148 @@ contains
     end if
 
   end function avgflag_valid
+
+#if defined USE_PDAF
+  !-----------------------------------------------------------------------
+  subroutine hist_init_da_tape()
+    !
+    ! !DESCRIPTION:
+    ! Initialize two dedicated history tapes for PDAF DA output:
+    ! one for the 'before DA' (forecast) state and one for the 'after DA'
+    ! (analysis) state.  Called once after CLM initialization from the PDAF
+    ! interface (enkf_clm_5.F90), after cime_init() has completed.
+    !
+    ! Each tape clones all fields from tape 1 with instantaneous ('I') averaging.
+    ! mfilt is set to huge so files never auto-close by sample count; instead,
+    ! the tapes roll over together with tape 1 (same file period as h0).
+    ! The tapes fire only when hist_htapes_wrapup is called with da_call=.true.
+    !
+    use clm_time_manager, only : get_prev_time
+    use clm_varcon,       only : secspday
+    !
+    integer :: f, t, i_da
+    integer :: day, sec
+    integer :: beg1d_out, end1d_out, num2d
+    integer :: da_tape_idxs(2)
+    character(len=*), parameter :: subname = 'hist_init_da_tape'
+    !-----------------------------------------------------------------------
+
+    if (ntapes + 2 > max_tapes) then
+       call endrun(msg=trim(subname)//' ERROR: no room for two DA tapes, increase max_tapes')
+    end if
+    if (ntapes < 1) then
+       call endrun(msg=trim(subname)//' ERROR: no base tape configured to clone from')
+    end if
+
+    ntapes          = ntapes + 1
+    da_tape_bef_idx = ntapes
+    ntapes          = ntapes + 1
+    da_tape_aft_idx = ntapes
+    da_tape_idxs    = [da_tape_bef_idx, da_tape_aft_idx]
+
+    call get_prev_time(day, sec)
+
+    do i_da = 1, 2
+       t = da_tape_idxs(i_da)
+
+       ! Clone field list from tape 1, using instantaneous averaging
+       tape(t)%nflds = tape(1)%nflds
+       do f = 1, tape(1)%nflds
+          tape(t)%hlist(f)%field   = tape(1)%hlist(f)%field
+          tape(t)%hlist(f)%avgflag = 'I'
+          beg1d_out = tape(1)%hlist(f)%field%beg1d_out
+          end1d_out = tape(1)%hlist(f)%field%end1d_out
+          num2d     = tape(1)%hlist(f)%field%num2d
+          allocate(tape(t)%hlist(f)%hbuf(beg1d_out:end1d_out, num2d))
+          allocate(tape(t)%hlist(f)%nacs(beg1d_out:end1d_out, num2d))
+          tape(t)%hlist(f)%hbuf(:,:) = 0._r8
+          tape(t)%hlist(f)%nacs(:,:) = 0
+       end do
+
+       ! Tape configuration: many samples per file (rolls with tape 1); never auto-triggered
+       tape(t)%ntimes     = 0
+       tape(t)%mfilt      = huge(tape(t)%mfilt)   ! never auto-closes by count
+       tape(t)%nhtfrq     = huge(tape(t)%nhtfrq)  ! never auto-triggered
+       tape(t)%ncprec     = tape(1)%ncprec
+       tape(t)%dov2xy     = tape(1)%dov2xy
+       tape(t)%is_endhist = .false.
+       tape(t)%begtime    = day + sec/secspday
+
+       history_tape_in_use(t) = .true.
+    end do
+
+    if (masterproc) then
+       write(iulog,*) trim(subname)//' : PDAF DA history tapes initialized as tapes ', &
+            da_tape_bef_idx, ' (bef) and ', da_tape_aft_idx, ' (aft) with ', &
+            tape(da_tape_bef_idx)%nflds, ' instantaneous fields; files roll with tape 1'
+    end if
+
+  end subroutine hist_init_da_tape
+
+  !-----------------------------------------------------------------------
+  subroutine hist_update_hbuf_da(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Update history buffers for the PDAF DA tape only.
+    ! Called from clm_hist_write_pdaf after the DA state update so that
+    ! the buffer captures the post-update model state before writing.
+    ! Using hist_update_hbuf (all tapes) is avoided to prevent an extra
+    ! accumulation step on the regular averaging tapes.
+    !
+    type(bounds_type), intent(in) :: bounds
+    !
+    integer :: f, num2d, active_tape
+    !-----------------------------------------------------------------------
+
+    active_tape = 0
+    if (da_tape_phase == 'bef' .and. da_tape_bef_idx > 0) active_tape = da_tape_bef_idx
+    if (da_tape_phase == 'aft' .and. da_tape_aft_idx > 0) active_tape = da_tape_aft_idx
+    if (active_tape == 0) return
+
+    do f = 1, tape(active_tape)%nflds
+       if (tape(active_tape)%hlist(f)%field%num2d == 1) then
+          call hist_update_hbuf_field_1d(active_tape, f, bounds)
+       else
+          num2d = tape(active_tape)%hlist(f)%field%num2d
+          call hist_update_hbuf_field_2d(active_tape, f, bounds, num2d)
+       end if
+    end do
+
+  end subroutine hist_update_hbuf_da
+
+  !-----------------------------------------------------------------------
+  subroutine hist_set_da_tape_phase(phase)
+    !
+    ! !DESCRIPTION:
+    ! Set the DA tape phase label used in the output filename.
+    ! Call with 'bef' prior to the DA update and 'aft' following it.
+    !
+    character(len=*), intent(in) :: phase
+    !-----------------------------------------------------------------------
+    da_tape_phase = phase
+  end subroutine hist_set_da_tape_phase
+
+  !-----------------------------------------------------------------------
+  character(len=max_length_filename) function set_da_hist_filename(phase)
+    !
+    ! !DESCRIPTION:
+    ! Generate a filename for a PDAF DA history tape.
+    ! Format: ./caseid.clm2{inst_suffix}.da_{phase}.YYYY-MM-DD-SSSSS.nc
+    ! The date reflects the time of the first DA sample written to the file.
+    !
+    use clm_varctl,      only : caseid, inst_suffix
+    use clm_time_manager, only : get_curr_date
+    character(len=3), intent(in) :: phase   ! 'bef' or 'aft'
+    !
+    character(len=max_chars) :: cdate
+    integer :: yr, mon, day, sec
+    !-----------------------------------------------------------------------
+    call get_curr_date(yr, mon, day, sec)
+    write(cdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr, mon, day, sec
+    set_da_hist_filename = "./"//trim(caseid)//".clm2"//trim(inst_suffix)// &
+                           ".da_"//trim(phase)//"."//trim(cdate)//".nc"
+  end function set_da_hist_filename
+#endif
 
 
 end module histFileMod
