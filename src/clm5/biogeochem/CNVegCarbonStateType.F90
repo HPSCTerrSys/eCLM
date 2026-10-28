@@ -48,6 +48,8 @@ module CNVegCarbonStateType
      real(r8), pointer :: deadstemc_patch          (:) ! (gC/m2) dead stem C
      real(r8), pointer :: deadstemc_storage_patch  (:) ! (gC/m2) dead stem C storage
      real(r8), pointer :: deadstemc_xfer_patch     (:) ! (gC/m2) dead stem C transfer
+     real(r8), pointer :: deadstemc_soy_patch      (:) ! (gC/m2) dead stem C at the start of year
+     real(r8), pointer :: deadstemc_storage_soy_patch (:) ! (gC/m2) dead stem C storage at the start of year
      real(r8), pointer :: livecrootc_patch         (:) ! (gC/m2) live coarse root C
      real(r8), pointer :: livecrootc_storage_patch (:) ! (gC/m2) live coarse root C storage
      real(r8), pointer :: livecrootc_xfer_patch    (:) ! (gC/m2) live coarse root C transfer
@@ -234,6 +236,8 @@ contains
     allocate(this%deadstemc_patch          (begp:endp)) ; this%deadstemc_patch          (:) = nan
     allocate(this%deadstemc_storage_patch  (begp:endp)) ; this%deadstemc_storage_patch  (:) = nan
     allocate(this%deadstemc_xfer_patch     (begp:endp)) ; this%deadstemc_xfer_patch     (:) = nan
+    allocate(this%deadstemc_soy_patch     (begp:endp)) ; this%deadstemc_soy_patch     (:) = nan
+    allocate(this%deadstemc_storage_soy_patch     (begp:endp)) ; this%deadstemc_storage_soy_patch     (:) = nan
     allocate(this%livecrootc_patch         (begp:endp)) ; this%livecrootc_patch         (:) = nan
     allocate(this%livecrootc_storage_patch (begp:endp)) ; this%livecrootc_storage_patch (:) = nan
     allocate(this%livecrootc_xfer_patch    (begp:endp)) ; this%livecrootc_xfer_patch    (:) = nan
@@ -399,6 +403,15 @@ contains
        call hist_addfld1d (fname='DEADSTEMC_XFER', units='gC/m^2', &
             avgflag='A', long_name='dead stem C transfer', &
             ptr_patch=this%deadstemc_xfer_patch, default='inactive')    
+       this%deadstemc_soy_patch(begp:endp) = spval
+       call hist_addfld1d (fname='DEADSTEMC_SOY', units='gC/m^2', &
+            avgflag='A', long_name='dead stem C at start of year', &
+            ptr_patch=this%deadstemc_soy_patch, default='inactive')
+
+       this%deadstemc_storage_soy_patch(begp:endp) = spval
+       call hist_addfld1d (fname='DEADSTEMC_STORAGE_SOY', units='gC/m^2', &
+            avgflag='A', long_name='dead stem C storage at start of year', &
+            ptr_patch=this%deadstemc_storage_soy_patch, default='inactive')
 
        this%livecrootc_patch(begp:endp) = spval
        call hist_addfld1d (fname='LIVECROOTC', units='gC/m^2', &
@@ -942,6 +955,14 @@ contains
                 this%leafc_storage_patch(p)  = 0._r8
                 this%frootc_patch(p)         = 0._r8            
                 this%frootc_storage_patch(p) = 0._r8    
+!                if (pftcon%perennial(patch%itype(p)) == 1._r8 .and. pftcon%woody(patch%itype(p)) == 1._r8) then
+!                   this%leafc_patch(p)          = 0._r8
+!                   this%leafc_storage_patch(p)  = cnvegcstate_const%initial_vegC * ratio
+!                   this%frootc_patch(p)         = 0._r8
+!                   this%frootc_storage_patch(p) = cnvegcstate_const%initial_vegC * ratio
+!                   this%deadstemc_soy_patch(p)  = 0._r8
+!                   this%deadstemc_storage_soy_patch(p) = 0._r8
+!                end if
              else
                 this%leafc_patch(p)          = 0._r8
                 this%leafc_storage_patch(p)  = cnvegcstate_const%initial_vegC * ratio   
@@ -964,7 +985,11 @@ contains
           this%livestemc_xfer_patch(p)    = 0._r8 
 
           if (pftcon%woody(patch%itype(p)) == 1._r8) then
+             if (patch%itype(p) < npcropmin)then ! (added by O.Dombrowski)
              this%deadstemc_patch(p) = 0.1_r8 * ratio
+             else
+                this%deadstemc_patch(p) = 0._r8 ! (added by O.Dombrowski)
+             end if
           else
              this%deadstemc_patch(p) = 0._r8 
           end if
@@ -1188,6 +1213,13 @@ contains
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%deadstemc_xfer_patch) 
 
+       call restartvar(ncid=ncid, flag=flag, varname='deadstemc_soy', xtype=ncd_double,  &
+            dim1name='pft', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%deadstemc_soy_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='deadstemc_storage_soy', xtype=ncd_double,  &
+            dim1name='pft', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%deadstemc_storage_soy_patch)
        call restartvar(ncid=ncid, flag=flag, varname='livecrootc', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%livecrootc_patch) 
@@ -1271,6 +1303,11 @@ contains
              do i = bounds%begp,bounds%endp
                 this%deadstemc_patch(i) = this%deadstemc_patch(i) * 10._r8
                 this%deadcrootc_patch(i) = this%deadcrootc_patch(i) * 10._r8
+                ! tboas-fix: the perennial reference pools are expressed on the
+                ! same scale as deadstemc and are compared against it in the
+                ! pruning/harvest calculation, so they must be rescaled too.
+                this%deadstemc_soy_patch(i) = this%deadstemc_soy_patch(i) * 10._r8
+                this%deadstemc_storage_soy_patch(i) = this%deadstemc_storage_soy_patch(i) * 10._r8
              end do
           else if (spinup_state == 2 .and. restart_file_spinup_state <= 1 )then
              if (spinup_state == 2 .and. restart_file_spinup_state <= 1 )then
@@ -1280,6 +1317,9 @@ contains
                 do i = bounds%begp,bounds%endp
                    this%deadstemc_patch(i) = this%deadstemc_patch(i) / 10._r8
                    this%deadcrootc_patch(i) = this%deadcrootc_patch(i) / 10._r8
+                   ! tboas-fix: keep the perennial reference pools on the same scale
+                   this%deadstemc_soy_patch(i) = this%deadstemc_soy_patch(i) / 10._r8
+                   this%deadstemc_storage_soy_patch(i) = this%deadstemc_storage_soy_patch(i) / 10._r8
                 end do
              end if
           end if
@@ -1380,8 +1420,18 @@ contains
 
                    this%leafcmax_patch(i) = 0._r8
 
+                   ! tboas-fix: l must be set from the CURRENT patch before it is
+                   ! used. Previously the perennial test below read the landunit
+                   ! index left over from the previous loop iteration (undefined
+                   ! on the first), so the soy/fruit-tree reference pools were
+                   ! reset on the wrong patches.
                    l = patch%landunit(i)
-                   if (lun%itype(l) == istsoil  .or. patch%itype(i) == nc3crop .or. patch%itype(i) == nc3irrig)then
+                   if (lun%itype(l) == istcrop .and. pftcon%perennial(patch%itype(i)) == 1._r8) then
+                     this%deadstemc_soy_patch(i) = 0._r8
+                     this%deadstemc_storage_soy_patch(i) = 0._r8
+                   end if
+                   if (lun%itype(l) == istsoil  .or. patch%itype(i) == nc3crop .or. patch%itype(i) == nc3irrig) then!.or. &
+!                      (lun%itype(l) == istcrop .and. pftcon%perennial(patch%itype(i)) == 1._r8)) then ! (added by O.Dombrowski)
                       if ( present(num_reseed_patch) ) then
                          num_reseed_patch = num_reseed_patch + 1
                          filter_reseed_patch(num_reseed_patch) = i
@@ -1420,9 +1470,11 @@ contains
                       this%livestemc_xfer_patch(i)    = 0._r8 
 
                       if (pftcon%woody(patch%itype(i)) == 1._r8) then
+                         if (patch%itype(p) < npcropmin) then
                          this%deadstemc_patch(i) = 0.1_r8 * ratio
                       else
                          this%deadstemc_patch(i) = 0._r8 
+                         end if
                       end if
                       this%deadstemc_storage_patch(i)  = 0._r8 
                       this%deadstemc_xfer_patch(i)     = 0._r8 
@@ -2367,6 +2419,8 @@ contains
        this%deadstemc_patch(i)          = value_patch
        this%deadstemc_storage_patch(i)  = value_patch
        this%deadstemc_xfer_patch(i)     = value_patch
+       this%deadstemc_soy_patch(i)      = value_patch
+       this%deadstemc_storage_soy_patch(i)     = value_patch
        this%livecrootc_patch(i)         = value_patch
        this%livecrootc_storage_patch(i) = value_patch
        this%livecrootc_xfer_patch(i)    = value_patch
