@@ -205,6 +205,9 @@ contains
     ! !USES:
     use shr_orb_mod
     use clm_time_manager   , only : get_nstep
+#ifdef COUP_OAS_ICON
+    use clm_time_manager   , only : get_step_size
+#endif
     use abortutils         , only : endrun
     use clm_varctl         , only : subgridflag, use_snicar_frc, use_fates
     use CLMFatesInterfaceMod, only : hlm_fates_interface_type
@@ -356,7 +359,12 @@ contains
     ! Cosine solar zenith angle for next time step
 
     do g = bounds%begg,bounds%endg
+#ifdef COUP_OAS_ICON
+       coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc%lat(g), grc%lon(g), declinp1, &
+            dt_avg=real(get_step_size(), r8))
+#else
        coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc%lat(g), grc%lon(g), declinp1)
+#endif
     end do
     do c = bounds%begc,bounds%endc
        g = col%gridcell(c)
