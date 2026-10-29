@@ -452,6 +452,10 @@ contains
        else
           doalb = (nextsw_cday >= -0.5_r8) 
        end if
+#ifdef COUP_OAS_ICON
+       doalb = (nstep > 0)
+       nextsw_cday = get_curr_calday()
+#endif
        call update_rad_dtime(doalb)
 
        ! Determine if time to write cam restart and stop
