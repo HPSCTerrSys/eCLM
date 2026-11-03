@@ -78,6 +78,7 @@ module lnd2atmType
 #ifdef COUP_OAS_PFL
      real(r8), pointer :: qflx_parflow_grc        (:,:) => null() ! source/sink flux per soil layer sent to ParFlow [1/hr] [- out from root]
      real(r8), pointer :: pfl_eff_porosity_grc    (:,:) => null() ! effective porosity per soil layer sent to ParFlow [m3/m3]
+     real(r8), pointer :: pfl_watsat_grc          (:,:) => null() ! watsat aggregated like pfl_eff_porosity_grc, diagnostic only [m3/m3]
 #endif
      real(r8), pointer :: qirrig_grc              (:)   => null() ! irrigation flux
 
@@ -193,6 +194,7 @@ contains
 #ifdef COUP_OAS_PFL
     allocate(this%qflx_parflow_grc     (begg:endg,1:nlevsoi)); this%qflx_parflow_grc     (:,:) =ival
     allocate(this%pfl_eff_porosity_grc (begg:endg,1:nlevgrnd)); this%pfl_eff_porosity_grc(:,:) =-9999._r8
+    allocate(this%pfl_watsat_grc       (begg:endg,1:nlevgrnd)); this%pfl_watsat_grc      (:,:) =-9999._r8
 #endif
     allocate(this%qirrig_grc           (begg:endg))          ; this%qirrig_grc           (:)   =ival
 
@@ -350,6 +352,11 @@ contains
     call hist_addfld2d (fname='EFF_POROSITY_TO_OASIS', units='m3/m3', type2d='levgrnd', &
          avgflag='A', long_name='effective porosity per soil layer sent to ParFlow', &
          ptr_lnd=this%pfl_eff_porosity_grc, default='inactive')
+
+    ! Reference porosity to ParFlow.
+    call hist_addfld2d (fname='WATSAT_TO_OASIS', units='m3/m3', type2d='levgrnd', &
+         avgflag='I', long_name='watsat per soil layer, aggregated like EFF_POROSITY_TO_OASIS', &
+         ptr_lnd=this%pfl_watsat_grc, default='inactive')
 #endif
   end subroutine InitHistory
 

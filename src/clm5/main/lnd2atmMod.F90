@@ -486,8 +486,10 @@ contains
     do g = bounds%begg, bounds%endg
        if (pfl_eff_porosity_wt(g) > 0._r8) then
           lnd2atm_inst%pfl_eff_porosity_grc(g,:) = 0._r8
+          lnd2atm_inst%pfl_watsat_grc(g,:) = 0._r8
        else
           lnd2atm_inst%pfl_eff_porosity_grc(g,:) = pfl_uncoupled
+          lnd2atm_inst%pfl_watsat_grc(g,:) = pfl_uncoupled
        end if
     end do
     do c = bounds%begc, bounds%endc
@@ -496,12 +498,16 @@ contains
           do j = 1, nlevgrnd
              lnd2atm_inst%pfl_eff_porosity_grc(g,j) = lnd2atm_inst%pfl_eff_porosity_grc(g,j) &
                   + col%wtgcell(c) * soilhydrology_inst%pfl_eff_porosity_col(c,j)
+             lnd2atm_inst%pfl_watsat_grc(g,j) = lnd2atm_inst%pfl_watsat_grc(g,j) &
+                  + col%wtgcell(c) * soilstate_inst%watsat_col(c,j)
           end do
        end if
     end do
     do g = bounds%begg, bounds%endg
        if (pfl_eff_porosity_wt(g) > 0._r8) then
           lnd2atm_inst%pfl_eff_porosity_grc(g,:) = lnd2atm_inst%pfl_eff_porosity_grc(g,:) &
+               / pfl_eff_porosity_wt(g)
+          lnd2atm_inst%pfl_watsat_grc(g,:) = lnd2atm_inst%pfl_watsat_grc(g,:) &
                / pfl_eff_porosity_wt(g)
        end if
     end do
