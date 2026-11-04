@@ -11,8 +11,8 @@ module oas_sendReceiveMod
   private
 
 #ifdef COUP_OAS_PFL
-  public  :: oas_send
-  public  :: oas_receive
+  public  :: oas_send_parflow
+  public  :: oas_receive_parflow
 #endif
 
 #ifdef COUP_OAS_ICON
