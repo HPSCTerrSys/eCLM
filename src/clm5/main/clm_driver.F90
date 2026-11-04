@@ -1089,13 +1089,13 @@ contains
     time_elapsed = get_step_size() * nstep
 #if defined(COUP_OAS_ICON)
        call t_startf('oas_send_icon')
-       call oas_send_icon(bounds, time_elapsed, lnd2atm_inst)
+       call oas_send_icon(bounds_proc, time_elapsed, lnd2atm_inst)
        call t_stopf('oas_send_icon')
 #endif
 
 #if defined(COUP_OAS_PFL)
        call t_startf('oas_send_parflow')
-       call oas_send_parflow(bounds, time_elapsed, lnd2atm_inst)
+       call oas_send_parflow(bounds_proc, time_elapsed, lnd2atm_inst)
        call t_stopf('oas_send_parflow')
 #endif
 
