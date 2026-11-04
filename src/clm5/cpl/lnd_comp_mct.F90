@@ -15,10 +15,10 @@ module lnd_comp_mct
 #if defined(USE_OASIS)
   use oas_defineMod     , only : oas_definitions_init
 #ifdef COUP_OAS_ICON
-  use oas_sendReceiveMod, only : oas_receive_icon, oas_send_icon
+  use oas_sendReceiveMod, only : oas_receive_icon
 #endif                   
 #ifdef COUP_OAS_PFL
-   use oas_sendReceiveMod, only : oas_receive, oas_send
+   use oas_sendReceiveMod, only : oas_receive_parflow
 #endif
 #endif
   !
@@ -462,7 +462,9 @@ contains
        if (nlend_sync .and. dosend) nlend = .true.
 
 #ifdef COUP_OAS_ICON
+       call t_startf('oas_receive_icon')
        call oas_receive_icon(bounds, time_elapsed, x2l = x2l_l%rattr)
+       call t_stopf ('oas_receive_icon')
 
        call t_startf ('lc_lnd_import')
        call lnd_import( bounds, &
@@ -474,7 +476,9 @@ contains
 #endif
 
 #ifdef COUP_OAS_PFL
-       call oas_receive(bounds, time_elapsed, atm2lnd_inst)
+       call t_startf('oas_receive_parflow')
+       call oas_receive_parflow(bounds, time_elapsed, atm2lnd_inst)
+       call t_stopf('oas_receive_parflow')
 #endif
        ! Run clm 
        call t_barrierf('sync_clm_run1', mpicom)
@@ -487,14 +491,6 @@ contains
        call clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate, rof_prognostic)
        call t_stopf ('clm_run')
 
-
-#if defined(COUP_OAS_ICON)
-       call oas_send_icon(bounds, time_elapsed, lnd2atm_inst)
-#endif
-
-#if defined(COUP_OAS_PFL)
-       call oas_send(bounds, time_elapsed, lnd2atm_inst)
-#endif
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_inst, lnd2glc_inst, l2x_l%rattr)

@@ -111,6 +111,12 @@ contains
     use clm_time_manager     , only : get_curr_date
     use clm_varctl           , only : use_lai_streams
     use SatellitePhenologyMod, only : lai_advance
+#ifdef COUP_OAS_ICON
+    use oas_sendReceiveMod,    only : oas_send_icon
+#endif
+#ifdef COUP_OAS_PFL
+   use oas_sendReceiveMod,     only : oas_send_parflow
+#endif
     !
     ! !ARGUMENTS:
     implicit none
@@ -1074,6 +1080,21 @@ contains
          net_carbon_exchange_grc = net_carbon_exchange_grc(bounds_proc%begg:bounds_proc%endg))
     deallocate(net_carbon_exchange_grc)
     call t_stopf('lnd2atm')
+
+    ! ============================================================================
+    ! Send coupled fields to ICON and/or Parflow.
+    ! ============================================================================
+#if defined(COUP_OAS_ICON)
+       call t_startf('oas_send_icon')
+       call oas_send_icon(bounds, time_elapsed, lnd2atm_inst)
+       call t_stopf('oas_send_icon')
+#endif
+
+#if defined(COUP_OAS_PFL)
+       call t_startf('oas_send_parflow')
+       call oas_send_parflow(bounds, time_elapsed, lnd2atm_inst)
+       call t_stopf('oas_send_parflow')
+#endif
 
     ! ============================================================================
     ! Determine gridcell averaged properties to send to glc
