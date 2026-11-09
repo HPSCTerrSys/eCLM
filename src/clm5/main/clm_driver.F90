@@ -13,7 +13,10 @@ module clm_driver
   use clm_varctl             , only : use_cn, use_lch4, use_noio, use_c13, use_c14
   use clm_varctl             , only : use_crop, ndep_from_cpl
   use clm_varctl             , only : use_soil_moisture_streams
-  use clm_time_manager       , only : get_nstep, get_step_size, is_beg_curr_day
+  use clm_time_manager       , only : get_nstep, is_beg_curr_day
+#ifdef (COUP_OAS_ICON || COUP_OAS_PFL)
+  use clm_time_manager       , only : get_step_size
+#endif
   use clm_time_manager       , only : get_prev_date, is_first_step
   use clm_varpar             , only : nlevsno, nlevgrnd
   use clm_varorb             , only : obliqr
@@ -135,7 +138,9 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer              :: nstep                   ! time step number
+#if defined(COUP_OAS_ICON || COUP_OAS_PFL)
     integer              :: time_elapsed            ! elapsed time (dtime * nstep)
+#endif
     integer              :: nc, c, p, l, g          ! indices
     integer              :: nclumps                 ! number of clumps on this processor
     integer              :: yr                      ! year (0, ...)
@@ -1085,18 +1090,21 @@ contains
     ! ============================================================================
     ! Send coupled fields to ICON and/or Parflow.
     ! ============================================================================
+#if defined(COUP_OAS_ICON || COUP_OAS_PFL)
     nstep = get_nstep()
     time_elapsed = get_step_size() * nstep
+#endif
+
 #if defined(COUP_OAS_ICON)
-       call t_startf('oas_send_icon')
-       call oas_send_icon(bounds_proc, time_elapsed, lnd2atm_inst)
-       call t_stopf('oas_send_icon')
+    call t_startf('oas_send_icon')
+    call oas_send_icon(bounds_proc, time_elapsed, lnd2atm_inst)
+    call t_stopf('oas_send_icon')
 #endif
 
 #if defined(COUP_OAS_PFL)
-       call t_startf('oas_send_parflow')
-       call oas_send_parflow(bounds_proc, time_elapsed, lnd2atm_inst)
-       call t_stopf('oas_send_parflow')
+    call t_startf('oas_send_parflow')
+    call oas_send_parflow(bounds_proc, time_elapsed, lnd2atm_inst)
+    call t_stopf('oas_send_parflow')
 #endif
 
     ! ============================================================================
@@ -1119,6 +1127,7 @@ contains
     ! Write global average diagnostics to standard output
     ! ============================================================================
 
+    nstep = get_nstep()
     if (wrtdia) call mpi_barrier(mpicom,ier)
     call t_startf('wrtdiag')
     call write_diagnostic(bounds_proc, wrtdia, nstep, lnd2atm_inst)
