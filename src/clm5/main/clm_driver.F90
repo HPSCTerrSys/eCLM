@@ -14,7 +14,7 @@ module clm_driver
   use clm_varctl             , only : use_crop, ndep_from_cpl
   use clm_varctl             , only : use_soil_moisture_streams
   use clm_time_manager       , only : get_nstep, is_beg_curr_day
-#ifdef (COUP_OAS_ICON || COUP_OAS_PFL)
+#if defined(COUP_OAS_ICON) || defined(COUP_OAS_PFL)
   use clm_time_manager       , only : get_step_size
 #endif
   use clm_time_manager       , only : get_prev_date, is_first_step
@@ -138,7 +138,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer              :: nstep                   ! time step number
-#if defined(COUP_OAS_ICON || COUP_OAS_PFL)
+#if defined(COUP_OAS_ICON) || defined(COUP_OAS_PFL)
     integer              :: time_elapsed            ! elapsed time (dtime * nstep)
 #endif
     integer              :: nc, c, p, l, g          ! indices
