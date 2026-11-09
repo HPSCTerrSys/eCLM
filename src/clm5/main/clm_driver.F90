@@ -1090,7 +1090,7 @@ contains
     ! ============================================================================
     ! Send coupled fields to ICON and/or Parflow.
     ! ============================================================================
-#if defined(COUP_OAS_ICON || COUP_OAS_PFL)
+#if defined(COUP_OAS_ICON) || defined(COUP_OAS_PFL)
     nstep = get_nstep()
     time_elapsed = get_step_size() * nstep
 #endif
