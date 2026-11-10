@@ -14,6 +14,9 @@ module clm_driver
   use clm_varctl             , only : use_crop, ndep_from_cpl
   use clm_varctl             , only : use_soil_moisture_streams
   use clm_time_manager       , only : get_nstep, is_beg_curr_day
+#if defined(COUP_OAS_ICON) || defined(COUP_OAS_PFL)
+  use clm_time_manager       , only : get_step_size
+#endif
   use clm_time_manager       , only : get_prev_date, is_first_step
   use clm_varpar             , only : nlevsno, nlevgrnd
   use clm_varorb             , only : obliqr
@@ -111,6 +114,12 @@ contains
     use clm_time_manager     , only : get_curr_date
     use clm_varctl           , only : use_lai_streams
     use SatellitePhenologyMod, only : lai_advance
+#ifdef COUP_OAS_ICON
+    use oas_sendReceiveMod,    only : oas_send_icon
+#endif
+#ifdef COUP_OAS_PFL
+   use oas_sendReceiveMod,     only : oas_send_parflow
+#endif
     !
     ! !ARGUMENTS:
     implicit none
@@ -129,6 +138,9 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer              :: nstep                   ! time step number
+#if defined(COUP_OAS_ICON) || defined(COUP_OAS_PFL)
+    integer              :: time_elapsed            ! elapsed time (dtime * nstep)
+#endif
     integer              :: nc, c, p, l, g          ! indices
     integer              :: nclumps                 ! number of clumps on this processor
     integer              :: yr                      ! year (0, ...)
@@ -1074,6 +1086,26 @@ contains
          net_carbon_exchange_grc = net_carbon_exchange_grc(bounds_proc%begg:bounds_proc%endg))
     deallocate(net_carbon_exchange_grc)
     call t_stopf('lnd2atm')
+
+    ! ============================================================================
+    ! Send coupled fields to ICON and/or Parflow.
+    ! ============================================================================
+#if defined(COUP_OAS_ICON) || defined(COUP_OAS_PFL)
+    nstep = get_nstep()
+    time_elapsed = get_step_size() * nstep
+#endif
+
+#if defined(COUP_OAS_ICON)
+    call t_startf('oas_send_icon')
+    call oas_send_icon(bounds_proc, time_elapsed, lnd2atm_inst)
+    call t_stopf('oas_send_icon')
+#endif
+
+#if defined(COUP_OAS_PFL)
+    call t_startf('oas_send_parflow')
+    call oas_send_parflow(bounds_proc, time_elapsed, lnd2atm_inst)
+    call t_stopf('oas_send_parflow')
+#endif
 
     ! ============================================================================
     ! Determine gridcell averaged properties to send to glc
