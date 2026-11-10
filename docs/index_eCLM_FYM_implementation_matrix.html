@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eCLM_FYM Implementation Map</title>
+<meta name="description" content="Manure carbon and nitrogen routing and prognostic crop rotation in the eCLM_FYM branch: namelist options, decision calendar, and the defects fixed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;600&display=swap">
+</head>
+<body>
+<style>
+  :root{
+    --ground:#FBF9F5; --panel:#FFFFFF; --sunk:#F3EFE7;
+    --ink:#1C1A16; --ink-2:#4A453C; --ink-3:#857E71;
+    --rule:#E2DCD0; --rule-2:#CFC7B7;
+    --carbon:#8A4B1B; --carbon-soft:#F0E3D6;
+    --nitro:#1F6580; --nitro-soft:#DDEBF1;
+    --crop:#4A6B24; --crop-soft:#E4EBD8;
+    --flag:#9C2B2B;
+    --shadow:0 1px 2px rgba(28,26,22,.06),0 8px 24px rgba(28,26,22,.05);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#15130F; --panel:#1E1B16; --sunk:#242019;
+      --ink:#F2EDE3; --ink-2:#C4BCAC; --ink-3:#8D8474;
+      --rule:#332E25; --rule-2:#463F33;
+      --carbon:#D69355; --carbon-soft:#38271A;
+      --nitro:#6FB6D2; --nitro-soft:#162C36;
+      --crop:#9CBF6A; --crop-soft:#1F2A15;
+      --flag:#E0736F;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#15130F; --panel:#1E1B16; --sunk:#242019;
+    --ink:#F2EDE3; --ink-2:#C4BCAC; --ink-3:#8D8474;
+    --rule:#332E25; --rule-2:#463F33;
+    --carbon:#D69355; --carbon-soft:#38271A;
+    --nitro:#6FB6D2; --nitro-soft:#162C36;
+    --crop:#9CBF6A; --crop-soft:#1F2A15;
+    --flag:#E0736F;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1160px; margin:0 auto; padding:48px 28px 80px}
+  h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0}
+  h1{font-size:clamp(28px,4vw,40px); font-weight:600; letter-spacing:-.015em}
+  h2{font-size:22px; font-weight:600; letter-spacing:-.01em}
+  h3{font-size:16px; font-weight:600}
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);
+  }
+  code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.88em}
+  code{background:var(--sunk); padding:1px 5px; border-radius:3px; color:var(--ink-2)}
+  p{margin:0 0 14px; max-width:68ch; color:var(--ink-2)}
+  a{color:var(--nitro)}
+
+  header{border-bottom:1px solid var(--rule); padding-bottom:28px; margin-bottom:36px}
+  header p{font-size:17px; max-width:74ch; margin-top:12px}
+  .branch{
+    display:inline-flex; gap:8px; align-items:center; margin-top:14px;
+    font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-3);
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--crop)}
+
+  section{margin:0 0 52px}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:6px}
+  .sec-head h2{flex:0 0 auto}
+  .sec-head .rule{flex:1; height:1px; background:var(--rule)}
+  section > p:first-of-type{margin-top:10px}
+
+  /* ---- controls ---- */
+  .controls{
+    display:flex; flex-wrap:wrap; gap:10px; margin:20px 0 22px;
+    padding:14px; background:var(--panel); border:1px solid var(--rule);
+    border-radius:10px; box-shadow:var(--shadow);
+  }
+  .sw{
+    display:inline-flex; align-items:center; gap:9px; cursor:pointer;
+    padding:7px 13px; border:1px solid var(--rule-2); border-radius:999px;
+    background:transparent; color:var(--ink-2);
+    font-family:"IBM Plex Mono",monospace; font-size:12px;
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .sw:hover{border-color:var(--ink-3)}
+  .sw:focus-visible{outline:2px solid var(--nitro); outline-offset:2px}
+  .sw .led{width:9px;height:9px;border-radius:50%;background:var(--rule-2)}
+  .sw[aria-pressed="true"]{background:var(--crop-soft); border-color:var(--crop); color:var(--ink)}
+  .sw[aria-pressed="true"] .led{background:var(--crop)}
+
+  /* ---- diagram ---- */
+  .diagram-row{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:24px; align-items:start}
+  @media (max-width:900px){.diagram-row{grid-template-columns:1fr}}
+  .canvas{
+    background:var(--panel); border:1px solid var(--rule); border-radius:12px;
+    padding:8px; overflow-x:auto; box-shadow:var(--shadow);
+  }
+  svg{display:block; min-width:620px; width:100%; height:auto}
+  .node{cursor:pointer}
+  .node rect{transition:opacity .2s, stroke-width .15s}
+  .node:hover rect{stroke-width:2.4}
+  .node:focus-visible rect{stroke:var(--ink); stroke-width:2.6}
+  .node text{pointer-events:none; font-family:"IBM Plex Sans",sans-serif}
+  .nlabel{font-size:12.5px; font-weight:600; fill:var(--ink)}
+  .nsub{font-size:10.5px; fill:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+  .flowlab{font-size:10px; fill:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+  .dim{opacity:.16}
+  .selected rect{stroke-width:2.6}
+
+  .detail{
+    background:var(--panel); border:1px solid var(--rule); border-radius:12px;
+    padding:20px; box-shadow:var(--shadow); position:sticky; top:20px;
+  }
+  .detail h3{margin-bottom:4px}
+  .detail .kind{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; margin-bottom:12px}
+  .detail p{font-size:14px; margin-bottom:12px}
+  .detail dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px}
+  .detail dt{font-family:"IBM Plex Mono",monospace; color:var(--carbon); font-size:12px}
+  .detail dd{margin:0; color:var(--ink-2)}
+  .hint{color:var(--ink-3); font-size:13px; font-style:italic}
+
+  /* ---- calendar ---- */
+  .cal{
+    position:relative; margin:26px 0 10px; padding:34px 0 8px;
+    border-top:1px solid var(--rule-2);
+  }
+  .months{display:grid; grid-template-columns:repeat(12,1fr); font-family:"IBM Plex Mono",monospace;
+    font-size:11px; color:var(--ink-3); text-align:center}
+  .marks{position:absolute; inset:0; pointer-events:none}
+  .mark{position:absolute; top:0; transform:translateX(-50%); text-align:center; width:150px}
+  .mark .pin{width:1px; height:26px; background:var(--carbon); margin:0 auto 4px}
+  .mark .t{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--carbon); font-weight:500}
+  .steps{display:grid; gap:14px; margin-top:26px}
+  .step{display:grid; grid-template-columns:78px 1fr; gap:16px; padding:14px 0; border-top:1px solid var(--rule)}
+  .step .when{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--carbon); font-weight:500}
+  .step p{margin:6px 0 0; font-size:14px}
+
+  /* ---- calculator ---- */
+  .calc{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:18px;
+    background:var(--sunk); border:1px solid var(--rule); border-radius:12px; padding:20px}
+  .calc label{display:block; font-family:"IBM Plex Mono",monospace; font-size:11px;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); margin-bottom:7px}
+  .calc input{
+    width:100%; padding:9px 11px; border:1px solid var(--rule-2); border-radius:7px;
+    background:var(--panel); color:var(--ink);
+    font-family:"IBM Plex Mono",monospace; font-size:15px;
+  }
+  .calc input:focus-visible{outline:2px solid var(--nitro); outline-offset:1px}
+  .out{grid-column:1/-1; display:flex; flex-wrap:wrap; gap:28px; align-items:flex-end;
+    border-top:1px solid var(--rule-2); padding-top:16px; margin-top:2px}
+  .out .big{font-family:"IBM Plex Serif",serif; font-size:34px; font-weight:600;
+    color:var(--carbon); line-height:1; font-variant-numeric:tabular-nums}
+  .out .unit{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-3)}
+  .out .sec{font-size:20px; font-weight:600; color:var(--nitro); font-variant-numeric:tabular-nums}
+
+  /* ---- table ---- */
+  .tablewrap{overflow-x:auto; border:1px solid var(--rule); border-radius:12px; background:var(--panel)}
+  table{border-collapse:collapse; width:100%; min-width:640px; font-size:13.5px}
+  th,td{text-align:left; padding:11px 16px; border-bottom:1px solid var(--rule); vertical-align:top}
+  thead th{
+    font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.11em;
+    text-transform:uppercase; color:var(--ink-3); background:var(--sunk); font-weight:500;
+  }
+  tbody tr:last-child td{border-bottom:none}
+  td.k{font-family:"IBM Plex Mono",monospace; color:var(--carbon); white-space:nowrap}
+  td.v{font-family:"IBM Plex Mono",monospace; color:var(--ink-2); white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  .tag{display:inline-block; padding:1px 7px; border-radius:4px; font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px; letter-spacing:.05em}
+  .tag.c{background:var(--carbon-soft); color:var(--carbon)}
+  .tag.n{background:var(--nitro-soft); color:var(--nitro)}
+  .tag.r{background:var(--crop-soft); color:var(--crop)}
+
+  .note{
+    border-left:2px solid var(--carbon); padding:2px 0 2px 16px; margin:22px 0;
+    color:var(--ink-2); font-size:14px;
+  }
+  .note strong{color:var(--ink)}
+  footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--rule);
+    color:var(--ink-3); font-size:12.5px; font-family:"IBM Plex Mono",monospace}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Model development · branch eCLM_FYM_fixes</div>
+  <h1>Organic fertiliser carbon and prognostic crop rotation in eCLM</h1>
+  <p>Two coupled developments on the CLM5 crop model: manure carbon and nitrogen routed
+  through the litter and mineral pools rather than entering as nitrogen alone, and a
+  calendar-driven rotation that switches crop type between seasons and admits winter cover
+  crops. This page maps what the code does and which namelist options control it.</p>
+  <div class="branch"><span class="dot"></span> tboas/eCLM · eCLM_FYM_fixes · point sites Dikopshof, Hoosfield, Selhausen + regional DE009</div>
+</header>
+
+<section>
+  <div class="sec-head"><h2>Where the manure goes</h2><span class="rule"></span></div>
+  <p>Click any box for the detail. The switches change what is active, exactly as the
+  namelist does — turn <code>use_cfert</code> off and the whole amendment branch goes dark.</p>
+
+  <div class="controls">
+    <button class="sw" id="sw-cfert" aria-pressed="true"><span class="led"></span>use_cfert</button>
+    <button class="sw" id="sw-cc" aria-pressed="true"><span class="led"></span>use_covercropping</button>
+    <button class="sw" id="sw-cal" aria-pressed="false"><span class="led"></span>manure_apply_month &gt; 0</button>
+  </div>
+
+  <div class="diagram-row">
+    <div class="canvas">
+      <svg viewBox="0 0 700 470" role="img" aria-label="Manure carbon and nitrogen routing diagram">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+        <g id="flows" stroke="var(--ink-3)" stroke-width="1.3" fill="none" marker-end="url(#ah)">
+          <path d="M150,64 L150,96"/>
+          <path d="M150,140 L150,168"/>
+          <path d="M112,212 L60,212 L60,262"/>
+          <path d="M188,212 L246,212 L246,262"/>
+          <path d="M60,306 L60,346"/>
+          <path d="M246,306 L246,346"/>
+          <path d="M330,282 L392,282"/>
+          <path d="M470,306 L470,346"/>
+          <path d="M126,390 L126,424"/>
+          <path d="M470,390 L470,424"/>
+          <path d="M310,368 L392,368"/>
+        </g>
+        <g id="flowlabels">
+          <text class="flowlab" x="158" y="118">manunitro × 1000</text>
+          <text class="flowlab" x="158" y="188">split by nh4_frac</text>
+          <text class="flowlab" x="66" y="332">immediate</text>
+          <text class="flowlab" x="252" y="332">C:N = 25</text>
+          <text class="flowlab" x="336" y="274">× CN ratio</text>
+          <text class="flowlab" x="316" y="360">fmet / fcel / flig</text>
+        </g>
+
+        <g class="node" id="n-timing" tabindex="0"><rect x="66" y="24" width="168" height="40" rx="7" fill="var(--sunk)" stroke="var(--rule-2)"/><text class="nlabel" x="150" y="42" text-anchor="middle">Application gate</text><text class="nsub" x="150" y="56" text-anchor="middle">manure_apply_month</text></g>
+
+        <g class="node" id="n-rate" tabindex="0"><rect x="66" y="96" width="168" height="44" rx="7" fill="var(--carbon-soft)" stroke="var(--carbon)"/><text class="nlabel" x="150" y="115" text-anchor="middle">Manure N rate</text><text class="nsub" x="150" y="130" text-anchor="middle">manunitro (gN m⁻² yr⁻¹)</text></g>
+
+        <g class="node" id="n-split" tabindex="0"><rect x="66" y="168" width="168" height="44" rx="7" fill="var(--nitro-soft)" stroke="var(--nitro)"/><text class="nlabel" x="150" y="187" text-anchor="middle">N speciation</text><text class="nsub" x="150" y="202" text-anchor="middle">manure_nh4_frac</text></g>
+
+        <g class="node" id="n-nh4" tabindex="0"><rect x="8" y="262" width="104" height="44" rx="7" fill="var(--nitro-soft)" stroke="var(--nitro)"/><text class="nlabel" x="60" y="281" text-anchor="middle">Ammoniacal</text><text class="nsub" x="60" y="296" text-anchor="middle">mineral N</text></g>
+
+        <g class="node" id="n-org" tabindex="0"><rect x="186" y="262" width="120" height="44" rx="7" fill="var(--carbon-soft)" stroke="var(--carbon)"/><text class="nlabel" x="246" y="281" text-anchor="middle">Organic N</text><text class="nsub" x="246" y="296" text-anchor="middle">1 − nh4_frac</text></g>
+
+        <g class="node" id="n-c" tabindex="0"><rect x="392" y="260" width="156" height="46" rx="7" fill="var(--carbon-soft)" stroke="var(--carbon)"/><text class="nlabel" x="470" y="279" text-anchor="middle">Manure carbon</text><text class="nsub" x="470" y="295" text-anchor="middle">Corg_FERT</text></g>
+
+        <g class="node" id="n-sminn" tabindex="0"><rect x="8" y="346" width="104" height="44" rx="7" fill="var(--nitro-soft)" stroke="var(--nitro)"/><text class="nlabel" x="60" y="365" text-anchor="middle">SMINN</text><text class="nsub" x="60" y="380" text-anchor="middle">uptake · N₂O</text></g>
+
+        <g class="node" id="n-litn" tabindex="0"><rect x="186" y="346" width="124" height="44" rx="7" fill="var(--carbon-soft)" stroke="var(--carbon)"/><text class="nlabel" x="248" y="365" text-anchor="middle">Litter N</text><text class="nsub" x="248" y="380" text-anchor="middle">LITR1–3 N</text></g>
+
+        <g class="node" id="n-lit" tabindex="0"><rect x="392" y="346" width="156" height="44" rx="7" fill="var(--carbon-soft)" stroke="var(--carbon)"/><text class="nlabel" x="470" y="365" text-anchor="middle">Litter C pools</text><text class="nsub" x="470" y="380" text-anchor="middle">LITR1 / LITR2 / LITR3</text></g>
+
+        <g class="node" id="n-som" tabindex="0"><rect x="392" y="424" width="156" height="42" rx="7" fill="var(--sunk)" stroke="var(--rule-2)"/><text class="nlabel" x="470" y="442" text-anchor="middle">Soil organic matter</text><text class="nsub" x="470" y="456" text-anchor="middle">TOTSOMC</text></g>
+
+        <g class="node" id="n-n2o" tabindex="0"><rect x="60" y="424" width="132" height="42" rx="7" fill="var(--nitro-soft)" stroke="var(--nitro)"/><text class="nlabel" x="126" y="442" text-anchor="middle">N₂O</text><text class="nsub" x="126" y="456" text-anchor="middle">NIT + DENIT</text></g>
+
+        <g class="node" id="n-rot" tabindex="0"><rect x="560" y="96" width="132" height="116" rx="7" fill="var(--crop-soft)" stroke="var(--crop)"/><text class="nlabel" x="626" y="130" text-anchor="middle">Crop rotation</text><text class="nsub" x="626" y="148" text-anchor="middle">PCT_CFT</text><text class="nsub" x="626" y="163" text-anchor="middle">PCT_CFT_WINTER</text><text class="nsub" x="626" y="186" text-anchor="middle">planting event</text></g>
+        <path d="M560,154 L246,154" stroke="var(--crop)" stroke-width="1.3" fill="none"
+              stroke-dasharray="4 3" marker-end="url(#ah)" id="rotlink"/>
+      </svg>
+    </div>
+
+    <div class="detail" id="detail">
+      <h3 id="d-title">Pick a box</h3>
+      <div class="kind" id="d-kind" style="color:var(--ink-3)">the map</div>
+      <p id="d-body">Every arrow here is a mass transfer in the code. The dashed green arrow is
+      the coupling people usually miss: manure is released on a <em>planting event</em>, so a
+      crop that never plants receives no manure — even when every manure namelist value is correct.</p>
+      <dl id="d-list"></dl>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Delivered ≠ nominal.</strong> The rate reaching the soil is three quarters of
+    <code>manunitro × 1000 × manure_CN_ratio</code>. Verified against Dikopshof: nominal 144
+    gC m⁻² yr⁻¹ produced a measured <code>Corg_FERT</code> of 4.032258 × 10⁻⁵ gC m⁻² s⁻¹ over a
+    31-day month — exactly 108 gC m⁻² yr⁻¹, the Herbst target.
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>Delivered rate</h2><span class="rule"></span></div>
+  <p>What a given <code>manunitro</code> actually puts into the soil, and the nitrogen that
+  rides with it.</p>
+  <div class="calc">
+    <div>
+      <label for="i-mn">manunitro</label>
+      <input id="i-mn" type="number" step="0.000001" value="0.005333">
+    </div>
+    <div>
+      <label for="i-cn">manure_CN_ratio</label>
+      <input id="i-cn" type="number" step="0.5" value="25">
+    </div>
+    <div>
+      <label for="i-nh4">manure_nh4_frac</label>
+      <input id="i-nh4" type="number" step="0.05" min="0" max="1" value="0.25">
+    </div>
+    <div class="out">
+      <div><div class="big" id="o-c">100.0</div><div class="unit">gC m⁻² yr⁻¹ delivered</div></div>
+      <div><div class="sec" id="o-n">53.3</div><div class="unit">kg N ha⁻¹ yr⁻¹ total</div></div>
+      <div><div class="sec" id="o-nh4">13.3</div><div class="unit">kg N ha⁻¹ mineral</div></div>
+      <div><div class="sec" id="o-org">40.0</div><div class="unit">kg N ha⁻¹ organic</div></div>
+    </div>
+  </div>
+  <div class="note">
+    The site targets are 108 (Dikopshof), 300 (Hoosfield) and 100 (Selhausen) gC m⁻² yr⁻¹.
+    Holding carbon at those values fixes the nitrogen that comes with it, and the two cannot
+    both be matched at a fixed C:N — at Selhausen the implied 53 kg N ha⁻¹ is well under the
+    ~125 kg N ha⁻¹ a 25 t ha⁻¹ application would carry. The honest lever there is
+    <code>manure_CN_ratio</code>, not <code>manunitro</code>.
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>The rotation year</h2><span class="rule"></span></div>
+  <p>Three calendar decisions govern which crop stands on the patch. The switch is by date,
+  not by phenology, which is why a late-harvested summer crop can push its successor into the
+  following year.</p>
+
+  <div class="cal">
+    <div class="marks">
+      <div class="mark" style="left:25%"><div class="pin"></div><div class="t">31 Mar</div></div>
+      <div class="mark" style="left:29.2%"><div class="pin"></div><div class="t">1 Apr</div></div>
+      <div class="mark" style="left:70.8%"><div class="pin"></div><div class="t">1 Sep</div></div>
+    </div>
+    <div class="months">
+      <span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span>
+      <span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="when">31 Mar</div>
+      <div>
+        <h3>Terminate a standing cover crop</h3>
+        <p>If the crop on the patch is not this year's crop in the rotation file, it is a cover
+        crop. It is forced through harvest by zeroing <code>gddmaturity</code> and
+        <code>huigrain</code> — the same idiom as the cold-kill path in <code>CNPhenologyMod</code>.
+        <code>itype</code> is deliberately left alone so that residue is partitioned with the
+        <em>cover crop's</em> <code>lf_flab</code> / <code>fcel</code> / <code>flig</code>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="when">1 Apr</div>
+      <div>
+        <h3>Switch to this year's crop</h3>
+        <p><code>itype</code> becomes <code>pct_cft_cur</code>. <code>CropPhenology</code> then
+        plants it inside its own min/max planting window. A crop whose window has already closed
+        waits until the next one opens — which is how a year can end with no harvest at all.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="when">1 Sep</div>
+      <div>
+        <h3>Look ahead to next year</h3>
+        <p>If the patch is bare, next year's crop (<code>pct_cft_next</code>) is inspected and
+        adopted only when it is autumn-sown — <code>min_NH_planting_date &gt; 0700</code>. A
+        spring-sown successor is left for the following April. A summer crop still standing is
+        left to finish.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>Namelist reference</h2><span class="rule"></span></div>
+  <p>Every option the two developments add, with the values used for the manuscript runs.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Option</th><th>Value used</th><th>Group</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="k">use_cfert</td><td class="v">.true. / .false.</td><td><span class="tag c">carbon</span></td><td>Master switch for the organic amendment. Off makes the case a control.</td></tr>
+        <tr><td class="k">manure_CN_ratio</td><td class="v">25.0</td><td><span class="tag c">carbon</span></td><td>Carbon added per unit organic manure N. Sets the C input for a given N rate.</td></tr>
+        <tr><td class="k">manure_nh4_frac</td><td class="v">0.25</td><td><span class="tag n">nitrogen</span></td><td>Fraction entering as ammoniacal N, available immediately; the rest is organic.</td></tr>
+        <tr><td class="k">manure_fmet</td><td class="v">0.60</td><td><span class="tag c">carbon</span></td><td>Metabolic share of manure C → LITR1.</td></tr>
+        <tr><td class="k">manure_fcel</td><td class="v">0.30</td><td><span class="tag c">carbon</span></td><td>Cellulose share → LITR2.</td></tr>
+        <tr><td class="k">manure_flig</td><td class="v">0.10</td><td><span class="tag c">carbon</span></td><td>Lignin share → LITR3. The three must sum to one.</td></tr>
+        <tr><td class="k">manure_injection_depth</td><td class="v">0.0</td><td><span class="tag c">carbon</span></td><td>Depth of incorporation; zero is surface application.</td></tr>
+        <tr><td class="k">manure_apply_month</td><td class="v">0</td><td><span class="tag c">carbon</span></td><td>0 applies at the planting event; a real month applies on that calendar date instead, decoupling manure from the crop.</td></tr>
+        <tr><td class="k">manure_apply_day</td><td class="v">1</td><td><span class="tag c">carbon</span></td><td>Day within the application month.</td></tr>
+        <tr><td class="k">manure_freq_years</td><td class="v">1</td><td><span class="tag c">carbon</span></td><td>Application interval in years.</td></tr>
+        <tr><td class="k">use_covercropping</td><td class="v">.true.</td><td><span class="tag r">rotation</span></td><td>Enables the calendar rotation switch and the winter cover-crop slot.</td></tr>
+        <tr><td class="k">transient_landuse_file</td><td class="v">*_landuse.nc</td><td><span class="tag r">rotation</span></td><td>Per-year crop sequence. <code>PCT_CFT</code> is the main slot, <code>PCT_CFT_WINTER</code> the cover crop.</td></tr>
+        <tr><td class="k">covercrop_paramfile</td><td class="v">clm5_params_*.nc</td><td><span class="tag r">rotation</span></td><td>Parameters for the cover-crop PFTs (77, 78).</td></tr>
+        <tr><td class="k">use_fruittree</td><td class="v">.true.</td><td><span class="tag r">rotation</span></td><td>Enables the perennial fruit-tree crop types.</td></tr>
+        <tr><td class="k">use_grainproduct</td><td class="v">.true.</td><td><span class="tag c">carbon</span></td><td>Sends harvested grain to a product pool instead of returning it to litter.</td></tr>
+        <tr><td class="k">cn_balance_tol_c</td><td class="v">1e-7</td><td><span class="tag c">carbon</span></td><td>Carbon balance tolerance, now namelist-controlled — was hardcoded at 100, i.e. effectively disabled.</td></tr>
+        <tr><td class="k">cn_balance_tol_n</td><td class="v">1e-7</td><td><span class="tag n">nitrogen</span></td><td>Nitrogen balance tolerance.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>Defects found and fixed</h2><span class="rule"></span></div>
+  <p>Correctness fixes made while getting these runs to a publishable state. Several were
+  silent — the model ran and produced plausible output while doing the wrong thing.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Module</th><th>Defect</th><th>Why it mattered</th></tr></thead>
+      <tbody>
+        <tr><td class="k">pftconMod</td><td>PFT index resolved by hardcoded literal, one out of bounds</td><td>Out-of-bounds write at index 79 — silent heap corruption in RELEASE builds. Resolution now by name.</td></tr>
+        <tr><td class="k">CropType</td><td>12 crop state variables not written to restart</td><td>Cold-hardening state lost on every restart; now written, with a fallback for old files.</td></tr>
+        <tr><td class="k">controlMod</td><td>use_grainproduct broadcast dropped</td><td>Only rank 0 saw the correct value, so harvested grain returned to litter on every other rank.</td></tr>
+        <tr><td class="k">CNPhenologyMod</td><td>manure_apply_month gate inverted</td><td>Any non-zero value silently applied no manure at all.</td></tr>
+        <tr><td class="k">CNVeg*StateType</td><td>AD-spinup reseed used <code>l</code> before assignment</td><td>Rescaling applied to the wrong column; deadstem pools were also missing from the rescale.</td></tr>
+        <tr><td class="k">dynCovercropFileMod</td><td>Cover-crop switch zeroed <code>xsmrpool</code></td><td>Mass was destroyed at every switch; now moved to a loss pool with a paired drain.</td></tr>
+        <tr><td class="k">rotation termination</td><td>Unguarded branch on PFT switch</td><td>Killed every two-crop rotation without an intervening cover crop — control runs included.</td></tr>
+        <tr><td class="k">CNBalanceCheckMod</td><td>Tolerance hardcoded at 100</td><td>The balance check could not fail. Now namelist-controlled at 1e-7 and passing at regional scale.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>eCLM_FYM_fixes · Dikopshof · Hoosfield · Selhausen · DE009</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var DETAIL = {
+    "n-timing":{t:"Application gate",k:"timing",b:"Decides when manure is released. With manure_apply_month = 0 the release is tied to the planting event, so the crop calendar drives it. Set a real month and the release happens on that calendar date instead, independent of whether anything is growing.",d:[["manure_apply_month","0 = at planting"],["manure_apply_day","day within that month"],["manure_freq_years","application interval"]]},
+    "n-rate":{t:"Manure N rate",k:"carbon · nitrogen",b:"manunitro is a per-PFT parameter in the parameter file, not a namelist value. It is the annual manure nitrogen rate, and it is what site calibration adjusts. Only the crop types actually grown at a site need it set.",d:[["manunitro","kg N m⁻² yr⁻¹"],["× 1000","→ gN m⁻² yr⁻¹"],["delivered","75% of nominal"]]},
+    "n-split":{t:"Nitrogen speciation",k:"nitrogen",b:"Manure nitrogen is split into an ammoniacal fraction that is immediately mineral and available, and an organic remainder that must be mineralised before plants can use it. This split is what separates manure from mineral fertiliser in the model.",d:[["manure_nh4_frac","0.25"],["organic share","1 − nh4_frac"]]},
+    "n-nh4":{t:"Ammoniacal nitrogen",k:"nitrogen",b:"Enters the mineral nitrogen pool directly at application. Available for uptake in the same timestep, and exposed to nitrification and denitrification — this is the fraction that drives the N₂O response to manure.",d:[["→","SMINN"],["fate","uptake · N₂O · leaching"]]},
+    "n-org":{t:"Organic nitrogen",k:"carbon · nitrogen",b:"The remainder of the manure nitrogen. It goes to the litter pools rather than the mineral pool, and it is what carries the carbon: the C added is the organic N multiplied by manure_CN_ratio.",d:[["share","1 − manure_nh4_frac"],["carries","C at C:N = 25"]]},
+    "n-c":{t:"Manure carbon",k:"carbon",b:"The carbon input, and the quantity the whole development exists to represent. Diagnosed as Corg_FERT — a zero here with use_cfert on means the application never fired, almost always because no planting event occurred.",d:[["diagnostic","Corg_FERT"],["units","gC m⁻² s⁻¹"],["spread over","one month"]]},
+    "n-sminn":{t:"Mineral soil nitrogen",k:"nitrogen",b:"The pool plants draw from. Note that a run with suplnitro = 'ALL' makes nitrogen non-limiting, which severs the link between fertiliser input and plant response — no N-response or N₂O result from such a run is interpretable.",d:[["variable","SMINN"],["watch","suplnitro"]]},
+    "n-litn":{t:"Litter nitrogen",k:"nitrogen",b:"Organic manure nitrogen enters the litter nitrogen pools alongside its carbon, at the prescribed C:N. It becomes available only as the litter decomposes.",d:[["pools","LITR1–3 N"]]},
+    "n-lit":{t:"Litter carbon pools",k:"carbon",b:"Manure carbon is partitioned across the three litter pools by quality — metabolic, cellulose and lignin — exactly as plant residue is. The lignin share is what governs how much survives to reach stable soil organic matter.",d:[["manure_fmet","0.60 → LITR1"],["manure_fcel","0.30 → LITR2"],["manure_flig","0.10 → LITR3"]]},
+    "n-som":{t:"Soil organic matter",k:"carbon",b:"The endpoint. Long-term retention of applied manure carbon runs near 13% in the Selhausen factorial and about 23% over 60 years at Dikopshof — the difference being time, not process.",d:[["variable","TOTSOMC"],["depth-resolved","SOILC_vr"]]},
+    "n-n2o":{t:"Nitrous oxide",k:"nitrogen",b:"Emitted from both nitrification and denitrification, reported separately. Comparable with the direct N₂O term of a national inventory only if nitrogen is limiting in the run.",d:[["F_N2O_NIT","nitrification"],["F_N2O_DENIT","denitrification"]]},
+    "n-rot":{t:"Crop rotation",k:"rotation",b:"Reads a per-year crop sequence and switches the patch by calendar date. It is independent of the manure code — but manure is released on a planting event, so a rotation that fails to plant also delivers no manure. That single coupling explains most apparent manure failures.",d:[["PCT_CFT","main crop slot"],["PCT_CFT_WINTER","cover crop slot"],["switch dates","31 Mar · 1 Apr · 1 Sep"]]}
+  };
+
+  var $ = function(id){ return document.getElementById(id); };
+  var dT=$("d-title"), dK=$("d-kind"), dB=$("d-body"), dL=$("d-list"), cur=null;
+
+  function select(id){
+    var info = DETAIL[id];
+    if(!info) return;
+    if(cur) cur.classList.remove("selected");
+    var g = $(id); g.classList.add("selected"); cur = g;
+    dT.textContent = info.t;
+    dK.textContent = info.k;
+    dK.style.color = info.k.indexOf("rotation")>=0 ? "var(--crop)"
+                   : info.k.indexOf("carbon")>=0 ? "var(--carbon)" : "var(--nitro)";
+    dB.textContent = info.b;
+    dL.innerHTML = "";
+    (info.d||[]).forEach(function(row){
+      var dt=document.createElement("dt"); dt.textContent=row[0];
+      var dd=document.createElement("dd"); dd.textContent=row[1];
+      dL.appendChild(dt); dL.appendChild(dd);
+    });
+  }
+
+  Object.keys(DETAIL).forEach(function(id){
+    var g = $(id);
+    if(!g) return;
+    g.addEventListener("click", function(){ select(id); });
+    g.addEventListener("keydown", function(e){
+      if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(id); }
+    });
+  });
+
+  // ---- option switches ----
+  var CFERT_NODES = ["n-timing","n-rate","n-split","n-nh4","n-org","n-c","n-litn","n-lit"];
+  function setDim(id,on){ var g=$(id); if(g) g.classList.toggle("dim",!on); }
+
+  function apply(){
+    var cfert = $("sw-cfert").getAttribute("aria-pressed")==="true";
+    var cc    = $("sw-cc").getAttribute("aria-pressed")==="true";
+    var cal   = $("sw-cal").getAttribute("aria-pressed")==="true";
+    CFERT_NODES.forEach(function(id){ setDim(id,cfert); });
+    $("flows").classList.toggle("dim",!cfert);
+    $("flowlabels").classList.toggle("dim",!cfert);
+    setDim("n-rot",cc);
+    // calendar-date application severs the planting-event link
+    var link = $("rotlink");
+    if(link) link.style.opacity = (cc && cfert && !cal) ? "1" : "0.12";
+  }
+  ["sw-cfert","sw-cc","sw-cal"].forEach(function(id){
+    $(id).addEventListener("click", function(){
+      var on = this.getAttribute("aria-pressed")==="true";
+      this.setAttribute("aria-pressed", on ? "false" : "true");
+      apply();
+    });
+  });
+  apply();
+
+  // ---- delivered rate ----
+  function calc(){
+    var mn  = parseFloat($("i-mn").value)  || 0;
+    var cn  = parseFloat($("i-cn").value)  || 0;
+    var nh4 = parseFloat($("i-nh4").value);
+    if(isNaN(nh4)) nh4 = 0;
+    var gC   = mn * 1000 * cn * 0.75;      // delivered = 75% of nominal
+    var kgNha = mn * 1000 * 0.75 * 10;     // gN m-2 -> kg N ha-1
+    $("o-c").textContent   = gC.toFixed(1);
+    $("o-n").textContent   = kgNha.toFixed(1);
+    $("o-nh4").textContent = (kgNha*nh4).toFixed(1);
+    $("o-org").textContent = (kgNha*(1-nh4)).toFixed(1);
+  }
+  ["i-mn","i-cn","i-nh4"].forEach(function(id){
+    $(id).addEventListener("input", calc);
+  });
+  calc();
+})();
+</script>
+</body>
+</html>

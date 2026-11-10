@@ -7,6 +7,7 @@ module CNVegNitrogenFluxType
   use clm_varpar                         , only : nlevdecomp_full, nlevdecomp
   use clm_varcon                         , only : spval, ispval, dzsoi_decomp
   use clm_varctl                         , only : use_nitrif_denitrif, use_vertsoilc, use_crop
+  use clm_varctl                         , only : use_cfert  ! tboas-fix: organic manure N flux
   use CNSharedParamsMod                  , only : use_fun
   use decompMod                          , only : bounds_type
   use abortutils                         , only : endrun
@@ -137,6 +138,9 @@ module CNVegNitrogenFluxType
      real(r8), pointer :: frootn_to_retransn_patch                  (:)     ! patch fine root N to retranslocated N pool (gN/m2/s)
      real(r8), pointer :: frootn_to_litter_patch                    (:)     ! patch fine root N litterfall (gN/m2/s)
 
+     ! pruning fluxes
+     real(r8), pointer :: prunen_to_litter_patch                    (:)     ! patch pruning N to litter (gN/m2/s)
+     real(r8), pointer :: prunen_storage_to_litter_patch            (:)     ! patch pruning N to litter (gN/m2/s)
      ! allocation fluxes
      real(r8), pointer :: retransn_to_npool_patch                   (:)     ! patch deployment of retranslocated N (gN/m2/s)  
      real(r8), pointer :: free_retransn_to_npool_patch              (:)     ! patch deployment of free retranslocated N (gN/m2/s)           
@@ -165,6 +169,11 @@ module CNVegNitrogenFluxType
      real(r8), pointer :: livecrootn_storage_to_xfer_patch          (:)     ! patch live coarse root N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: deadcrootn_storage_to_xfer_patch          (:)     ! patch dead coarse root N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: fert_patch                                (:)     ! patch applied fertilizer (gN/m2/s)
+     ! tboas-fix: organic N applied with farmyard manure. This is the counterpart of
+     ! cnveg_carbonflux_type%fertC_patch: it enters the litter pools together with the
+     ! manure C at manure_CN_ratio and is mineralised by the decomposition cascade,
+     ! rather than being injected into the mineral pool like fert_patch.
+     real(r8), pointer :: fertN_patch                               (:)     ! (gN/m2/s) organic N applied with manure
      real(r8), pointer :: fert_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
      real(r8), pointer :: soyfixn_patch                             (:)     ! patch soybean fixed N (gN/m2/s)
 
@@ -206,6 +215,8 @@ module CNVegNitrogenFluxType
 
      ! crop fluxes
      real(r8), pointer :: crop_seedn_to_leaf_patch                  (:)     ! patch (gN/m2/s) seed source to leaf, for crops
+     real(r8), pointer :: crop_seedn_to_froot_patch                 (:)     ! patch (gN/m2/s) seed source to fine root, for perennial crops (added by O.Dombrowski)
+     real(r8), pointer :: crop_seedn_to_deadstem_patch              (:)     ! patch (gN/m2/s) seed source to deadstem, for perennial crops (added by O.Dombrowski)
      
      ! Misc
      real(r8), pointer :: plant_ndemand_patch                       (:)     ! N flux required to support initial GPP (gN/m2/s)
@@ -417,8 +428,13 @@ contains
     allocate(this%grainn_xfer_to_grainn_patch               (begp:endp)) ; this%grainn_xfer_to_grainn_patch               (:) = nan
     allocate(this%grainn_storage_to_xfer_patch              (begp:endp)) ; this%grainn_storage_to_xfer_patch              (:) = nan
     allocate(this%fert_patch                                (begp:endp)) ; this%fert_patch                                (:) = nan
+    ! tboas-fix: always allocated (and zeroed) so the associate pointer in
+    ! CNPhenologyMod is valid even when use_cfert = .false.
+    allocate(this%fertN_patch                               (begp:endp)) ; this%fertN_patch                               (:) = 0.0_r8
     allocate(this%fert_counter_patch                        (begp:endp)) ; this%fert_counter_patch                        (:) = nan
     allocate(this%soyfixn_patch                             (begp:endp)) ; this%soyfixn_patch                             (:) = nan
+    allocate(this%prunen_to_litter_patch                    (begp:endp)) ; this%prunen_to_litter_patch                    (:) = nan
+    allocate(this%prunen_storage_to_litter_patch            (begp:endp)) ; this%prunen_storage_to_litter_patch            (:) = nan
 
     allocate(this%grainn_to_cropprodn_patch                 (begp:endp)) ; this%grainn_to_cropprodn_patch                 (:) = nan
     allocate(this%grainn_to_cropprodn_col                   (begc:endc)) ; this%grainn_to_cropprodn_col                   (:) = nan
@@ -447,6 +463,8 @@ contains
     allocate(this%dwt_deadcrootn_to_cwdn_col   (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcrootn_to_cwdn_col   (:,:) = nan
 
     allocate(this%crop_seedn_to_leaf_patch     (begp:endp))                   ; this%crop_seedn_to_leaf_patch     (:)   = nan
+    allocate(this%crop_seedn_to_froot_patch    (begp:endp))                   ; this%crop_seedn_to_froot_patch    (:)   = nan 
+    allocate(this%crop_seedn_to_deadstem_patch (begp:endp))                   ; this%crop_seedn_to_deadstem_patch (:)   = nan 
 
     allocate(this%m_decomp_npools_to_fire_vr_col    (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     allocate(this%m_decomp_npools_to_fire_col       (begc:endc,1:ndecomp_pools                  ))
@@ -950,6 +968,13 @@ contains
             ptr_patch=this%fert_patch)
     end if
 
+    ! tboas-fix: diagnostic for the organic N applied with manure
+    if (use_crop .and. use_cfert) then
+       this%fertN_patch(begp:endp) = 0.0_r8
+       call hist_addfld1d (fname='Norg_FERT', units='gN/m^2/s', &
+            avgflag='A', long_name='Organic nitrogen applied with farmyard manure', &
+            ptr_patch=this%fertN_patch, default='inactive')
+    end if
     if (use_crop .and. .not. use_fun) then
        this%soyfixn_patch(begp:endp) = spval
        call hist_addfld1d (fname='SOYFIXN', units='gN/m^2/s', &
@@ -1062,6 +1087,15 @@ contains
     call hist_addfld1d (fname='CROP_SEEDN_TO_LEAF', units='gN/m^2/s', &
          avgflag='A', long_name='crop seed source to leaf', &
          ptr_patch=this%crop_seedn_to_leaf_patch, default='inactive')
+    this%crop_seedn_to_froot_patch(begp:endp) = spval                              
+    call hist_addfld1d (fname='CROP_SEEDN_TO_FROOT', units='gN/m^2/s', &
+         avgflag='A', long_name='crop seed source to fine root', &
+         ptr_patch=this%crop_seedn_to_froot_patch, default='inactive')
+
+    this%crop_seedn_to_deadstem_patch(begp:endp) = spval                           
+    call hist_addfld1d (fname='CROP_SEEDN_TO_DEADSTEM', units='gN/m^2/s', &
+         avgflag='A', long_name='crop seed source to deadstem', &
+         ptr_patch=this%crop_seedn_to_deadstem_patch, default='inactive')
 
     this%plant_ndemand_patch(begp:endp) = spval
     call hist_addfld1d (fname='PLANT_NDEMAND', units='gN/m^2/s', &
@@ -1260,6 +1294,7 @@ contains
        if ( use_crop )then
           this%fert_counter_patch(p)  = spval
           this%fert_patch(p)          = 0._r8 
+          this%fertN_patch(p)         = 0._r8   ! tboas-fix
           this%soyfixn_patch(p)       = 0._r8 
        end if
 
@@ -1350,6 +1385,13 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%fert_patch)
     end if
 
+    ! tboas-fix: restart the organic manure N flux alongside fertC_patch
+    if (use_cfert) then
+       call restartvar(ncid=ncid, flag=flag, varname='fertN_patch', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='organic N flux applied with farmyard manure', units='gN/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%fertN_patch)
+    end if
     if (use_crop) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer_to_grainn', xtype=ncd_double,  &
             dim1name='pft', &
@@ -1390,6 +1432,18 @@ contains
             dim1name='pft', &
             long_name='grain N shift storage to transfer', units='gN/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_storage_to_xfer_patch)
+    end if
+
+    if (use_crop) then
+       call restartvar(ncid=ncid, flag=flag, varname='prunen_to_litter', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='pruning N to litterfall', units='gN/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%prunen_to_litter_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='prunen_storage_to_litter', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='pruning storage N to litterfall', units='gN/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%prunen_storage_to_litter_patch)
     end if
 
     call restartvar(ncid=ncid, flag=flag, varname='plant_ndemand', xtype=ncd_double,  &
@@ -1682,6 +1736,9 @@ contains
        this%fire_nloss_patch(i)                          = value_patch
 
        this%crop_seedn_to_leaf_patch(i)                  = value_patch
+       if (use_cfert) this%fertN_patch(i)                = value_patch  ! tboas-fix
+       this%crop_seedn_to_froot_patch(i)                 = value_patch    
+       this%crop_seedn_to_deadstem_patch(i)              = value_patch    
        this%grainn_to_cropprodn_patch(i)                 = value_patch
     end do
 
@@ -1697,6 +1754,8 @@ contains
           this%grainn_storage_to_xfer_patch(i)           = value_patch
           this%soyfixn_patch(i)                          = value_patch
           this%frootn_to_retransn_patch(i)               = value_patch
+          this%prunen_to_litter_patch(i)                 = value_patch
+          this%prunen_storage_to_litter_patch(i)         = value_patch
        end do
     end if
 

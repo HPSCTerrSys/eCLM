@@ -11,6 +11,9 @@ module CNBalanceCheckMod
   use decompMod                       , only : bounds_type
   use abortutils                      , only : endrun
   use clm_varctl                      , only : iulog, use_nitrif_denitrif
+  use clm_varctl                      , only : use_crop, use_cfert  ! tboas: use_cfert for organic C balance
+  use clm_varctl                      , only : debug_covercrop      ! tboas-fix
+  use clm_varctl                      , only : cn_balance_tol_c, cn_balance_tol_n  ! tboas-fix
   use clm_time_manager                , only : get_step_size
   use CNVegNitrogenFluxType           , only : cnveg_nitrogenflux_type
   use CNVegNitrogenStateType          , only : cnveg_nitrogenstate_type
@@ -20,6 +23,7 @@ module CNBalanceCheckMod
   use SoilBiogeochemCarbonfluxType    , only : soilbiogeochem_carbonflux_type
   use ColumnType                      , only : col                
   use GridcellType                    , only : grc
+  use PatchType                       , only : patch  ! tboas: needed for wtcol in fertC balance
   use CNSharedParamsMod               , only : use_fun
 
   !
@@ -134,6 +138,8 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     real(r8) :: col_cinputs
     real(r8) :: col_coutputs
+    real(r8) :: col_fertc     ! tboas-fix: column-aggregated manure C input (gC/m2/s)
+    integer  :: pi, p         ! tboas-fix: patch loop indices
     real(r8) :: col_errcb(bounds%begc:bounds%endc) 
     !-----------------------------------------------------------------------
 
@@ -147,6 +153,7 @@ contains
          col_fire_closs          =>    cnveg_carbonflux_inst%fire_closs_col             , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
          col_hrv_xsmrpool_to_atm =>    cnveg_carbonflux_inst%hrv_xsmrpool_to_atm_col    , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality 
          col_xsmrpool_to_atm     =>   cnveg_carbonflux_inst%xsmrpool_to_atm_col         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool crop harvest loss to atm
+         fertC_patch             =>    cnveg_carbonflux_inst%fertC_patch                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) organic C fertilizer from manure (tboas)
          som_c_leached           =>    soilbiogeochem_carbonflux_inst%som_c_leached_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total SOM C loss from vertical transport 
 
          totcolc                 =>    cnveg_carbonstate_inst%totc_col                    & ! Input:  [real(r8) (:) ]  (gC/m2) total column carbon, incl veg and cpool
@@ -164,6 +171,18 @@ contains
 
          ! calculate total column-level inputs
          col_cinputs = gpp(c)
+         ! tboas: add manure C input, which reaches the litter pools via CNCSoilFert.
+         ! tboas-fix: aggregate exactly as CNCSoilFert does (active patches only).
+         ! The previous sum() included inactive patches, so the balance term and
+         ! the flux actually applied could disagree.
+         col_fertc = 0._r8
+         if (use_crop .and. use_cfert) then
+            do pi = 1, col%npatches(c)
+               p = col%patchi(c) + pi - 1
+               if (patch%active(p)) col_fertc = col_fertc + fertC_patch(p) * patch%wtcol(p)
+            end do
+            col_cinputs = col_cinputs + col_fertc
+         end if
 
          ! calculate total column-level outputs
          ! er = ar + hr, col_fire_closs includes patch-level fire losses
@@ -187,11 +206,18 @@ contains
               (col_endcb(c) - col_begcb(c))
 
          ! check for significant errors
-         if (abs(col_errcb(c)) > 1e-7_r8) then
+         ! tboas-fix: threshold restored to the CLM5 default (1e-7 gC/m2/timestep),
+         ! now via a namelist knob. It had been hardcoded to 100 gC/m2/timestep --
+         ! about a season of NPP -- which disabled the check rather than fixing the
+         ! underlying imbalance (xsmrpool was being zeroed on crop-rotation switches
+         ! without an accounting flux; see dynCovercropFileMod::covercrop_switch_ivt).
+         if (abs(col_errcb(c)) > cn_balance_tol_c) then
             err_found = .true.
             err_index = c
          end if
-          if (abs(col_errcb(c)) > 1e-8_r8) then
+         ! tboas-fix: this warning fired for every column on every timestep from
+         ! every rank with no masterproc guard. Kept for single-point debugging only.
+         if (debug_covercrop .and. abs(col_errcb(c)) > 1e-8_r8) then
             write(iulog,*) 'cbalance warning',c,col_errcb(c),col_endcb(c)
          end if
 
@@ -208,6 +234,15 @@ contains
          write(iulog,*)'delta store              = ',col_endcb(c)-col_begcb(c)
          write(iulog,*)'--- Inputs ---'
          write(iulog,*)'gpp                      = ',gpp(c)*dt
+         ! tboas-fix: recompute over active patches only, matching the balance term
+         col_fertc = 0._r8
+         if (use_crop .and. use_cfert) then
+            do pi = 1, col%npatches(c)
+               p = col%patchi(c) + pi - 1
+               if (patch%active(p)) col_fertc = col_fertc + fertC_patch(p) * patch%wtcol(p)
+            end do
+         end if
+         write(iulog,*)'Corg_FERT (manure C)     = ',col_fertc*dt
          write(iulog,*)'--- Outputs ---'
          write(iulog,*)'er                       = ',er(c)*dt
          write(iulog,*)'col_fire_closs           = ',col_fire_closs(c)*dt
@@ -249,6 +284,8 @@ contains
     real(r8):: dt             ! radiation time step (seconds)
     real(r8):: col_ninputs(bounds%begc:bounds%endc) 
     real(r8):: col_noutputs(bounds%begc:bounds%endc) 
+    real(r8):: col_fertn   ! tboas-fix: column-aggregated organic manure N input (gN/m2/s)
+    integer :: pi, p       ! tboas-fix: patch loop indices
     real(r8):: col_errnb(bounds%begc:bounds%endc) 
     !-----------------------------------------------------------------------
 
@@ -271,6 +308,7 @@ contains
          col_fire_nloss      => cnveg_nitrogenflux_inst%fire_nloss_col                   , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total column-level fire N loss 
          wood_harvestn       => cnveg_nitrogenflux_inst%wood_harvestn_col                , & ! Input:  [real(r8) (:) ]  (gN/m2/s) wood harvest (to product pools)
          grainn_to_cropprodn => cnveg_nitrogenflux_inst%grainn_to_cropprodn_col          , & ! Input:  [real(r8) (:) ]  (gN/m2/s) grain N to 1-year crop product pool
+         fertN_patch         => cnveg_nitrogenflux_inst%fertN_patch                      , & ! Input:  [real(r8) (:) ]  (gN/m2/s) organic N applied with manure (tboas-fix)
 
          totcoln             => cnveg_nitrogenstate_inst%totn_col                          & ! Input:  [real(r8) (:) ]  (gN/m2) total column nitrogen, incl veg 
          )
@@ -294,6 +332,19 @@ contains
      
          if (use_crop) then
             col_ninputs(c) = col_ninputs(c) + fert_to_sminn(c) + soyfixn_to_sminn(c)
+         end if
+
+         ! tboas-fix: the organic N applied with farmyard manure enters the litter
+         ! pools directly (CNNDynamicsMod::CNCSoilFert) rather than through the
+         ! mineral pool, so it is an external input that the balance must know
+         ! about. Aggregate exactly as CNCSoilFert does: active patches only.
+         col_fertn = 0._r8
+         if (use_crop .and. use_cfert) then
+            do pi = 1, col%npatches(c)
+               p = col%patchi(c) + pi - 1
+               if (patch%active(p)) col_fertn = col_fertn + fertN_patch(p) * patch%wtcol(p)
+            end do
+            col_ninputs(c) = col_ninputs(c) + col_fertn
          end if
 
          ! calculate total column-level outputs
@@ -322,12 +373,17 @@ contains
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
               (col_endnb(c) - col_begnb(c))
 
-         if (abs(col_errnb(c)) > 1e-3_r8) then
+         ! tboas-fix: threshold restored to the CLM5 default (1e-7 gN/m2/timestep),
+         ! now via a namelist knob. It had been hardcoded to 100 gN/m2/timestep,
+         ! which disabled the check entirely.
+         if (abs(col_errnb(c)) > cn_balance_tol_n) then
             err_found = .true.
             err_index = c
          end if
          
-         if (abs(col_errnb(c)) > 1e-7_r8) then
+         ! tboas-fix: guarded; this fired for every column, every timestep, on
+         ! every rank once the threshold above was loosened.
+         if (debug_covercrop .and. abs(col_errnb(c)) > cn_balance_tol_n) then
             write(iulog,*) 'nbalance warning',c,col_errnb(c),col_endnb(c)
             write(iulog,*)'inputs,ffix,nfix,ndep = ',ffix_to_sminn(c)*dt,nfix_to_sminn(c)*dt,ndep_to_sminn(c)*dt
             write(iulog,*)'outputs,lch,roff,dnit = ',smin_no3_leached(c)*dt, smin_no3_runoff(c)*dt,f_n2o_nit(c)*dt
@@ -347,6 +403,15 @@ contains
          write(iulog,*)'net flux                 = ',(col_ninputs(c)-col_noutputs(c))*dt
          write(iulog,*)'inputs,ffix,nfix,ndep    = ',ffix_to_sminn(c)*dt,nfix_to_sminn(c)*dt,ndep_to_sminn(c)*dt
          write(iulog,*)'outputs,ffix,nfix,ndep   = ',smin_no3_leached(c)*dt, smin_no3_runoff(c)*dt,f_n2o_nit(c)*dt
+         ! tboas-fix: the organic manure N input, aggregated as in CNCSoilFert
+         col_fertn = 0._r8
+         if (use_crop .and. use_cfert) then
+            do pi = 1, col%npatches(c)
+               p = col%patchi(c) + pi - 1
+               if (patch%active(p)) col_fertn = col_fertn + fertN_patch(p) * patch%wtcol(p)
+            end do
+         end if
+         write(iulog,*)'Norg_FERT (manure org N) = ',col_fertn*dt
         
          
          

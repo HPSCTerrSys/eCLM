@@ -498,7 +498,7 @@ contains
     ! !USES:
     use pftconMod              , only : npcropmin, pftcon
     use pftconMod              , only : ntmp_soybean, nirrig_tmp_soybean
-    use pftconMod              , only : ntrp_soybean, nirrig_trp_soybean
+    !use pftconMod              , only : ntrp_soybean, nirrig_trp_soybean
     use clm_varcon             , only : secspday
     use clm_varctl             , only : use_c13, use_c14
     use clm_time_manager       , only : get_step_size
@@ -855,8 +855,8 @@ contains
                   !they all seemed to be going through the retranslocation loop for soybean - good news.
 
                    if (astem(p) == astemf(ivt(p)) .or. &
-                       (ivt(p) /= ntmp_soybean .and. ivt(p) /= nirrig_tmp_soybean .and.&
-                        ivt(p) /= ntrp_soybean .and. ivt(p) /= nirrig_trp_soybean)) then
+                       (ivt(p) /= ntmp_soybean .and. ivt(p) /= nirrig_tmp_soybean)) then ! .and.&
+                        !ivt(p) /= ntrp_soybean .and. ivt(p) /= nirrig_trp_soybean)) then
                      if (grain_flag(p) == 0._r8)then
                      if(.not.use_fun) then
                         t1 = 1 / dt
