@@ -205,6 +205,10 @@ contains
     ! !USES:
     use shr_orb_mod
     use clm_time_manager   , only : get_nstep
+#ifdef COUP_OAS_ICON
+    use clm_time_manager   , only : get_step_size, get_curr_date
+    use shr_const_mod      , only : SHR_CONST_PI
+#endif
     use abortutils         , only : endrun
     use clm_varctl         , only : subgridflag, use_snicar_frc, use_fates
     use CLMFatesInterfaceMod, only : hlm_fates_interface_type
@@ -280,6 +284,11 @@ contains
     real(r8) :: mss_cnc_aer_in_fdb     (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of all aerosol species for feedback calculation (col,lyr,aer) [kg kg-1]
     real(r8), parameter :: mpe = 1.e-06_r8                                                ! prevents overflow for division by zero
     integer , parameter :: nband =numrad                                                  ! number of solar radiation waveband classes
+#ifdef COUP_OAS_ICON
+    integer  :: yr, mon, day, tod                                                         ! current date
+    real(r8) :: ztwo, ztho                                                                ! helper variables for eot
+    real(r8) :: eot_cday                                                                  ! equation of time in calendar days
+#endif
     !-----------------------------------------------------------------------
 
    associate(&
@@ -355,8 +364,21 @@ contains
 
     ! Cosine solar zenith angle for next time step
 
+#ifdef COUP_OAS_ICON
+    ! calculate equation of time as in ICON (mo_radiation.f90) to account for apparent vs mean solar time
+    call get_curr_date(yr, mon, day, tod)
+    ztwo = 0.681_r8 + 0.2422_r8*real(yr-1949, r8) - real((yr-1949)/4, r8)
+    ztho = 2._r8*SHR_CONST_PI*(real(floor(nextsw_cday), r8) - 1._r8 + ztwo)/365.2422_r8
+    eot_cday = (0.000075_r8 + 0.001868_r8*cos(ztho) - 0.032077_r8*sin(ztho) &
+         - 0.014615_r8*cos(2._r8*ztho) - 0.040849_r8*sin(2._r8*ztho)) / (2._r8*SHR_CONST_PI)
+#endif
     do g = bounds%begg,bounds%endg
+#ifdef COUP_OAS_ICON
+       coszen_gcell(g) = shr_orb_cosz (nextsw_cday + eot_cday, grc%lat(g), grc%lon(g), declinp1, &
+            dt_avg=real(get_step_size(), r8))
+#else
        coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc%lat(g), grc%lon(g), declinp1)
+#endif
     end do
     do c = bounds%begc,bounds%endc
        g = col%gridcell(c)
