@@ -12,6 +12,7 @@ module CNDriverMod
   use perf_mod                        , only : t_startf, t_stopf
   use clm_varctl                      , only : use_century_decomp, use_nitrif_denitrif, use_nguardrail
   use clm_varctl                      , only : use_crop
+  use clm_varctl                      , only : use_cfert  ! tboas: organic C fertilizer flag
   use CNSharedParamsMod               , only : use_fun
   use CNVegStateType                  , only : cnveg_state_type
   use CNVegCarbonStateType            , only : cnveg_carbonstate_type
@@ -105,7 +106,8 @@ contains
     use clm_varpar                        , only: nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
     use subgridAveMod                     , only: p2c, p2c_2d
     use CropType                          , only: crop_type
-    use CNNDynamicsMod                    , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix,CNFreeLivingFixation
+    use CNNDynamicsMod                    , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix,CNFreeLivingFixation, &
+                                                   CNCSoilFert  ! tboas: organic C fertilizer routing
     use CNMRespMod                        , only: CNMResp
     use CNFUNMod                          , only: CNFUNInit  !, CNFUN 
     use CNPhenologyMod                    , only: CNPhenology
@@ -352,11 +354,12 @@ contains
             filter_soilp, num_pcropp, filter_pcropp, &
             doalb, waterstate_inst, temperature_inst, atm2lnd_inst, &
             crop_inst, canopystate_inst, soilstate_inst, dgvs_inst, &
-            cnveg_state_inst, cnveg_carbonstate_inst, cnveg_carbonflux_inst, &
+            cnveg_state_inst, soilbiogeochem_state_inst, cnveg_carbonstate_inst, cnveg_carbonflux_inst, &
             cnveg_nitrogenstate_inst, cnveg_nitrogenflux_inst, &
             c13_cnveg_carbonstate_inst, c14_cnveg_carbonstate_inst, &
             leaf_prof_patch=soilbiogeochem_state_inst%leaf_prof_patch(begp:endp,1:nlevdecomp_full), &
             froot_prof_patch=soilbiogeochem_state_inst%froot_prof_patch(begp:endp,1:nlevdecomp_full), &
+            stem_prof_patch=soilbiogeochem_state_inst%stem_prof_patch(begp:endp,1:nlevdecomp_full), &
             phase=1)
        call t_stopf('CNPhenology_phase1')
 
@@ -447,25 +450,32 @@ contains
             filter_soilp, num_pcropp, filter_pcropp, &
             doalb, waterstate_inst, temperature_inst, atm2lnd_inst, &
             crop_inst, canopystate_inst, soilstate_inst, dgvs_inst, &
-            cnveg_state_inst, cnveg_carbonstate_inst, cnveg_carbonflux_inst, &
+            cnveg_state_inst,soilbiogeochem_state_inst, cnveg_carbonstate_inst, cnveg_carbonflux_inst, &
             cnveg_nitrogenstate_inst, cnveg_nitrogenflux_inst, &
             c13_cnveg_carbonstate_inst, c14_cnveg_carbonstate_inst, &
             leaf_prof_patch=soilbiogeochem_state_inst%leaf_prof_patch(begp:endp,1:nlevdecomp_full), &
             froot_prof_patch=soilbiogeochem_state_inst%froot_prof_patch(begp:endp,1:nlevdecomp_full), &
+            stem_prof_patch=soilbiogeochem_state_inst%stem_prof_patch(begp:endp,1:nlevdecomp_full), &
             phase=1)
     end if
     call CNPhenology (bounds, num_soilc, filter_soilc, num_soilp, &
          filter_soilp, num_pcropp, filter_pcropp, &
          doalb, waterstate_inst, temperature_inst, atm2lnd_inst, &
          crop_inst, canopystate_inst, soilstate_inst, dgvs_inst, &
-         cnveg_state_inst, cnveg_carbonstate_inst, cnveg_carbonflux_inst, &
+         cnveg_state_inst, soilbiogeochem_state_inst,cnveg_carbonstate_inst, cnveg_carbonflux_inst, &
          cnveg_nitrogenstate_inst, cnveg_nitrogenflux_inst, &
          c13_cnveg_carbonstate_inst, c14_cnveg_carbonstate_inst, &
          leaf_prof_patch=soilbiogeochem_state_inst%leaf_prof_patch(begp:endp,1:nlevdecomp_full), &
          froot_prof_patch=soilbiogeochem_state_inst%froot_prof_patch(begp:endp,1:nlevdecomp_full), &
+         stem_prof_patch=soilbiogeochem_state_inst%stem_prof_patch(begp:endp,1:nlevdecomp_full), &
          phase=2)
 
     call t_stopf('CNPhenology')
+    ! tboas: route manure organic C into litter pools AFTER CNPhenology to avoid overwrite
+    if (use_cfert) then
+       call CNCSoilFert(bounds, num_soilc, filter_soilc, cnveg_carbonflux_inst, &
+            cnveg_nitrogenflux_inst)
+    end if
 
     !--------------------------------------------
     ! Growth respiration

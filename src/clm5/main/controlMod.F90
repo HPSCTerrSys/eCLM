@@ -224,6 +224,11 @@ contains
 
 
     ! FATES Flags
+    namelist /clm_inparm/ use_fruittree         ! tboas
+    namelist /clm_inparm/ covercrop_paramfile    ! tboas: param file for covercrop PFTs
+    namelist /clm_inparm/ transient_landuse_file ! tboas: cover-crop rotation file
+    namelist /clm_inparm/ covercrop_paramfile    ! tboas
+    namelist /clm_inparm/ transient_landuse_file ! tboas
     namelist /clm_inparm/ fates_paramfile, use_fates,   &
           use_fates_spitfire, use_fates_logging,        &
           use_fates_planthydro, use_fates_ed_st3,       &
@@ -269,9 +274,14 @@ contains
 
     namelist /clm_inparm/ &
          use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
-         use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_fertilizer, use_ozone, &
+         use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_covercropping, use_fertilizer, use_cfert, use_ozone, &
          use_grainproduct, use_snicar_frc, use_vancouver, use_mexicocity, use_noio, &
          use_nguardrail
+    namelist /cfert_inparm/ manure_CN_ratio, manure_fmet, manure_fcel, manure_flig, &
+         manure_injection_depth, manure_freq_years, manure_apply_month, &
+         manure_apply_day, &  ! tboas: manure C parameters
+         manure_nh4_frac, &   ! tboas-fix: NH4-N fraction of applied manure N
+         cn_balance_tol_c, cn_balance_tol_n  ! tboas-fix: mass-balance tolerances
 
 
     ! ----------------------------------------------------------------------
@@ -321,6 +331,16 @@ contains
        else
           call endrun(msg='ERROR finding clm_inparm namelist'//errMsg(sourcefile, __LINE__))
        end if
+       ! tboas: read optional cfert_inparm namelist (default manure_CN_ratio=25 if absent)
+       rewind(unitn)
+       call shr_nl_find_group_name(unitn, 'cfert_inparm', status=ierr)
+       if (ierr == 0) then
+          read(unitn, cfert_inparm, iostat=ierr)
+          if (ierr /= 0) then
+             call endrun(msg='ERROR reading cfert_inparm namelist'//errMsg(sourcefile, __LINE__))
+          end if
+       end if
+       rewind(unitn)  ! tboas: rewind after cfert_inparm read
        call shr_nl_find_group_name(unitn, 'clm_nitrogen', status=ierr)
        if (ierr == 0) then
           read(unitn, clm_nitrogen, iostat=ierr)
@@ -597,8 +617,28 @@ contains
     call mpi_bcast (use_cndv, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_nguardrail, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_crop, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fruittree,          1, MPI_LOGICAL,   0, mpicom, ier)  ! tboas
+    call mpi_bcast (use_covercropping,      1, MPI_LOGICAL,   0, mpicom, ier)
+    call mpi_bcast (covercrop_paramfile,    len(covercrop_paramfile),    MPI_CHARACTER, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (transient_landuse_file, len(transient_landuse_file), MPI_CHARACTER, 0, mpicom, ier)  ! tboas
     call mpi_bcast (use_fertilizer, 1, MPI_LOGICAL, 0, mpicom, ier)
+    ! tboas-fix: this broadcast was lost. use_grainproduct is read on the master
+    ! rank only, so without it every other rank kept the .false. default and
+    ! routed harvested grain C and N to litter while rank 0 sent it to the crop
+    ! product pool -- rank- and decomposition-dependent results.
     call mpi_bcast (use_grainproduct, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_cfert,       1, MPI_LOGICAL, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_CN_ratio,        1, MPI_REAL8, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_fmet,            1, MPI_REAL8, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_fcel,            1, MPI_REAL8, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_flig,            1, MPI_REAL8, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_injection_depth, 1, MPI_REAL8,    0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_freq_years,      1, MPI_INTEGER, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_apply_month,     1, MPI_INTEGER, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_apply_day,       1, MPI_INTEGER, 0, mpicom, ier)  ! tboas
+    call mpi_bcast (manure_nh4_frac,        1, MPI_REAL8, 0, mpicom, ier)  ! tboas-fix
+    call mpi_bcast (cn_balance_tol_c,       1, MPI_REAL8, 0, mpicom, ier)  ! tboas-fix
+    call mpi_bcast (cn_balance_tol_n,       1, MPI_REAL8, 0, mpicom, ier)  ! tboas-fix
     call mpi_bcast (use_ozone, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_snicar_frc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -821,6 +861,29 @@ contains
     write(iulog,*) '    use_cndv = ', use_cndv
     write(iulog,*) '    use_crop = ', use_crop
     write(iulog,*) '    use_fertilizer = ', use_fertilizer
+    write(iulog,*) '    use_cfert      = ', use_cfert  ! tboas
+    write(iulog,*) '    manure_CN_ratio= ',        manure_CN_ratio         ! tboas
+    write(iulog,*) '    manure_fmet= ',            manure_fmet                ! tboas
+    write(iulog,*) '    manure_fcel= ',            manure_fcel                ! tboas
+    write(iulog,*) '    manure_flig= ',            manure_flig                ! tboas
+    write(iulog,*) '    manure_injection_depth= ', manure_injection_depth     ! tboas
+    write(iulog,*) '    manure_freq_years= ',      manure_freq_years          ! tboas
+    write(iulog,*) '    manure_apply_month= ',     manure_apply_month         ! tboas
+    write(iulog,*) '    manure_apply_day= ',       manure_apply_day           ! tboas
+    write(iulog,*) '    manure_nh4_frac= ',        manure_nh4_frac            ! tboas-fix
+    write(iulog,*) '    cn_balance_tol_c= ',       cn_balance_tol_c           ! tboas-fix
+    write(iulog,*) '    cn_balance_tol_n= ',       cn_balance_tol_n           ! tboas-fix
+    if (manure_nh4_frac < 0.0_r8 .or. manure_nh4_frac > 1.0_r8) then
+       call endrun(msg='ERROR: manure_nh4_frac must lie between 0 and 1')
+    end if
+    if (cn_balance_tol_c > 1.e-6_r8 .or. cn_balance_tol_n > 1.e-6_r8) then
+       write(iulog,*) 'WARNING: C/N mass-conservation tolerances have been widened beyond'
+       write(iulog,*) '         the CLM5 defaults (1e-7). Conservation errors up to the'
+       write(iulog,*) '         values above will NOT abort the run. Do not use for production.'
+    end if
+    if (abs(manure_fmet + manure_fcel + manure_flig - 1.0_r8) > 1.0e-6_r8) then
+       call endrun(msg='ERROR: manure_fmet + manure_fcel + manure_flig must equal 1.0')
+    end if
     write(iulog,*) '    use_grainproduct = ', use_grainproduct
     write(iulog,*) '    use_ozone = ', use_ozone
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
