@@ -400,6 +400,12 @@ contains
           nrad        => surfalb_inst%nrad_patch, &       ! number of canopy layers
           parsun_z    => solarabs_inst%parsun_z_patch, &  ! absorbed PAR for sunlit leaves
           parsha_z    => solarabs_inst%parsha_z_patch, &  ! absorbed PAR for shaded leaves
+          ! for leaf APAR
+          fabdl_sun_z  => surfalb_inst%fabdl_sun_z_patch, & ! absorbed sunlit leaf direct PAR
+          fabdl_sha_z  => surfalb_inst%fabdl_sha_z_patch, & ! absorbed shaded leaf direct PAR
+          fabil_sun_z  => surfalb_inst%fabil_sun_z_patch, & ! absorbed sunlit leaf diffuse PAR
+          fabil_sha_z  => surfalb_inst%fabil_sha_z_patch, & ! absorbed shaded leaf diffuse PAR
+
           laisun      => canopystate_inst%laisun_patch, & ! sunlit leaf area
           laisha      => canopystate_inst%laisha_patch, & ! shaded  leaf area
           laisun_z    => canopystate_inst%laisun_z_patch, & ! sunlit leaf area for canopy layer

@@ -55,6 +55,11 @@ module  PhotosynthesisMod
   private :: ft             ! photosynthesis temperature response
   private :: fth            ! photosynthesis temperature inhibition
   private :: fth25          ! scaling factor for photosynthesis temperature inhibition
+
+  private :: fluorescence	! calculate fluorescence
+  private :: fluorescence_upscaling	! upscale fluorescence to canopy level
+
+
   ! For plant hydraulics approach
   private :: hybrid_PHS     ! hybrid solver for ci
   private :: ci_func_PHS    ! ci function
@@ -137,6 +142,21 @@ module  PhotosynthesisMod
 
      real(r8), pointer, public  :: psnsun_patch      (:)   ! patch sunlit leaf photosynthesis     (umol CO2/m**2/s)
      real(r8), pointer, public  :: psnsha_patch      (:)   ! patch shaded leaf photosynthesis     (umol CO2/m**2/s)
+	 ! SIF-related variables
+     real(r8), pointer, public  :: sifsun_patch   	 (:)   ! patch sunlit leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+     real(r8), pointer, public  :: sifsha_patch      (:)   ! patch shaded leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+     
+	 real(r8), pointer, public  :: fyieldsun_patch	 (:)   ! patch sunlit fluorescence yield at 740 (um-1), diagnostic variable
+     real(r8), pointer, public  :: fyieldsha_patch 	 (:)   ! patch shaded fluorescence yield at 740 (um-1), diagnostic variable    
+     real(r8), pointer, public  :: pyieldsun_patch	 (:)   ! patch sunlit photochemical yield (photon absorbed photon emitted-1 for PAR), diagnostic variable
+     real(r8), pointer, public  :: pyieldsha_patch	 (:)   ! patch shaded photochemical yield (photon absorbed photon emitted-1 for PAR), diagnostic variable    
+     real(r8), pointer, public  :: xsatsun_patch 	 (:)   ! patch sunlit degree of light saturation for fluorescence model, diagnostic variable
+     real(r8), pointer, public  :: xsatsha_patch	 (:)   ! patch shaded degree of light saturation for fluorescence model, diagnostic variable
+     real(r8), pointer, public  :: parsun_patch   	 (:)   ! patch sunlit leaf absorbed PAR per unit leaf area (W /m**2)
+     real(r8), pointer, public  :: parsha_patch      (:)   ! patch shaded leaf absorbed PAR per unit leaf area (W /m**2)
+	 
+
+
      real(r8), pointer, public  :: c13_psnsun_patch  (:)   ! patch c13 sunlit leaf photosynthesis (umol 13CO2/m**2/s)
      real(r8), pointer, public  :: c13_psnsha_patch  (:)   ! patch c13 shaded leaf photosynthesis (umol 13CO2/m**2/s)
      real(r8), pointer, public  :: c14_psnsun_patch  (:)   ! patch c14 sunlit leaf photosynthesis (umol 14CO2/m**2/s)
@@ -144,6 +164,18 @@ module  PhotosynthesisMod
 
      real(r8), pointer, private :: psnsun_z_patch    (:,:) ! patch canopy layer: sunlit leaf photosynthesis   (umol CO2/m**2/s)
      real(r8), pointer, private :: psnsha_z_patch    (:,:) ! patch canopy layer: shaded leaf photosynthesis   (umol CO2/m**2/s)
+
+     ! SIF-related variables							
+     real(r8), pointer, private :: sifsun_z_patch    (:,:) ! patch canopy layer: sunlit leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+     real(r8), pointer, private :: sifsha_z_patch    (:,:) ! patch canopy layer: shaded leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+     real(r8), pointer, private :: fyieldsun_z_patch    (:,:) ! patch canopy layer: sunlit fluorescence yield at 740(um-1), diagnostic variable
+     real(r8), pointer, private :: fyieldsha_z_patch    (:,:) ! patch canopy layer: shaded fluorescence yield at 740 (um-1), diagnostic variable
+     real(r8), pointer, private :: pyieldsun_z_patch    (:,:) ! patch canopy layer: sunlit photochemical yield (photon absorbed photon emitted-1 for PAR), diagnostic variable
+     real(r8), pointer, private :: pyieldsha_z_patch    (:,:) ! patch canopy layer: shaded photochemical yield (photon absorbed photon emitted-1 for PAR), diagnostic variable
+     real(r8), pointer, private :: xsatsun_z_patch    (:,:) ! patch canopy layer: shaded degree of light saturation for fluorescence model, diagnostic variable
+     real(r8), pointer, private :: xsatsha_z_patch    (:,:) ! patch canopy layer: shaded degree of light saturation for fluorescence model, diagnostic variable
+
+
      real(r8), pointer, private :: psnsun_wc_patch   (:)   ! patch Rubsico-limited sunlit leaf photosynthesis (umol CO2/m**2/s)
      real(r8), pointer, private :: psnsha_wc_patch   (:)   ! patch Rubsico-limited shaded leaf photosynthesis (umol CO2/m**2/s)
      real(r8), pointer, private :: psnsun_wj_patch   (:)   ! patch RuBP-limited sunlit leaf photosynthesis    (umol CO2/m**2/s)
@@ -152,6 +184,17 @@ module  PhotosynthesisMod
      real(r8), pointer, private :: psnsha_wp_patch   (:)   ! patch product-limited shaded leaf photosynthesis (umol CO2/m**2/s)
 
      real(r8), pointer, public  :: fpsn_patch        (:)   ! patch photosynthesis                 (umol CO2/m**2 ground/s)
+
+     ! SIF-related variables							
+     real(r8), pointer, public  :: fsif_patch        (:)   ! patch fluorescence at 740                (W /m**2/um)
+     real(r8), pointer, public  :: fyield_patch		 (:)   ! patch fluorescence yield at 740, canopy weighted diagnostic (um-1)
+     real(r8), pointer, public  :: pyield_patch		 (:)   ! patch photochemical yield canopy weighted diagnostic (photon absorbed photon emitted-1 of PAR)
+     real(r8), pointer, public  :: fxsat_patch		 (:)   ! patch degree of light saturation for fluorescence model, canopy weighted diagnostic
+     real(r8), pointer, public  :: apar_patch        (:)   ! patch absorbed PAR                 (W /m**2)
+
+     real(r8), pointer, public  :: sifesc_patch        (:)   ! patch fluorescence at 740 nm escaping canopy    (W /m**2/um)
+     real(r8), pointer, public  :: sifescn_patch        (:)   ! patch fluorescence at 740 nm escaping canopy    (W /m**2/um)
+
      real(r8), pointer, private :: fpsn_wc_patch     (:)   ! patch Rubisco-limited photosynthesis (umol CO2/m**2 ground/s)
      real(r8), pointer, private :: fpsn_wj_patch     (:)   ! patch RuBP-limited photosynthesis    (umol CO2/m**2 ground/s)
      real(r8), pointer, private :: fpsn_wp_patch     (:)   ! patch product-limited photosynthesis (umol CO2/m**2 ground/s)
@@ -274,6 +317,19 @@ contains
 
     allocate(this%psnsun_patch      (begp:endp))           ; this%psnsun_patch      (:)   = nan
     allocate(this%psnsha_patch      (begp:endp))           ; this%psnsha_patch      (:)   = nan
+	
+	! for SIF
+    allocate(this%sifsun_patch      (begp:endp))           ; this%sifsun_patch      (:)   = nan
+    allocate(this%sifsha_patch      (begp:endp))           ; this%sifsha_patch      (:)   = nan
+    allocate(this%fyieldsun_patch   (begp:endp))           ; this%fyieldsun_patch   (:)   = nan
+    allocate(this%fyieldsha_patch   (begp:endp))           ; this%fyieldsha_patch   (:)   = nan
+    allocate(this%pyieldsun_patch   (begp:endp))           ; this%pyieldsun_patch   (:)   = nan
+    allocate(this%pyieldsha_patch   (begp:endp))           ; this%pyieldsha_patch   (:)   = nan
+    allocate(this%xsatsun_patch     (begp:endp))           ; this%xsatsun_patch     (:)   = nan
+    allocate(this%xsatsha_patch     (begp:endp))           ; this%xsatsha_patch     (:)   = nan
+    allocate(this%parsun_patch      (begp:endp))           ; this%parsun_patch      (:)   = nan
+    allocate(this%parsha_patch      (begp:endp))           ; this%parsha_patch      (:)   = nan
+
     allocate(this%c13_psnsun_patch  (begp:endp))           ; this%c13_psnsun_patch  (:)   = nan
     allocate(this%c13_psnsha_patch  (begp:endp))           ; this%c13_psnsha_patch  (:)   = nan
     allocate(this%c14_psnsun_patch  (begp:endp))           ; this%c14_psnsun_patch  (:)   = nan
@@ -281,6 +337,17 @@ contains
 
     allocate(this%psnsun_z_patch    (begp:endp,1:nlevcan)) ; this%psnsun_z_patch    (:,:) = nan
     allocate(this%psnsha_z_patch    (begp:endp,1:nlevcan)) ; this%psnsha_z_patch    (:,:) = nan
+
+	! for SIF
+    allocate(this%sifsun_z_patch    (begp:endp,1:nlevcan)) ; this%sifsun_z_patch    (:,:) = nan
+    allocate(this%sifsha_z_patch    (begp:endp,1:nlevcan)) ; this%sifsha_z_patch    (:,:) = nan
+    allocate(this%fyieldsun_z_patch    (begp:endp,1:nlevcan)) ; this%fyieldsun_z_patch    (:,:) = nan
+    allocate(this%fyieldsha_z_patch    (begp:endp,1:nlevcan)) ; this%fyieldsha_z_patch    (:,:) = nan
+    allocate(this%pyieldsun_z_patch    (begp:endp,1:nlevcan)) ; this%pyieldsun_z_patch    (:,:) = nan
+    allocate(this%pyieldsha_z_patch    (begp:endp,1:nlevcan)) ; this%pyieldsha_z_patch    (:,:) = nan
+    allocate(this%xsatsun_z_patch    (begp:endp,1:nlevcan)) ; this%xsatsun_z_patch    (:,:) = nan
+    allocate(this%xsatsha_z_patch    (begp:endp,1:nlevcan)) ; this%xsatsha_z_patch    (:,:) = nan
+
     allocate(this%psnsun_wc_patch   (begp:endp))           ; this%psnsun_wc_patch   (:)   = nan
     allocate(this%psnsha_wc_patch   (begp:endp))           ; this%psnsha_wc_patch   (:)   = nan
     allocate(this%psnsun_wj_patch   (begp:endp))           ; this%psnsun_wj_patch   (:)   = nan
@@ -288,6 +355,18 @@ contains
     allocate(this%psnsun_wp_patch   (begp:endp))           ; this%psnsun_wp_patch   (:)   = nan
     allocate(this%psnsha_wp_patch   (begp:endp))           ; this%psnsha_wp_patch   (:)   = nan
     allocate(this%fpsn_patch        (begp:endp))           ; this%fpsn_patch        (:)   = nan
+
+    ! for SIF 
+    allocate(this%fsif_patch        (begp:endp))           ; this%fsif_patch        (:)   = nan
+    allocate(this%fyield_patch      (begp:endp))           ; this%fyield_patch      (:)   = nan
+    allocate(this%pyield_patch      (begp:endp))           ; this%pyield_patch      (:)   = nan
+    allocate(this%fxsat_patch       (begp:endp))           ; this%fxsat_patch       (:)   = nan
+    allocate(this%apar_patch        (begp:endp))           ; this%apar_patch        (:)   = nan
+
+
+    allocate(this%sifesc_patch      (begp:endp))           ; this%sifesc_patch      (:)   = nan
+    allocate(this%sifescn_patch     (begp:endp))           ; this%sifescn_patch     (:)   = nan
+
     allocate(this%fpsn_wc_patch     (begp:endp))           ; this%fpsn_wc_patch     (:)   = nan
     allocate(this%fpsn_wj_patch     (begp:endp))           ; this%fpsn_wj_patch     (:)   = nan
     allocate(this%fpsn_wp_patch     (begp:endp))           ; this%fpsn_wp_patch     (:)   = nan
@@ -363,7 +442,81 @@ contains
        call hist_addfld1d (fname='FPSN', units='umol m-2 s-1',  &
             avgflag='A', long_name='photosynthesis', &
             ptr_patch=this%fpsn_patch, set_lake=0._r8, set_urb=0._r8)
+ 
+       !SIF
+	   this%apar_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='APAR', units='W/m2',  &
+			avgflag='A', long_name='absorbed PAR', &
+			ptr_patch=this%apar_patch, set_lake=spval, set_urb=spval)
+	   this%fsif_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='FSIF', units='W/m2/um',  &
+			avgflag='A', long_name='fluorescence at 740 nm', &
+			ptr_patch=this%fsif_patch, set_lake=0._r8, set_urb=0._r8)
+	   this%fyield_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='FYIELD', units='um-1',  &
+			avgflag='A', long_name='fluorescence yield at 740 nm', &
+			ptr_patch=this%fyield_patch, set_lake=0._r8, set_urb=0._r8)
+	   this%pyield_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='PYIELD', units='-',  &
+			avgflag='A', long_name='photochemical yield', &
+			ptr_patch=this%pyield_patch, set_lake=0._r8, set_urb=0._r8)
+	   this%fxsat_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='FXSAT', units='fraction',  &
+			avgflag='A', long_name='degree of light saturation for fluorescence model (ja/qabs)', &
+			ptr_patch=this%fxsat_patch, set_lake=0._r8, set_urb=0._r8)	 
 
+	   this%sifesc_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='SIFESC', units='W/m2/um',  &
+			avgflag='A', long_name='fluorescence escaping canopy', &
+			ptr_patch=this%sifesc_patch, set_lake=0._r8, set_urb=0._r8)
+	   this%sifescn_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='SIFESCN', units='W/m2/um',  &
+			avgflag='A', long_name='fluorescence escaping canopy (nadir)', &
+			ptr_patch=this%sifescn_patch, set_lake=0._r8, set_urb=0._r8)
+
+	   this%parsun_patch(begp:endp) = spval
+       call hist_addfld1d (fname='PARSUN', units='W/m2',  &
+			avgflag='A', long_name='absorbed PAR sunlit', &
+            ptr_patch=this%parsun_patch)
+       this%parsha_patch(begp:endp) = spval
+       call hist_addfld1d (fname='PARSHA', units='W/m2',  &
+			avgflag='A', long_name='absorbed PAR shaded', &
+            ptr_patch=this%parsha_patch)
+			
+	   this%sifsun_patch(begp:endp) = spval
+       call hist_addfld1d (fname='SIFSUN', units='W/m2/um',  &
+			avgflag='A', long_name='sunlit fluorescence at 740', &
+            ptr_patch=this%sifsun_patch)
+       this%sifsha_patch(begp:endp) = spval
+       call hist_addfld1d (fname='SIFSHA', units='W/m2/um',  &
+			avgflag='A', long_name='shaded fluorescence at 740', &
+            ptr_patch=this%sifsha_patch)
+	   this%fyieldsun_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='FYIELDSUN', units='um-1',  &
+			avgflag='A', long_name='sunlit fluorescence yield at 740', &
+			ptr_patch=this%fyieldsun_patch)
+	   this%fyieldsha_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='FYIELDSHA', units='um-1',  &
+			avgflag='A', long_name='shaded fluorescence yield at 740', &
+			ptr_patch=this%fyieldsha_patch)
+	   this%pyieldsun_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='PYIELDSUN', units='-',  &
+			avgflag='A', long_name='sunlit photochemical yield', &
+			ptr_patch=this%pyieldsun_patch)
+	   this%pyieldsha_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='PYIELDSHA', units='-',  &
+			avgflag='A', long_name='shaded photochemical yield', &
+			ptr_patch=this%pyieldsha_patch)
+	   this%xsatsun_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='XSATSUN', units='-',  &
+			avgflag='A', long_name='sunlit degree of light saturation', &
+			ptr_patch=this%xsatsun_patch)
+	   this%xsatsha_patch(begp:endp) = spval
+	   call hist_addfld1d (fname='XSATSHA', units='-',  &
+			avgflag='A', long_name='shaded degree of light saturation', &
+			ptr_patch=this%xsatsha_patch)
+
+			
        ! Don't by default output this rate limiting step as only makes sense if you are outputing
        ! the others each time-step
        this%fpsn_wc_patch(begp:endp) = spval
@@ -582,6 +735,19 @@ contains
        if (lun%ifspecial(l)) then
           this%psnsun_patch(p) = 0._r8
           this%psnsha_patch(p) = 0._r8
+
+          ! SIF  
+          this%sifsun_patch(p) = 0._r8
+          this%sifsha_patch(p) = 0._r8
+          this%fyieldsun_patch(p) = 0._r8
+          this%fyieldsha_patch(p) = 0._r8
+          this%pyieldsun_patch(p) = 0._r8
+          this%pyieldsha_patch(p) = 0._r8
+          this%xsatsun_patch(p) = 0._r8
+          this%xsatsha_patch(p) = 0._r8
+          this%parsun_patch(p) = 0._r8
+          this%parsha_patch(p) = 0._r8
+
           if ( use_c13 ) then
              this%c13_psnsun_patch(p) = 0._r8
              this%c13_psnsha_patch(p) = 0._r8
@@ -869,16 +1035,41 @@ contains
        l = patch%landunit(p)
        if (.not. lun%lakpoi(l)) then
           this%psnsun_patch(p)    = 0._r8
+          !SIF
+          this%sifsun_patch(p)    = 0._r8
+          this%fyieldsun_patch(p)    = 0._r8
+          this%pyieldsun_patch(p)    = 0._r8
+          this%xsatsun_patch(p)    = 0._r8
+          this%parsun_patch(p)    = 0._r8
+
           this%psnsun_wc_patch(p) = 0._r8
           this%psnsun_wj_patch(p) = 0._r8
           this%psnsun_wp_patch(p) = 0._r8
 
           this%psnsha_patch(p)    = 0._r8
+          !SIF
+          this%sifsha_patch(p)    = 0._r8
+          this%fyieldsha_patch(p)    = 0._r8
+          this%pyieldsha_patch(p)    = 0._r8
+          this%xsatsha_patch(p)    = 0._r8
+          this%parsha_patch(p)    = 0._r8
+
           this%psnsha_wc_patch(p) = 0._r8
           this%psnsha_wj_patch(p) = 0._r8
           this%psnsha_wp_patch(p) = 0._r8
 
           this%fpsn_patch(p)      = 0._r8
+          !SIF  
+          this%fsif_patch(p)      = 0._r8
+          this%fyield_patch(p)      = 0._r8
+          this%pyield_patch(p)      = 0._r8
+          this%fxsat_patch(p)      = 0._r8
+          this%apar_patch(p)      = 0._r8
+
+
+          this%sifesc_patch(p)      = 0._r8
+          this%sifescn_patch(p)      = 0._r8
+
           this%fpsn_wc_patch(p)   = 0._r8
           this%fpsn_wj_patch(p)   = 0._r8
           this%fpsn_wp_patch(p)   = 0._r8
@@ -929,6 +1120,17 @@ contains
 
     this%psnsun_patch(p) = 0._r8
     this%psnsha_patch(p) = 0._r8
+    !SIF
+    this%sifsun_patch(p) = 0._r8
+    this%sifsha_patch(p) = 0._r8
+    this%fyieldsun_patch(p) = 0._r8
+    this%fyieldsha_patch(p) = 0._r8
+    this%pyieldsun_patch(p) = 0._r8
+    this%pyieldsha_patch(p) = 0._r8
+    this%xsatsun_patch(p) = 0._r8
+    this%xsatsha_patch(p) = 0._r8
+    this%parsun_patch(p) = 0._r8
+    this%parsha_patch(p) = 0._r8
 
     if (use_c13) then
        this%c13_psnsun_patch(p) = 0._r8
@@ -1065,12 +1267,25 @@ contains
     real(r8) :: nscaler           ! leaf nitrogen scaling coefficient
 
     real(r8) :: ai                ! intermediate co-limited photosynthesis (umol CO2/m**2/s)
+!SIF
+!lje & bmr
+    real(r8) :: ja      ! electron transport rate as defined by Lee et al. 2015. (umol electrons/m**2/s)
+    real(r8) :: po0           ! dark adapted photochemical yield
+	real(r8) :: Kd,Kf,Kp	!rate constants
+
 
     real(r8) :: psn_wc_z(bounds%begp:bounds%endp,nlevcan) ! Rubisco-limited contribution to psn_z (umol CO2/m**2/s)
     real(r8) :: psn_wj_z(bounds%begp:bounds%endp,nlevcan) ! RuBP-limited contribution to psn_z (umol CO2/m**2/s)
     real(r8) :: psn_wp_z(bounds%begp:bounds%endp,nlevcan) ! product-limited contribution to psn_z (umol CO2/m**2/s)
 
     real(r8) :: psncan            ! canopy sum of psn_z
+    !SIF
+    real(r8) :: sifcan            ! canopy sum of sif_z
+    real(r8) :: fyieldcan            ! canopy sum of fs_z
+    real(r8) :: pyieldcan            ! canopy sum of ps_z
+    real(r8) :: xsatcan            ! canopy sum of xsat_z
+    real(r8) :: parcan            ! canopy sum of par_z
+
     real(r8) :: psncan_wc         ! canopy sum of psn_wc_z
     real(r8) :: psncan_wj         ! canopy sum of psn_wj_z
     real(r8) :: psncan_wp         ! canopy sum of psn_wp_z
@@ -1083,10 +1298,23 @@ contains
     real(r8) , pointer :: vcmaxcint   (:)
     real(r8) , pointer :: alphapsn    (:)
     real(r8) , pointer :: psn         (:)
+    !SIF
+    real(r8) , pointer :: sif_         (:)
+    real(r8) , pointer :: fs         (:)
+    real(r8) , pointer :: ps         (:)
+    real(r8) , pointer :: xsat         (:)
+    real(r8) , pointer :: par         (:)
+
     real(r8) , pointer :: psn_wc      (:)
     real(r8) , pointer :: psn_wj      (:)
     real(r8) , pointer :: psn_wp      (:)
     real(r8) , pointer :: psn_z       (:,:)
+    !SIF
+    real(r8) , pointer :: sif_z       (:,:)
+    real(r8) , pointer :: fs_z       (:,:)
+    real(r8) , pointer :: ps_z       (:,:)
+    real(r8) , pointer :: xsat_z       (:,:)
+
     real(r8) , pointer :: lmr         (:)
     real(r8) , pointer :: lmr_z       (:,:)
     real(r8) , pointer :: rs          (:)
@@ -1124,7 +1352,7 @@ contains
 
     associate(                                                 &
          c3psn      => pftcon%c3psn                          , & ! Input:  photosynthetic pathway: 0. = c4, 1. = c3
-	 crop       => pftcon%crop                           , & ! Input:  crop or not (0 =not crop and 1 = crop)
+		 crop       => pftcon%crop                           , & ! Input:  crop or not (0 =not crop and 1 = crop)
          leafcn     => pftcon%leafcn                         , & ! Input:  leaf C:N (gC/gN)
          flnr       => pftcon%flnr                           , & ! Input:  fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)
          fnitr      => pftcon%fnitr                          , & ! Input:  foliage nitrogen limitation factor (-)
@@ -1187,6 +1415,17 @@ contains
          lmr_z     =>    photosyns_inst%lmrsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
          psn       =>    photosyns_inst%psnsun_patch         ! Output: [real(r8) (:)   ]  foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_z     =>    photosyns_inst%psnsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage photosynthesis (umol co2 /m**2/ s) [always +]
+         ! SIF
+         sif_      =>    photosyns_inst%sifsun_patch         ! Output: [real(r8) (:)   ]  leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+         sif_z     =>    photosyns_inst%sifsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+         fs        =>    photosyns_inst%fyieldsun_patch      ! Output: [real(r8) (:)   ]  fluorescence yield at 740(um-1)
+         fs_z      =>    photosyns_inst%fyieldsun_z_patch    ! Output: [real(r8) (:,:) ]  canopy layer: fluorescence yield at 740(um-1)
+         ps        =>    photosyns_inst%pyieldsun_patch      ! Output: [real(r8) (:)   ]  photochemical yield (-)
+         ps_z      =>    photosyns_inst%pyieldsun_z_patch    ! Output: [real(r8) (:,:) ]  canopy layer: photochemical yield (-)
+         xsat      =>    photosyns_inst%xsatsun_patch        ! Output: [real(r8) (:)   ]  degree of light saturation for fluorescence model
+         xsat_z    =>    photosyns_inst%xsatsun_z_patch      ! Output: [real(r8) (:,:) ]  canopy layer: degree of light saturation for fluorescence model
+		 par	   =>	 photosyns_inst%parsun_patch      	 ! Output: [real(r8) (:)   ]  absorbed PAR (W /m**2)
+
          psn_wc    =>    photosyns_inst%psnsun_wc_patch      ! Output: [real(r8) (:)   ]  Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wj    =>    photosyns_inst%psnsun_wj_patch      ! Output: [real(r8) (:)   ]  RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wp    =>    photosyns_inst%psnsun_wp_patch      ! Output: [real(r8) (:)   ]  product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
@@ -1204,6 +1443,17 @@ contains
          lmr_z     =>    photosyns_inst%lmrsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
          psn       =>    photosyns_inst%psnsha_patch         ! Output: [real(r8) (:)   ]  foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_z     =>    photosyns_inst%psnsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage photosynthesis (umol co2 /m**2/ s) [always +]
+         ! SIF
+         sif_      =>    photosyns_inst%sifsha_patch         ! Output: [real(r8) (:)   ]  leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+         sif_z     =>    photosyns_inst%sifsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: leaf solar-induced fluorescence at 740 per unit leaf area (W /m**2/um)
+         fs        =>    photosyns_inst%fyieldsha_patch      ! Output: [real(r8) (:)   ]  fluorescence yield at 740(um-1)
+         fs_z      =>    photosyns_inst%fyieldsha_z_patch    ! Output: [real(r8) (:,:) ]  canopy layer: fluorescence yield at 740(um-1)
+         ps        =>    photosyns_inst%pyieldsha_patch      ! Output: [real(r8) (:)   ]  photochemical yield (-)
+         ps_z      =>    photosyns_inst%pyieldsha_z_patch    ! Output: [real(r8) (:,:) ]  canopy layer: photochemical yield (-)
+         xsat      =>    photosyns_inst%xsatsha_patch        ! Output: [real(r8) (:)   ]  degree of light saturation for fluorescence model
+         xsat_z    =>    photosyns_inst%xsatsha_z_patch      ! Output: [real(r8) (:,:) ]  canopy layer: degree of light saturation for fluorescence model
+		 par	   =>	 photosyns_inst%parsha_patch      	 ! Output: [real(r8) (:)   ]  absorbed PAR (W /m**2)
+
          psn_wc    =>    photosyns_inst%psnsha_wc_patch      ! Output: [real(r8) (:)   ]  Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wj    =>    photosyns_inst%psnsha_wj_patch      ! Output: [real(r8) (:)   ]  RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wp    =>    photosyns_inst%psnsha_wp_patch      ! Output: [real(r8) (:)   ]  product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
@@ -1396,7 +1646,6 @@ contains
                ! for trees 
             end if     
          end if        
-
 
          ! Parameters derived from vcmax25top. Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
          ! used jmax25 = 1.97 vcmax25, from Wullschleger (1993) Journal of Experimental Botany 44:907-920.
@@ -1595,6 +1844,18 @@ contains
                ag(p,iv) = 0._r8
                an(p,iv) = ag(p,iv) - lmr_z(p,iv)
                psn_z(p,iv) = 0._r8
+!SIF
+!lje & XY & bmr****
+               sif_z(p,iv) = 0._r8
+               fs_z(p,iv)  = 0._r8
+               ps_z(p,iv)  = 0._r8
+               xsat_z(p,iv) = 0._r8
+
+			   fs(p)=0._r8     !   All yields and light saturation go to zero at night
+			   ps(p)=0._r8
+			   xsat(p)=0._r8
+
+
                psn_wc_z(p,iv) = 0._r8
                psn_wj_z(p,iv) = 0._r8
                psn_wp_z(p,iv) = 0._r8
@@ -1698,6 +1959,47 @@ contains
                   psn_wp_z(p,iv) =  psn_z(p,iv)
                end if
 
+!SIF
+!lje & XY & BMR****
+		Kf   = 0.05_r8
+		Kd   = max(0.8738_r8,  0.0301_r8 * (t_veg(p) - 273.15_r8) + 0.0773_r8);
+		Kp   = 4.0_r8 			  
+        po0  = Kp / (Kf + Kp + Kd)      ! Defining dark adapted max photochemical yield
+  	
+	if(c3flag(p)) then
+	
+	   !! Original potential Ja without nitrogen downscaling. 
+	    ja= max(4._r8*psn_z(p,iv)*(ci_z(p,iv)+2._r8*cp(p))/(ci_z(p,iv)-cp(p)), 0._r8)   ! Lee et al. (2015) (umol electrons m-2 s-1)
+	   
+	   
+	   !! BMR Start actual Ja that includes nitrogen downscaling
+	   
+	   !!  co2(p) = forc_pco2(g) 
+	   
+	   !!  ci_z_downreg(p,iv) = co2(p) - ((an(p,iv) * (1._r8-downreg(p))) * &
+       !!                           forc_pbot(g) * &
+       !!                           (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv)))   ! Following subroutine Fractionation
+	     
+	   !!  ja= max(4._r8*psn_z(p,iv)*(1._r8-downreg(p))*(ci_z_downreg(p,iv)+2._r8*cp(p))/(ci_z_downreg(p,iv)-cp(p)), 0._r8)  ! (umol electrons m-2 s-1)	  
+				  
+	   
+	   !! BMR End actual Ja that includes nitrogen downscaling
+	   
+	   !! Note that xsat is essentially 1-x in which x is the one used in SCOPE [XY] 
+	   xsat_z(p,iv)=ja/qabs
+	   ps_z(p,iv)=xsat_z(p,iv)*po0
+	else
+	   ps_z(p,iv)=psn_z(p,iv)/aj(p,iv)*po0
+	endif
+	
+	
+            if (psn_z(p,iv) <= 0._r8)  xsat_z(p,iv)=0._r8
+            call fluorescence(ps_z(p,iv),po0,fs_z(p,iv),Kf,Kd,Kp)            
+	    	    	      
+            sif_z(p,iv) = fs_z(p,iv)*par_z(p,iv)                 ! (W m-2 um-1) 
+!lje & XY & BMR $$$$
+
+
                ! Make sure iterative solution is correct
 
                if (gs_mol(p,iv) < 0._r8) then
@@ -1733,6 +2035,12 @@ contains
          p = filterp(f)
 
          psncan = 0._r8
+         ! SIF
+         sifcan = 0._r8
+         fyieldcan = 0._r8
+         pyieldcan = 0._r8
+         xsatcan = 0._r8
+         parcan = 0._r8
          psncan_wc = 0._r8
          psncan_wj = 0._r8
          psncan_wp = 0._r8
@@ -1741,6 +2049,13 @@ contains
          laican = 0._r8
          do iv = 1, nrad(p)
             psncan = psncan + psn_z(p,iv) * lai_z(p,iv)
+            ! SIF
+            sifcan = sifcan + sif_z(p,iv) * lai_z(p,iv)
+            fyieldcan = fyieldcan + fs_z(p,iv) * lai_z(p,iv)
+            pyieldcan = pyieldcan + ps_z(p,iv) * lai_z(p,iv)
+            xsatcan = xsatcan + xsat_z(p,iv) * lai_z(p,iv)
+            parcan = parcan + par_z(p,iv) * lai_z(p,iv)
+
             psncan_wc = psncan_wc + psn_wc_z(p,iv) * lai_z(p,iv)
             psncan_wj = psncan_wj + psn_wj_z(p,iv) * lai_z(p,iv)
             psncan_wp = psncan_wp + psn_wp_z(p,iv) * lai_z(p,iv)
@@ -1750,6 +2065,13 @@ contains
          end do
          if (laican > 0._r8) then
             psn(p) = psncan / laican
+            ! SIF
+            sif_(p) = sifcan / laican
+            fs(p) = fyieldcan / laican
+            ps(p) = pyieldcan / laican
+            xsat(p) = xsatcan / laican
+            par(p) = parcan / laican
+
             psn_wc(p) = psncan_wc / laican
             psn_wj(p) = psncan_wj / laican
             psn_wp(p) = psncan_wp / laican
@@ -1757,6 +2079,13 @@ contains
             rs(p) = laican / gscan - rb(p)
          else
             psn(p) =  0._r8
+            ! SIF
+            sif_(p) =  0._r8
+            fs(p) =  0._r8
+            ps(p) =  0._r8
+            xsat(p) =  0._r8
+            par(p) =  0._r8
+
             psn_wc(p) =  0._r8
             psn_wj(p) =  0._r8
             psn_wp(p) =  0._r8
@@ -1770,17 +2099,28 @@ contains
   end subroutine Photosynthesis
 
   !------------------------------------------------------------------------------
+  ! Variables added for SIF simulation
   subroutine PhotosynthesisTotal (fn, filterp, &
-       atm2lnd_inst, canopystate_inst, photosyns_inst)
+       atm2lnd_inst, canopystate_inst, photosyns_inst, &
+	   bounds,surfalb_inst, solarabs_inst)
+
     !
     ! Determine total photosynthesis
-    !
+
+	! !Uses
+    use clm_varpar, only : numrad	
+
     ! !ARGUMENTS:
     integer                , intent(in)    :: fn                             ! size of pft filter
     integer                , intent(in)    :: filterp(fn)                    ! patch filter
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
     type(canopystate_type) , intent(in)    :: canopystate_inst
     type(photosyns_type)   , intent(inout) :: photosyns_inst
+    ! added for SIF simulation
+    type(bounds_type)      , intent(in)    :: bounds           
+    type(surfalb_type)     , intent(in)    :: surfalb_inst
+    type(solarabs_type)    , intent(in)    :: solarabs_inst
+
     !
     ! !LOCAL VARIABLES:
     integer :: f,fp,p,l,g               ! indices
@@ -1797,8 +2137,22 @@ contains
          laisun      => canopystate_inst%laisun_patch    , & ! Input:  [real(r8) (:) ]  sunlit leaf area
          laisha      => canopystate_inst%laisha_patch    , & ! Input:  [real(r8) (:) ]  shaded leaf area
 
+         elai        => canopystate_inst%elai_patch    , & ! Input: [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+
          psnsun      => photosyns_inst%psnsun_patch      , & ! Input:  [real(r8) (:) ]  sunlit leaf photosynthesis (umol CO2 /m**2/ s)
          psnsha      => photosyns_inst%psnsha_patch      , & ! Input:  [real(r8) (:) ]  shaded leaf photosynthesis (umol CO2 /m**2/ s)
+         ! SIF
+         sifsun      => photosyns_inst%sifsun_patch      , & ! Input:  [real(r8) (:) ]  sunlit leaf emitted fluorescence at 740(W /m**2/um)
+         sifsha      => photosyns_inst%sifsha_patch      , & ! Input:  [real(r8) (:) ]  shaded leaf emitted fluorescence at 740(W /m**2/um)
+         fyieldsun      => photosyns_inst%fyieldsun_patch      , & ! Input:  [real(r8) (:) ]  sunlit leaf fluorescence yield at 740(um-1)
+         fyieldsha      => photosyns_inst%fyieldsha_patch      , & ! Input:  [real(r8) (:) ]  shaded leaf fluorescence yield at 740(um-1)
+         pyieldsun      => photosyns_inst%pyieldsun_patch      , & ! Input:  [real(r8) (:) ]  sunlit leaf photochemical yield(-)
+         pyieldsha      => photosyns_inst%pyieldsha_patch      , & ! Input:  [real(r8) (:) ]  shaded leaf photochemical yield(-)
+         xsatsun      => photosyns_inst%xsatsun_patch      , & ! Input:  [real(r8) (:) ]  sunlit leaf degree of light saturation
+         xsatsha      => photosyns_inst%xsatsha_patch      , & ! Input:  [real(r8) (:) ]  shaded leaf degree of light saturation 
+         parsun      => photosyns_inst%parsun_patch      , & ! Input:  [real(r8) (:) ]  sunlit leaf absorbed PAR (W /m**2)
+         parsha      => photosyns_inst%parsha_patch      , & ! Input:  [real(r8) (:) ]  shaded leaf absorbed PAR (W /m**2)
+
          rc13_canair => photosyns_inst%rc13_canair_patch , & ! Output: [real(r8) (:) ]  C13O2/C12O2 in canopy air
          rc13_psnsun => photosyns_inst%rc13_psnsun_patch , & ! Output: [real(r8) (:) ]  C13O2/C12O2 in sunlit canopy psn flux
          rc13_psnsha => photosyns_inst%rc13_psnsha_patch , & ! Output: [real(r8) (:) ]  C13O2/C12O2 in shaded canopy psn flux
@@ -1815,6 +2169,13 @@ contains
          c14_psnsun  => photosyns_inst%c14_psnsun_patch  , & ! Output: [real(r8) (:) ]  sunlit leaf photosynthesis (umol 14CO2 /m**2/ s)
          c14_psnsha  => photosyns_inst%c14_psnsha_patch  , & ! Output: [real(r8) (:) ]  shaded leaf photosynthesis (umol 14CO2 /m**2/ s)
          fpsn        => photosyns_inst%fpsn_patch        , & ! Output: [real(r8) (:) ]  photosynthesis (umol CO2 /m**2 /s)
+         ! SIF
+         fsif        => photosyns_inst%fsif_patch        , & ! Output: [real(r8) (:) ]  emitted fluorescence at 740(W /m**2/um)
+         fyield      => photosyns_inst%fyield_patch      , & ! Output: [real(r8) (:) ]  fluorescence yield (um-1)
+         pyield      => photosyns_inst%pyield_patch      , & ! Output: [real(r8) (:) ]  photochemical yield(-)
+         fxsat       => photosyns_inst%fxsat_patch       , & ! Output: [real(r8) (:) ]  degree of light saturation
+         apar        => photosyns_inst%apar_patch        , & ! Output: [real(r8) (:) ]  absorbed par (W /m**2)
+
          fpsn_wc     => photosyns_inst%fpsn_wc_patch     , & ! Output: [real(r8) (:) ]  Rubisco-limited photosynthesis (umol CO2 /m**2 /s)
          fpsn_wj     => photosyns_inst%fpsn_wj_patch     , & ! Output: [real(r8) (:) ]  RuBP-limited photosynthesis (umol CO2 /m**2 /s)
          fpsn_wp     => photosyns_inst%fpsn_wp_patch       & ! Output: [real(r8) (:) ]  product-limited photosynthesis (umol CO2 /m**2 /s)
@@ -1840,6 +2201,19 @@ contains
 
          if (.not. use_fates) then
             fpsn(p)    = psnsun(p)   *laisun(p) + psnsha(p)   *laisha(p)
+            ! SIF
+            fsif(p)    = sifsun(p)   *laisun(p) + sifsha(p)   *laisha(p)
+            apar(p)    = parsun(p)   *laisun(p) + parsha(p)   *laisha(p)
+			if (elai(p)>0) then
+				fyield(p) =  (laisun(p)*fyieldsun(p) +  laisha(p)*fyieldsha(p))/ max(elai(p), 0.01_r8)
+				pyield(p) =  (laisun(p)*pyieldsun(p) +  laisha(p)*pyieldsha(p))/ max(elai(p), 0.01_r8)
+				fxsat(p) =  (laisun(p)*xsatsun(p) +  laisha(p)*xsatsha(p))/ max(elai(p), 0.01_r8)
+			else
+			fyield(p)=0._r8
+			pyield(p)=0._r8
+			fxsat(p)=0._r8
+			endif
+
             fpsn_wc(p) = psnsun_wc(p)*laisun(p) + psnsha_wc(p)*laisha(p)
             fpsn_wj(p) = psnsun_wj(p)*laisun(p) + psnsha_wj(p)*laisha(p)
             fpsn_wp(p) = psnsun_wp(p)*laisun(p) + psnsha_wp(p)*laisha(p)
@@ -1878,6 +2252,9 @@ contains
          end if
 
       end do
+        ! upscaling SIF
+		call fluorescence_upscaling(bounds,fn, filterp, &
+		surfalb_inst, solarabs_inst, canopystate_inst, photosyns_inst)
 
     end associate
 
@@ -2562,6 +2939,14 @@ contains
 
     real(r8) :: ai                ! intermediate co-limited photosynthesis (umol CO2/m**2/s)
 
+!SIF
+!lje & bmr****
+    real(r8) :: ja      ! electron transport rate as defined by Lee et al. 2015. (umol electrons/m**2/s)
+    real(r8) :: po0           ! dark adapted photochemical yield
+	real(r8) :: Kd,Kf,Kp 	!rate constants
+!lje & bmr$$$$   
+
+
     real(r8) :: psn_wc_z_sun(bounds%begp:bounds%endp,nlevcan) ! Rubisco-limited contribution to sunlit psn_z (umol CO2/m**2/s)
     real(r8) :: psn_wj_z_sun(bounds%begp:bounds%endp,nlevcan) ! RuBP-limited contribution to sunlit psn_z (umol CO2/m**2/s)
     real(r8) :: psn_wp_z_sun(bounds%begp:bounds%endp,nlevcan) ! product-limited contribution to sunlit psn_z (umol CO2/m**2/s)
@@ -2572,6 +2957,13 @@ contains
     real(r8) :: rh_leaf_sha(bounds%begp:bounds%endp)          ! fractional humidity at shaded leaf surface (dimensionless)
 
     real(r8) :: psncan_sun            ! canopy sum of sunlit psn_z
+    ! SIF
+    real(r8) :: sifcan_sun            ! canopy sum of sunlit sif_z
+    real(r8) :: fyieldcan_sun            ! canopy sum of sunlit fyield_z
+    real(r8) :: pyieldcan_sun            ! canopy sum of sunlit pyield_z
+    real(r8) :: xsatcan_sun            ! canopy sum of sunlit xsat_z
+    real(r8) :: parcan_sun            ! canopy sum of sunlit par_z
+
     real(r8) :: psncan_wc_sun         ! canopy sum of sunlit psn_wc_z
     real(r8) :: psncan_wj_sun         ! canopy sum of sunlit psn_wj_z
     real(r8) :: psncan_wp_sun         ! canopy sum of sunlit psn_wp_z
@@ -2579,6 +2971,13 @@ contains
     real(r8) :: gscan_sun             ! canopy sum of sunlit leaf conductance
     real(r8) :: laican_sun            ! canopy sum of sunlit lai_z
     real(r8) :: psncan_sha            ! canopy sum of shaded psn_z
+    ! SIF
+    real(r8) :: sifcan_sha            ! canopy sum of shaded sif_z
+    real(r8) :: fyieldcan_sha            ! canopy sum of shaded fyield_z
+    real(r8) :: pyieldcan_sha            ! canopy sum of shaded pyield_z
+    real(r8) :: xsatcan_sha            ! canopy sum of shaded xsat_z
+    real(r8) :: parcan_sha            ! canopy sum of shaded par_z
+
     real(r8) :: psncan_wc_sha         ! canopy sum of shaded psn_wc_z
     real(r8) :: psncan_wj_sha         ! canopy sum of shaded psn_wj_z
     real(r8) :: psncan_wp_sha         ! canopy sum of shaded psn_wp_z
@@ -2593,10 +2992,23 @@ contains
     real(r8) , pointer :: vcmaxcint_sun   (:)   ! leaf to canopy scaling coefficient, sunlit
     real(r8) , pointer :: alphapsn_sun    (:)   ! 13C fractionation factor for PSN, sunlit ()
     real(r8) , pointer :: psn_sun         (:)   ! foliage photosynthesis, sunlit (umol co2 /m**2/ s) [always +]
+    ! SIF
+    real(r8) , pointer :: sif_sun         (:)   ! foliage fluorescnece at 740 nm, sunlit (W /m**2/ um) [always +]
+    real(r8) , pointer :: fyield_sun         (:)   ! foliage fluorescnece yield at 740 nm, sunlit (um-1) [always +]
+    real(r8) , pointer :: pyield_sun         (:)   ! foliage photochemical yield, sunlit (-) [always +]
+    real(r8) , pointer :: xsat_sun         (:)   ! foliage degree of light saturation, sunlit [always +]
+    real(r8) , pointer :: par_sun         (:)   ! foliage absorbed PAR, sunlit (W /m**2) [always +]
+
     real(r8) , pointer :: psn_wc_sun      (:)   ! Rubisco-limited foliage photosynthesis, sunlit (umol co2 /m**2/ s) [always +]
     real(r8) , pointer :: psn_wj_sun      (:)   ! RuBP-limited foliage photosynthesis, sunlit (umol co2 /m**2/ s) [always +] 
     real(r8) , pointer :: psn_wp_sun      (:)   ! product-limited foliage photosynthesis, sunlit (umol co2 /m**2/ s) [always +]
     real(r8) , pointer :: psn_z_sun       (:,:) ! canopy layer: foliage photosynthesis, sunlit (umol co2 /m**2/ s) [always +]
+    ! SIF
+    real(r8) , pointer :: sif_z_sun       (:,:) ! canopy layer: foliage photosynthesis at 740 nm, sunlit (W /m**2/ um) [always +]
+    real(r8) , pointer :: fyield_z_sun       (:,:) ! canopy layer: foliage fluorescence yield at 740, sunlit (um-1) [always +]
+    real(r8) , pointer :: pyield_z_sun       (:,:) ! canopy layer: foliage photochemical yield, sunlit (-) [always +]
+    real(r8) , pointer :: xsat_z_sun       (:,:) ! canopy layer: foliage degree of light saturation, sunlit [always +]
+
     real(r8) , pointer :: lmr_sun         (:)   ! leaf maintenance respiration rate, sunlit (umol CO2/m**2/s)
     real(r8) , pointer :: lmr_z_sun       (:,:) ! canopy layer: leaf maintenance respiration rate, sunlit (umol CO2/m**2/s)
     real(r8) , pointer :: rs_sun          (:)   ! leaf stomatal resistance, sunlit (s/m)
@@ -2609,10 +3021,23 @@ contains
     real(r8) , pointer :: vcmaxcint_sha   (:)   ! leaf to canopy scaling coefficient, shaded
     real(r8) , pointer :: alphapsn_sha    (:)   ! 13C fractionation factor for PSN, shaded ()
     real(r8) , pointer :: psn_sha         (:)   ! foliage photosynthesis, shaded (umol co2 /m**2/ s) [always +]
+    ! SIF
+    real(r8) , pointer :: sif_sha         (:)   ! foliage fluorescence at 740, shaded (W /m**2/um) [always +]
+    real(r8) , pointer :: fyield_sha         (:)   ! foliage fluorescence yield at 740, shaded (um-1) [always +]
+    real(r8) , pointer :: pyield_sha         (:)   ! foliage photochemical yield, shaded (-) [always +]
+    real(r8) , pointer :: xsat_sha         (:)   ! foliage degree of light saturation, shaded  [always +]
+    real(r8) , pointer :: par_sha         (:)   ! foliage absorbed PAR, shaded (W /m**2) [always +]
+
     real(r8) , pointer :: psn_wc_sha      (:)   ! Rubisco-limited foliage photosynthesis, shaded (umol co2 /m**2/ s) [always +]
     real(r8) , pointer :: psn_wj_sha      (:)   ! RuBP-limited foliage photosynthesis, shaded (umol co2 /m**2/ s) [always +] 
     real(r8) , pointer :: psn_wp_sha      (:)   ! product-limited foliage photosynthesis, shaded (umol co2 /m**2/ s) [always +]
     real(r8) , pointer :: psn_z_sha       (:,:) ! canopy layer: foliage photosynthesis, shaded (umol co2 /m**2/ s) [always +]
+    ! SIF
+    real(r8) , pointer :: sif_z_sha       (:,:) ! canopy layer: foliage fluorescence at 740, shaded (W /m**2/ um) [always +]
+    real(r8) , pointer :: fyield_z_sha       (:,:) ! canopy layer: foliage fluorescence yield at 740, shaded (um-1) [always +]
+    real(r8) , pointer :: pyield_z_sha       (:,:) ! canopy layer: foliage photochemical yield, shaded (-) [always +]
+    real(r8) , pointer :: xsat_z_sha       (:,:) ! canopy layer: foliage degree of light saturation, shaded [always +]
+
     real(r8) , pointer :: lmr_sha         (:)   ! leaf maintenance respiration rate, shaded (umol CO2/m**2/s)
     real(r8) , pointer :: lmr_z_sha       (:,:) ! canopy layer: leaf maintenance respiration rate, shaded (umol CO2/m**2/s)
     real(r8) , pointer :: rs_sha          (:)   ! leaf stomatal resistance, shaded (s/m)
@@ -2753,6 +3178,17 @@ contains
       lmr_z_sun     =>    photosyns_inst%lmrsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
       psn_sun       =>    photosyns_inst%psnsun_patch         ! Output: [real(r8) (:)   ]  foliage photosynthesis (umol co2 /m**2/ s) [always +]
       psn_z_sun     =>    photosyns_inst%psnsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage photosynthesis (umol co2 /m**2/ s) [always +]
+      ! SIF
+      sif_sun       =>    photosyns_inst%sifsun_patch         ! Output: [real(r8) (:)   ]  foliage SIF at 740 nm (W /m**2 /um) [always +]
+      sif_z_sun     =>    photosyns_inst%sifsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage SIF at 740 nm (W /m**2 um-1) [always +]
+      fyield_sun       =>    photosyns_inst%fyieldsun_patch         ! Output: [real(r8) (:)   ]  foliage fluorescence yield at 740 nm (um-1) [always +]
+      fyield_z_sun     =>    photosyns_inst%fyieldsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage fluorescence yield at 740 nm (um-1) [always +]
+      pyield_sun       =>    photosyns_inst%pyieldsun_patch         ! Output: [real(r8) (:)   ]  foliage photochemical yield (-) [always +]
+      pyield_z_sun     =>    photosyns_inst%pyieldsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage photochemical yield (-) [always +]
+      xsat_sun       =>    photosyns_inst%xsatsun_patch         ! Output: [real(r8) (:)   ]  foliage  degree of light saturation  [always +]
+      xsat_z_sun     =>    photosyns_inst%xsatsun_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage  degree of light saturation  [always +]
+      par_sun       =>    photosyns_inst%parsun_patch         ! Output: [real(r8) (:)   ]  foliage absorbed PAR (W /m**2) [always +]
+
       psn_wc_sun    =>    photosyns_inst%psnsun_wc_patch      ! Output: [real(r8) (:)   ]  Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
       psn_wj_sun    =>    photosyns_inst%psnsun_wj_patch      ! Output: [real(r8) (:)   ]  RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
       psn_wp_sun    =>    photosyns_inst%psnsun_wp_patch      ! Output: [real(r8) (:)   ]  product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
@@ -2769,6 +3205,17 @@ contains
       lmr_z_sha     =>    photosyns_inst%lmrsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
       psn_sha       =>    photosyns_inst%psnsha_patch         ! Output: [real(r8) (:)   ]  foliage photosynthesis (umol co2 /m**2/ s) [always +]
       psn_z_sha     =>    photosyns_inst%psnsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage photosynthesis (umol co2 /m**2/ s) [always +]
+      ! SIF
+      sif_sha       =>    photosyns_inst%sifsha_patch         ! Output: [real(r8) (:)   ]  foliage SIF at 740 nm (W /m**2/ um) [always +]
+      sif_z_sha     =>    photosyns_inst%sifsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage SIF at 740 nm (W /m**2 um-1) [always +]
+      fyield_sha       =>    photosyns_inst%fyieldsha_patch         ! Output: [real(r8) (:)   ]  foliage fluorescence yield at 740 nm (um-1) [always +]
+      fyield_z_sha     =>    photosyns_inst%fyieldsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage fluorescence yield at 740 nm (um-1) [always +]
+      pyield_sha       =>    photosyns_inst%pyieldsha_patch         ! Output: [real(r8) (:)   ]  foliage photochemical yield (-) [always +]
+      pyield_z_sha     =>    photosyns_inst%pyieldsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage photochemical yield (-) [always +]
+      xsat_sha       =>    photosyns_inst%xsatsha_patch         ! Output: [real(r8) (:)   ]  foliage  degree of light saturation [always +]
+      xsat_z_sha     =>    photosyns_inst%xsatsha_z_patch       ! Output: [real(r8) (:,:) ]  canopy layer: foliage  degree of light saturation [always +]
+      par_sha       =>    photosyns_inst%parsha_patch         ! Output: [real(r8) (:)   ]  foliage absorbed PAR (W /m**2) [always +]
+
       psn_wc_sha    =>    photosyns_inst%psnsha_wc_patch      ! Output: [real(r8) (:)   ]  Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
       psn_wj_sha    =>    photosyns_inst%psnsha_wj_patch      ! Output: [real(r8) (:)   ]  RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
       psn_wp_sha    =>    photosyns_inst%psnsha_wp_patch      ! Output: [real(r8) (:)   ]  product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
@@ -3009,7 +3456,6 @@ contains
                ! for trees
             end if
          end if
-
          ! Parameters derived from vcmax25top. Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
          ! used jmax25 = 1.97 vcmax25, from Wullschleger (1993) Journal of Experimental Botany 44:907-920.
 
@@ -3219,6 +3665,11 @@ contains
          c = patch%column(p)
          g = patch%gridcell(p)
 
+         ! SIF
+		 Kf   = 0.05_r8
+		 Kd   = max(0.8738_r8,  0.0301_r8 * (t_veg(p) - 273.15_r8) + 0.0773_r8);
+		 Kp   = 4.0_r8 	
+
          ! Leaf boundary layer conductance, umol/m**2/s
 
          cf = forc_pbot(c)/(rgas*1.e-3_r8*tgcm(p))*1.e06_r8
@@ -3258,6 +3709,17 @@ contains
                   an_sun(p,iv) = ag(p,sun,iv) - lmr_z_sun(p,iv)
                endif
                psn_z_sun(p,iv) = 0._r8
+!SIF
+!lje & XY & bmr****
+               sif_z_sun(p,iv) = 0._r8
+               fyield_z_sun(p,iv) = 0._r8
+               pyield_z_sun(p,iv) = 0._r8
+               xsat_z_sun(p,iv) = 0._r8
+!bmr*****
+			   fyield_sun(p)=0._r8     !   All yields and light saturation go to zero at night
+			   pyield_sun(p)=0._r8
+			   xsat_sun(p)=0._r8			   
+
                psn_wc_z_sun(p,iv) = 0._r8
                psn_wj_z_sun(p,iv) = 0._r8
                psn_wp_z_sun(p,iv) = 0._r8
@@ -3275,6 +3737,17 @@ contains
                   an_sha(p,iv) = ag(p,sha,iv) - lmr_z_sha(p,iv)
                endif
                psn_z_sha(p,iv) = 0._r8
+!SIF
+!lje & XY & bmr****
+               sif_z_sha(p,iv) = 0._r8
+               fyield_z_sha(p,iv) = 0._r8
+               pyield_z_sha(p,iv) = 0._r8
+               xsat_z_sha(p,iv) = 0._r8
+!bmr*****
+			   fyield_sha(p)=0._r8     !   All yields and light saturation go to zero at night
+			   pyield_sha(p)=0._r8
+			   xsat_sha(p)=0._r8			   
+
                psn_wc_z_sha(p,iv) = 0._r8
                psn_wj_z_sha(p,iv) = 0._r8
                psn_wp_z_sha(p,iv) = 0._r8
@@ -3400,6 +3873,45 @@ contains
                else if (ap(p,sun,iv) < ac(p,sun,iv) .and. ap(p,sun,iv) < aj(p,sun,iv)) then
                   psn_wp_z_sun(p,iv) =  psn_z_sun(p,iv)
                end if
+!SIF
+!lje & XY & BMR****		  
+        po0  = Kp / (Kf + Kp + Kd)      ! Defining dark adapted max photochemical yield
+ 	
+			   if(c3flag(p)) then
+	
+				!! Original potential Ja without nitrogen downscaling. 
+				ja= max(4._r8*psn_z_sun(p,iv)*(ci_z_sun(p,iv)+2._r8*cp(p))/(ci_z_sun(p,iv)-cp(p)), 0._r8)   ! Lee et al. (2015) (umol electrons m-2 s-1)
+				!! BMR Start actual Ja that includes nitrogen downscaling
+	   
+				!!  co2(p) = forc_pco2(g) 
+	   
+				!!  ci_z_downreg(p,iv) = co2(p) - ((an(p,iv) * (1._r8-downreg(p))) * &
+				!!                           forc_pbot(g) * &
+				!!                           (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv)))   ! Following subroutine Fractionation
+	     
+				!!  ja= max(4._r8*psn_z(p,iv)*(1._r8-downreg(p))*(ci_z_downreg(p,iv)+2._r8*cp(p))/(ci_z_downreg(p,iv)-cp(p)), 0._r8)  ! (umol electrons m-2 s-1)	  
+				  
+	   
+				!! BMR End actual Ja that includes nitrogen downscaling
+	   
+				!! Note that xsat is essentially 1-x in which x is the one used in SCOPE [XY] 
+
+				qabs  = 0.5_r8 * (1._r8 - fnps) * par_z_sun(p,iv) * 4.6_r8
+				xsat_z_sun(p,iv)=ja/qabs
+				pyield_z_sun(p,iv)=xsat_z_sun(p,iv)*po0
+			   else
+				pyield_z_sun(p,iv)=psn_z_sun(p,iv)/aj(p,sun,iv)*po0
+			   endif
+	
+	
+            if (psn_z_sun(p,iv) <= 0._r8)  xsat_z_sun(p,iv)=0._r8
+            call fluorescence(pyield_z_sun(p,iv),po0,fyield_z_sun(p,iv),Kf,Kd,Kp)            
+	    	    	      
+            sif_z_sun(p,iv) = fyield_z_sun(p,iv)*par_z_sun(p,iv)                 ! (W m-2 um-1)
+!lje & XY & BMR $$$$
+
+
+
 
                psn_z_sha(p,iv) = ag(p,sha,iv)
                psn_z_sha(p,iv) = psn_z_sha(p,iv) * o3coefv_sha(p)
@@ -3415,6 +3927,42 @@ contains
                else if (ap(p,sha,iv) < ac(p,sha,iv) .and. ap(p,sha,iv) < aj(p,sha,iv)) then
                   psn_wp_z_sha(p,iv) =  psn_z_sha(p,iv)
                end if
+!SIF
+!lje & XY & BMR****
+       po0  = Kp / (Kf + Kp + Kd)      ! Defining dark adapted max photochemical yield
+  	
+			   if(c3flag(p)) then
+	
+				!! Original potential Ja without nitrogen downscaling. 
+				ja= max(4._r8*psn_z_sha(p,iv)*(ci_z_sha(p,iv)+2._r8*cp(p))/(ci_z_sha(p,iv)-cp(p)), 0._r8)   ! Lee et al. (2015) (umol electrons m-2 s-1)
+				!! BMR Start actual Ja that includes nitrogen downscaling
+	   
+				!!  co2(p) = forc_pco2(g) 
+	   
+				!!  ci_z_downreg(p,iv) = co2(p) - ((an(p,iv) * (1._r8-downreg(p))) * &
+				!!                           forc_pbot(g) * &
+				!!                           (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv)))   ! Following subroutine Fractionation
+	     
+				!!  ja= max(4._r8*psn_z(p,iv)*(1._r8-downreg(p))*(ci_z_downreg(p,iv)+2._r8*cp(p))/(ci_z_downreg(p,iv)-cp(p)), 0._r8)  ! (umol electrons m-2 s-1)	  
+				  
+	   
+				!! BMR End actual Ja that includes nitrogen downscaling
+	   
+				!! Note that xsat is essentially 1-x in which x is the one used in SCOPE [XY] 
+
+				qabs  = 0.5_r8 * (1._r8 - fnps) * par_z_sha(p,iv) * 4.6_r8
+				xsat_z_sha(p,iv)=ja/qabs
+				pyield_z_sha(p,iv)=xsat_z_sha(p,iv)*po0
+			   else
+				pyield_z_sha(p,iv)=psn_z_sha(p,iv)/aj(p,sha,iv)*po0
+			   endif
+	
+	
+            if (psn_z_sha(p,iv) <= 0._r8)  xsat_z_sha(p,iv)=0._r8
+            call fluorescence(pyield_z_sha(p,iv),po0,fyield_z_sha(p,iv),Kf,Kd,Kp)            
+	    	    	      
+            sif_z_sha(p,iv) = fyield_z_sha(p,iv)*par_z_sha(p,iv)                 ! (W m-2 um-1)
+!lje & XY & BMR $$$$
 
                ! Make sure iterative solution is correct
 
@@ -3460,6 +4008,13 @@ contains
          p = filterp(f)
 
          psncan_sun = 0._r8
+         ! SIF
+         sifcan_sun = 0._r8
+         fyieldcan_sun = 0._r8
+         pyieldcan_sun = 0._r8
+         xsatcan_sun = 0._r8
+         parcan_sun = 0._r8
+
          psncan_wc_sun = 0._r8
          psncan_wj_sun = 0._r8
          psncan_wp_sun = 0._r8
@@ -3468,6 +4023,13 @@ contains
          laican_sun = 0._r8
          do iv = 1, nrad(p)
             psncan_sun = psncan_sun + psn_z_sun(p,iv) * lai_z_sun(p,iv)
+            ! SIF
+            sifcan_sun = sifcan_sun + sif_z_sun(p,iv) * lai_z_sun(p,iv)
+            fyieldcan_sun = fyieldcan_sun + fyield_z_sun(p,iv) * lai_z_sun(p,iv)
+            pyieldcan_sun = pyieldcan_sun + pyield_z_sun(p,iv) * lai_z_sun(p,iv)
+            xsatcan_sun = xsatcan_sun + xsat_z_sun(p,iv) * lai_z_sun(p,iv)
+            parcan_sun = parcan_sun + par_z_sun(p,iv) * lai_z_sun(p,iv)
+
             psncan_wc_sun = psncan_wc_sun + psn_wc_z_sun(p,iv) * lai_z_sun(p,iv)
             psncan_wj_sun = psncan_wj_sun + psn_wj_z_sun(p,iv) * lai_z_sun(p,iv)
             psncan_wp_sun = psncan_wp_sun + psn_wp_z_sun(p,iv) * lai_z_sun(p,iv)
@@ -3481,6 +4043,13 @@ contains
          end do
          if (laican_sun > 0._r8) then
             psn_sun(p) = psncan_sun / laican_sun
+            ! SIF
+            sif_sun(p) = sifcan_sun / laican_sun
+            fyield_sun(p) = fyieldcan_sun / laican_sun
+            pyield_sun(p) = pyieldcan_sun / laican_sun
+            xsat_sun(p) = xsatcan_sun / laican_sun
+            par_sun(p) = parcan_sun / laican_sun
+
             psn_wc_sun(p) = psncan_wc_sun / laican_sun
             psn_wj_sun(p) = psncan_wj_sun / laican_sun
             psn_wp_sun(p) = psncan_wp_sun / laican_sun
@@ -3488,6 +4057,13 @@ contains
             rs_sun(p) = laican_sun / gscan_sun - rb(p)
          else
             psn_sun(p) =  0._r8
+            ! SIF
+            sif_sun(p) =  0._r8
+            fyield_sun(p) =  0._r8
+            pyield_sun(p) =  0._r8
+            xsat_sun(p) =  0._r8
+            par_sun(p) =  0._r8
+
             psn_wc_sun(p) =  0._r8
             psn_wj_sun(p) =  0._r8
             psn_wp_sun(p) =  0._r8
@@ -3495,6 +4071,14 @@ contains
             rs_sun(p) = 0._r8
          end if
          psncan_sha = 0._r8
+            ! SIF
+         sifcan_sha = 0._r8
+         fyieldcan_sha = 0._r8
+         pyieldcan_sha = 0._r8
+         xsatcan_sha = 0._r8
+         parcan_sha = 0._r8
+         parcan_sha = 0._r8
+
          psncan_wc_sha = 0._r8
          psncan_wj_sha = 0._r8
          psncan_wp_sha = 0._r8
@@ -3503,6 +4087,13 @@ contains
          laican_sha = 0._r8
          do iv = 1, nrad(p)
             psncan_sha = psncan_sha + psn_z_sha(p,iv) * lai_z_sha(p,iv)
+            ! SIF
+            sifcan_sha = sifcan_sha + sif_z_sha(p,iv) * lai_z_sha(p,iv)
+            fyieldcan_sha = fyieldcan_sha + fyield_z_sha(p,iv) * lai_z_sha(p,iv)
+            pyieldcan_sha = pyieldcan_sha + pyield_z_sha(p,iv) * lai_z_sha(p,iv)
+            xsatcan_sha = xsatcan_sha + xsat_z_sha(p,iv) * lai_z_sha(p,iv)
+            parcan_sha = parcan_sha + par_z_sha(p,iv) * lai_z_sha(p,iv)
+
             psncan_wc_sha = psncan_wc_sha + psn_wc_z_sha(p,iv) * lai_z_sha(p,iv)
             psncan_wj_sha = psncan_wj_sha + psn_wj_z_sha(p,iv) * lai_z_sha(p,iv)
             psncan_wp_sha = psncan_wp_sha + psn_wp_z_sha(p,iv) * lai_z_sha(p,iv)
@@ -3516,6 +4107,13 @@ contains
          end do
          if (laican_sha > 0._r8) then
             psn_sha(p) = psncan_sha / laican_sha
+            ! SIF
+            sif_sha(p) = sifcan_sha / laican_sha
+            fyield_sha(p) = fyieldcan_sha / laican_sha
+            pyield_sha(p) = pyieldcan_sha / laican_sha
+            xsat_sha(p) = xsatcan_sha / laican_sha
+            par_sha(p) = parcan_sha / laican_sha
+
             psn_wc_sha(p) = psncan_wc_sha / laican_sha
             psn_wj_sha(p) = psncan_wj_sha / laican_sha
             psn_wp_sha(p) = psncan_wp_sha / laican_sha
@@ -3523,6 +4121,13 @@ contains
             rs_sha(p) = laican_sha / gscan_sha - rb(p)
          else
             psn_sha(p) =  0._r8
+            ! SIF
+            sif_sha(p) =  0._r8
+            fyield_sha(p) =  0._r8
+            pyield_sha(p) =  0._r8
+            xsat_sha(p) =  0._r8
+            par_sha(p) =  0._r8
+
             psn_wc_sha(p) =  0._r8
             psn_wj_sha(p) =  0._r8
             psn_wp_sha(p) =  0._r8
@@ -4929,5 +5534,139 @@ contains
     end associate
     
   end function d1plc  
+  !------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: Fluorescence
+!
+! !INTERFACE:
+  subroutine fluorescence(ps,po0,fs,Kf,Kd,Kp)
+!rl update to the method used by SCOPE
+  !
+  !! DESCRIPTION:
+  ! Chlorophyll fluorescence
   
+  ! !REVISION HISTORY:
+  ! writen by Jung-Eun Lee using van der Tol and Berry (2012)
+  ! modified by Mengxi Wu
+  ! Adopted by Raczka 10/15/17
+  
+  !!USES
+  use shr_kind_mod , only : r8 => shr_kind_r8
+  !
+  !ARGUMENTS:
+  implicit none
+  real(r8), intent(in) :: ps   ! photochemical yield
+  real(r8), intent(in) :: po0  ! dark adapted photochemical yield
+  real(r8), intent(in) :: Kf   ! rate constant for fluorescence
+  real(r8), intent(in) :: Kd   ! rate constant for thermal deactivation
+  real(r8), intent(in) :: Kp   ! rate constant for photochemistry
+  real(r8), intent(out) :: fs  ! fluorescence yield at 740
+  real(r8) :: Kn       ! rate constant for non-photochemical quenching
+  real(r8) :: x        ! degree of light saturation
+  real(r8) :: fm       ! light adapted fluorescence yield Fm
+  real(r8) :: fo0      ! dark adapted fluorescence yield
+  real(r8) :: eta      ! from SCOPE
+  real(r8) :: x_alpha  ! for Kn
+  
+  x    = 1._r8 - ps / po0
+  x_alpha = exp(log(x) * 2.83_r8)
+  Kn = 2.48_r8 * (1.0_r8 + 0.114_r8) * x_alpha /(0.114_r8 + x_alpha)
+
+!  Kn   = (6.2473_r8 * x - 0.5944_r8) * x       ! empirical fit to Flexas' data
+  !  Kn   = (3.9867_r8 * x - 1.0589_r8) * x       ! empirical fit to Flexas, Daumard, Rascher, Berry data
+   
+  fm   = Kf / (Kf + Kd + Kn)
+  fs   = fm * (1._r8 - ps)
+
+  fo0  = Kf / (Kf + Kp + Kd)
+  eta  = fs / fo0 ! SCOPE method
+  fs   = eta * 0.0616 
+  
+  end subroutine fluorescence  
+
+!rl up ****
+  subroutine fluorescence_upscaling(bounds,fn, filterp, &
+		surfalb_inst, solarabs_inst, canopystate_inst, photosyns_inst)
+	!
+	!!DESCRIPTION:
+	! convert total emitted SIF to SIF escaping canopy
+	! !Uses
+    use clm_varpar, only : numrad	
+	! !ARGUMENTS
+    type(bounds_type)      , intent(in)    :: bounds           
+    integer                , intent(in)    :: fn                             ! size of pft filter
+    integer                , intent(in)    :: filterp(fn)                    ! patch filter
+    type(surfalb_type)     , intent(in)    :: surfalb_inst
+    type(solarabs_type)    , intent(in)    :: solarabs_inst
+    type(canopystate_type) , intent(in)    :: canopystate_inst
+    type(photosyns_type)   , intent(inout) :: photosyns_inst
+	
+    ! !LOCAL VARIABLES:
+    integer :: f,p,c                ! indices
+	real(r8) :: i0v, i0s			! interception by vegetation, soil
+	real(r8) :: Rc, Rs, Rv		 	! reflectance of canopy, soil, vegetation
+	real(r8) :: Rcn, Rsn, Rvn	 	! nadir reflectance of canopy, soil, vegetation
+!	real(r8), parameter :: conv740 = 15.1296_r8 ! Conversion of leaf level spectrally integrated SIF to SIF at 740 nm
+											   ! derived from SCOPE with chlorophyll content of 40 ug/m2, calc_PSI = 0
+	
+	associate(                                           &
+         elai        => canopystate_inst%elai_patch    , & ! Input: [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+         esai        => canopystate_inst%esai_patch    , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
+
+         fsif        => photosyns_inst%fsif_patch      , & ! Input: [real(r8) (:) ]  total emitted fluorescence (W /m**2)	
+         ftdd        => surfalb_inst%ftdd_patch        , & ! Input: [real(r8) (:,:) ]  down direct flux below canopy per unit direct flx
+         ftii        => surfalb_inst%ftii_patch        , & ! Input: [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flx
+         albd        => surfalb_inst%albd_patch        , & ! Input: [real(r8) (:,:) ]  surface albedo (direct)               
+         albi        => surfalb_inst%albi_patch        , & ! Input: [real(r8) (:,:) ]  surface albedo (diffuse)              
+         nrad        => surfalb_inst%nrad_patch        , & ! Input:  [integer  (:)   ]  number of canopy layers, above snow for radiative transfer
+         albgrd      => surfalb_inst%albgrd_col        , & ! Input:  [real(r8) (:,:) ]  ground albedo (direct) (column-level) 
+         albgri      => surfalb_inst%albgri_col        , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level) 
+         fsds_d      => solarabs_inst%fsds_nir_d_patch        , & ! Input:  [real(r8) (:) ]  incident direct beam nir solar radiation (W/m**2)
+         fsds_i      => solarabs_inst%fsds_nir_i_patch        , & ! Input:  [real(r8) (:) ]  incident diffuse nir solar radiation (W/m**2)
+         omega       => surfalb_inst%omega_patch       , & ! Input:  [real(r8) (:,:) ]  fraction of intercepted radiation that is scattered(snow considered)
+         
+		 sifesc      => photosyns_inst%sifesc_patch    , & ! Output: [real(r8) (:) ]  fluorescence escaping canopy (W /m**2 )	
+		 sifescn     => photosyns_inst%sifescn_patch    , & ! Output: [real(r8) (:) ]  Nadir: fluorescence escaping canopy (W /m**2 )
+
+         refd        => surfalb_inst%refd_patch        , & ! Input: [real(r8) (:,:) ]  surface albedo (direct)               
+         refi        => surfalb_inst%refi_patch        , & ! Input: [real(r8) (:,:) ]  surface albedo (diffuse)               		 
+         ftnn        => surfalb_inst%ftnn_patch        , & ! Input: [real(r8) (:,:) ]  down nadir flux below canopy per unit nadir flx              		 
+!         ftid        => surfalb_inst%ftid_patch        , & ! Input: [real(r8) (:,:) ]  surface albedo (diffuse)               		 
+         ftin        => surfalb_inst%ftin_patch         & ! Input: [real(r8) (:,:) ]  down diffuse flux below canopy (per unit nadir beam flux)             		 
+		)
+		
+    do f = 1, fn
+       p = filterp(f)
+       c = patch%column(p)	   
+       if (.not. use_fates) then
+		if (fsif(p) > 0._r8 .AND. (fsds_i(p)+fsds_d(p))>0._r8) then
+
+		  i0s=(fsds_i(p) * exp((-elai(p)-esai(p)))+fsds_d(p)*ftdd(p,numrad))/(fsds_i(p)+fsds_d(p)) 
+		  i0v=1._r8-i0s
+		  Rc=(fsds_i(p) * albi(p,numrad)+fsds_d(p)*albd(p,numrad))/(fsds_i(p)+fsds_d(p))
+
+		  Rs=(fsds_i(p) * exp((-elai(p)-esai(p))) * albgri(c,numrad)+fsds_d(p)*ftdd(p,numrad)*albgrd(c,numrad)) / (fsds_i(p)+fsds_d(p)) * ftii(p,numrad)
+		  Rv=Rc-Rs
+		  Rcn=(fsds_i(p) * refi(p,numrad) + fsds_d(p) * refd(p,numrad)) / (fsds_i(p) + fsds_d(p))
+
+		  Rsn=(fsds_i(p) * exp((-elai(p)-esai(p))) * albgri(c,numrad)+fsds_d(p)*ftdd(p,numrad)*albgrd(c,numrad)) / (fsds_i(p)+fsds_d(p)) * (ftin(p,numrad)+ftnn(p,numrad))
+		  Rvn=Rcn-Rsn
+		  if (i0v > 0._r8 .AND. omega(p,numrad) > 0._r8 ) then
+			sifesc(p)=fsif(p) * Rv / i0v / omega(p,numrad) !
+			sifescn(p)=fsif(p) * Rvn / i0v / omega(p,numrad) !
+		  else
+			sifesc(p)= 0._r8
+			sifescn(p)= 0._r8
+		  end if
+		 else
+		  sifesc(p)=fsif(p)
+		  sifescn(p)=fsif(p)
+		 end if
+	   end if
+	end do
+		
+	end associate
+  end subroutine fluorescence_upscaling
+
 end module PhotosynthesisMod

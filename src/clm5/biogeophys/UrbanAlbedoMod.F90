@@ -154,6 +154,14 @@ contains
          albgri             => surfalb_inst%albgri_col              , & ! Output: [real(r8) (:,:) ]  urban col ground albedo (diffuse)
          albd               => surfalb_inst%albd_patch              , & ! Output  [real(r8) (:,:) ]  urban pft surface albedo (direct)                         
          albi               => surfalb_inst%albi_patch              , & ! Output: [real(r8) (:,:) ]  urban pft surface albedo (diffuse)                        
+         ! for nadir viewing
+         ftnn               => surfalb_inst%ftnn_patch              , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
+         ftin               => surfalb_inst%ftin_patch              , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
+         refd               => surfalb_inst%refd_patch              , & ! Output  [real(r8) (:,:) ]  urban pft surface albedo (direct)                         
+         refi               => surfalb_inst%refi_patch              , & ! Output: [real(r8) (:,:) ]  urban pft surface albedo (diffuse)                        
+         refd_gr            => surfalb_inst%refd_gr_patch              , & ! Output  [real(r8) (:,:) ]  urban pft surface albedo (direct)                         
+         refi_gr            => surfalb_inst%refi_gr_patch              , & ! Output: [real(r8) (:,:) ]  urban pft surface albedo (diffuse)                        
+
          
          begl               => bounds%begl                          , &
          vf_sr              => urbanparams_inst%vf_sr               , & ! Input:  [real(r8) (:) ]  view factor of sky for road
@@ -191,15 +199,39 @@ contains
             if (col%itype(c) == icol_sunwall) then
                albd(p,ib) = vf_sw(l)
                albi(p,ib) = vf_sw(l)
+               ! for nidir viewing
+               refd(p,ib) = vf_sw(l)
+               refi(p,ib) = vf_sw(l)
+               refd_gr(p,ib) = vf_sw(l)
+               refi_gr(p,ib) = vf_sw(l)
+ 
             else if (col%itype(c) == icol_shadewall) then
                albd(p,ib) = vf_sw(l)
                albi(p,ib) = vf_sw(l)
+               ! for nidir viewing
+               refd(p,ib) = vf_sw(l)
+               refi(p,ib) = vf_sw(l)
+               refd_gr(p,ib) = vf_sw(l)
+               refi_gr(p,ib) = vf_sw(l)			   
+ 
             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
                albd(p,ib) = vf_sr(l)
                albi(p,ib) = vf_sr(l)
-            else if (col%itype(c) == icol_roof) then
+               ! for nidir viewing
+               refd(p,ib) = vf_sr(l)
+               refi(p,ib) = vf_sr(l)
+               refd_gr(p,ib) = vf_sr(l)
+               refi_gr(p,ib) = vf_sr(l)
+ 
+		    else if (col%itype(c) == icol_roof) then
                albd(p,ib) = 1._r8
                albi(p,ib) = 1._r8
+               ! for nidir viewing
+               refd(p,ib) = 1._r8
+               refi(p,ib) = 1._r8
+               refd_gr(p,ib) = 1._r8
+               refi_gr(p,ib) = 1._r8
+ 
             endif
             fabd(p,ib)     = 0._r8
             fabd_sun(p,ib) = 0._r8
@@ -218,6 +250,14 @@ contains
             else
                ftii(p,ib)  = 0._r8
             end if
+            ! for nidir viewing
+			if (coszen(l) > 0._r8) then
+               ftnn(p,ib)  = 1._r8
+            else
+               ftnn(p,ib)  = 0._r8
+            end if
+            ftin(p,ib)     = 0._r8
+ 
          end do
       end do
 
@@ -422,7 +462,13 @@ contains
                c = patch%column(p)
                albd(p,ib) = albgrd(c,ib)
                albi(p,ib) = albgri(c,ib)
-            end do
+               ! for nidir viewing
+               refd(p,ib) = albgrd(c,ib)
+               refi(p,ib) = albgri(c,ib)
+               refd_gr(p,ib) = albgrd(c,ib)
+               refi_gr(p,ib) = albgri(c,ib)
+   
+          end do
          end do
       end if
 
@@ -1283,4 +1329,3 @@ contains
   end subroutine net_solar
 
 end module UrbanAlbedoMod
-

@@ -1296,7 +1296,8 @@ contains
          ! Determine total photosynthesis
          
          call PhotosynthesisTotal(fn, filterp, &
-              atm2lnd_inst, canopystate_inst, photosyns_inst)
+              atm2lnd_inst, canopystate_inst, photosyns_inst, &
+              bounds, surfalb_inst, solarabs_inst)
          
          ! Calculate ozone stress. This needs to be done after rssun and rsshade are
          ! computed by the Photosynthesis routine. However, Photosynthesis also uses the
@@ -1379,8 +1380,6 @@ contains
 
     end associate
 
-
   end subroutine CanopyFluxes
 
 end module CanopyFluxesMod
-

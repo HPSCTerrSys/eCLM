@@ -39,6 +39,9 @@ module SurfaceAlbedoType
 
      real(r8), pointer :: ftdd_patch           (:,:) ! patch down direct flux below canopy per unit direct flx    (numrad)
      real(r8), pointer :: ftid_patch           (:,:) ! patch down diffuse flux below canopy per unit direct flx   (numrad)
+     ! for nadir viewing
+     real(r8), pointer :: ftin_patch           (:,:) ! patch down diffuse flux below canopy per unit nadir flx   (numrad)
+		
      real(r8), pointer :: ftii_patch           (:,:) ! patch down diffuse flux below canopy per unit diffuse flx  (numrad)
      real(r8), pointer :: fabd_patch           (:,:) ! patch flux absorbed by canopy per unit direct flux         (numrad)
      real(r8), pointer :: fabd_sun_patch       (:,:) ! patch flux absorbed by sunlit canopy per unit direct flux  (numrad)
@@ -50,6 +53,12 @@ module SurfaceAlbedoType
      real(r8), pointer :: fabd_sha_z_patch     (:,:) ! patch absorbed shaded leaf direct  PAR (per unit lai+sai) for each canopy layer
      real(r8), pointer :: fabi_sun_z_patch     (:,:) ! patch absorbed sunlit leaf diffuse PAR (per unit lai+sai) for each canopy layer
      real(r8), pointer :: fabi_sha_z_patch     (:,:) ! patch absorbed shaded leaf diffuse PAR (per unit lai+sai) for each canopy layer
+     ! for leaf APAR
+     real(r8), pointer :: fabdl_sun_z_patch    (:,:) ! patch absorbed sunlit leaf direct  PAR (per unit lai) for each canopy layer
+     real(r8), pointer :: fabdl_sha_z_patch    (:,:) ! patch absorbed shaded leaf direct  PAR (per unit lai) for each canopy layer
+     real(r8), pointer :: fabil_sun_z_patch    (:,:) ! patch absorbed sunlit leaf diffuse PAR (per unit lai) for each canopy layer
+     real(r8), pointer :: fabil_sha_z_patch    (:,:) ! patch absorbed shaded leaf diffuse PAR (per unit lai) for each canopy layer
+
      real(r8), pointer :: flx_absdv_col        (:,:) ! col absorbed flux per unit incident direct flux:  VIS (col,lyr) [frc]
      real(r8), pointer :: flx_absdn_col        (:,:) ! col absorbed flux per unit incident direct flux:  NIR (col,lyr) [frc]
      real(r8), pointer :: flx_absiv_col        (:,:) ! col absorbed flux per unit incident diffuse flux: VIS (col,lyr) [frc]
@@ -63,6 +72,21 @@ module SurfaceAlbedoType
      real(r8) , pointer :: vcmaxcintsun_patch  (:)   ! patch leaf to canopy scaling coefficient, sunlit leaf vcmax   
      real(r8) , pointer :: vcmaxcintsha_patch  (:)   ! patch leaf to canopy scaling coefficient, shaded leaf vcmax   
 
+     ! for leaf APAR
+     real(r8), pointer :: omega_patch          (:,:) ! patch fraction of intercepted radiation that is scattered (0 to 1) (include snow)  (numrad)
+     real(r8), pointer :: fabsl_patch          (:,:) ! patch fraction of intercepted radiation that is scattered (0 to 1) (include snow)  (numrad)
+     real(r8), pointer :: fabsv_patch          (:,:) ! patch fraction of intercepted radiation that is scattered (0 to 1) (include snow)  (numrad)
+	 
+     ! for nadir viewing
+     real(r8), pointer :: refd_patch           (:,:) ! patch nadir flux above canopy per unit direct flx    (numrad)
+     real(r8), pointer :: refi_patch           (:,:) ! patch nadir flux above canopy per unit diffuse flx    (numrad)
+     real(r8), pointer :: refd_can_patch       (:,:) ! patch canopy contribution to nadir flux above canopy per unit direct flx    (numrad)
+     real(r8), pointer :: refi_can_patch       (:,:) ! patch canopy contribution to nadir flux above canopy per unit diffuse flx    (numrad)
+     real(r8), pointer :: refd_gr_patch        (:,:) ! patch ground contribution to nadir flux above canopy per unit direct flx    (numrad)
+     real(r8), pointer :: refi_gr_patch        (:,:) ! patch ground contribution to nadir flux above canopy per unit diffuse flx    (numrad)
+     real(r8), pointer :: ftnn_patch      	   (:,:) ! patch down direct nadir flux below canopy per unit direct nadir flx    (numrad)
+     real(r8), pointer :: tii_patch      	   (:,:) ! patch down direct nadir flux below canopy per unit direct nadir flx    (numrad)
+		
    contains
 
      procedure, public  :: Init         
@@ -134,6 +158,9 @@ contains
     allocate(this%albiSF_patch       (begp:endp,numrad))       ; this%albiSF_patch       (:,:) = nan
     allocate(this%ftdd_patch         (begp:endp,numrad))       ; this%ftdd_patch         (:,:) = nan
     allocate(this%ftid_patch         (begp:endp,numrad))       ; this%ftid_patch         (:,:) = nan
+    ! for nadir viewing
+    allocate(this%ftin_patch         (begp:endp,numrad))       ; this%ftin_patch         (:,:) = nan
+		
     allocate(this%ftii_patch         (begp:endp,numrad))       ; this%ftii_patch         (:,:) = nan
     allocate(this%fabd_patch         (begp:endp,numrad))       ; this%fabd_patch         (:,:) = nan
     allocate(this%fabd_sun_patch     (begp:endp,numrad))       ; this%fabd_sun_patch     (:,:) = nan
@@ -145,6 +172,12 @@ contains
     allocate(this%fabd_sha_z_patch   (begp:endp,nlevcan))      ; this%fabd_sha_z_patch   (:,:) = 0._r8
     allocate(this%fabi_sun_z_patch   (begp:endp,nlevcan))      ; this%fabi_sun_z_patch   (:,:) = 0._r8
     allocate(this%fabi_sha_z_patch   (begp:endp,nlevcan))      ; this%fabi_sha_z_patch   (:,:) = 0._r8
+    ! for leaf APAR
+    allocate(this%fabdl_sun_z_patch  (begp:endp,nlevcan))      ; this%fabdl_sun_z_patch  (:,:) = 0._r8
+    allocate(this%fabdl_sha_z_patch  (begp:endp,nlevcan))      ; this%fabdl_sha_z_patch  (:,:) = 0._r8
+    allocate(this%fabil_sun_z_patch  (begp:endp,nlevcan))      ; this%fabil_sun_z_patch  (:,:) = 0._r8
+    allocate(this%fabil_sha_z_patch  (begp:endp,nlevcan))      ; this%fabil_sha_z_patch  (:,:) = 0._r8
+
     allocate(this%flx_absdv_col      (begc:endc,-nlevsno+1:1)) ; this%flx_absdv_col      (:,:) = spval
     allocate(this%flx_absdn_col      (begc:endc,-nlevsno+1:1)) ; this%flx_absdn_col      (:,:) = spval
     allocate(this%flx_absiv_col      (begc:endc,-nlevsno+1:1)) ; this%flx_absiv_col      (:,:) = spval
@@ -157,7 +190,23 @@ contains
     allocate(this%nrad_patch         (begp:endp))              ; this%nrad_patch         (:)   = 0
     allocate(this%vcmaxcintsun_patch (begp:endp))              ; this%vcmaxcintsun_patch (:)   = nan
     allocate(this%vcmaxcintsha_patch (begp:endp))              ; this%vcmaxcintsha_patch (:)   = nan
+    ! for leaf APAR
+    allocate(this%omega_patch        (begp:endp,numrad))       ; this%omega_patch         (:,:) = nan
+    allocate(this%fabsl_patch        (begp:endp,numrad))       ; this%omega_patch         (:,:) = nan
+    allocate(this%fabsv_patch        (begp:endp,numrad))       ; this%omega_patch         (:,:) = nan
+    
+	! for nadir viewing
+    allocate(this%refd_patch         (begp:endp,numrad))       ; this%refd_patch         (:,:) = nan
+    allocate(this%refi_patch         (begp:endp,numrad))       ; this%refi_patch         (:,:) = nan
+    allocate(this%refd_can_patch     (begp:endp,numrad))       ; this%refd_can_patch     (:,:) = nan
+    allocate(this%refi_can_patch     (begp:endp,numrad))       ; this%refi_can_patch     (:,:) = nan
+    allocate(this%refd_gr_patch      (begp:endp,numrad))       ; this%refd_gr_patch      (:,:) = nan
+    allocate(this%refi_gr_patch      (begp:endp,numrad))       ; this%refi_gr_patch      (:,:) = nan
+    allocate(this%ftnn_patch    	 (begp:endp,numrad))       ; this%ftnn_patch   		 (:,:) = nan
+    allocate(this%tii_patch    	  	 (begp:endp,numrad))       ; this%tii_patch   		 (:,:) = nan
+		
 
+ 
   end subroutine InitAllocate
 
   !-----------------------------------------------------------------------
@@ -221,7 +270,96 @@ contains
     call hist_addfld2d (fname='ALBI', units='proportion', type2d='numrad', &
          avgflag='A', long_name='surface albedo (indirect)', &
          ptr_patch=this%albi_patch, default=defaultoutput, c2l_scale_type='urbanf')
+    ! for leaf APAR
+    this%omega_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='OMEGA', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='fraction of intercepted radiation that is scattered(snow considered)', &
+         ptr_patch=this%omega_patch, default=defaultoutput, c2l_scale_type='urbanf')
+    this%fabsl_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='FABSL', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='fraction of intercepted radiation that is scattered(snow considered)', &
+         ptr_patch=this%fabsl_patch, default='active', c2l_scale_type='urbanf')    
+	this%fabsv_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='FABSV', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='fraction of intercepted radiation that is scattered(snow considered)', &
+         ptr_patch=this%fabsv_patch, default='active', c2l_scale_type='urbanf')		 
+		 
+    ! for nadir viewing
+	this%ftid_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='FTID', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Downward scattered flux below canopy (direct)', &
+         ptr_patch=this%ftid_patch, default=defaultoutput, c2l_scale_type='urbanf')
+	this%ftin_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='FTIN', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Downward scattered flux below canopy (nadir)', &
+         ptr_patch=this%ftin_patch, default=defaultoutput, c2l_scale_type='urbanf')
+	this%ftii_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='FTII', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Downward scattered flux below canopy (indirect)', &
+         ptr_patch=this%ftii_patch, default=defaultoutput, c2l_scale_type='urbanf')
+    this%ftdd_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='FTDD', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Downward scattered flux below canopy (indirect)', &
+         ptr_patch=this%ftdd_patch, default=defaultoutput, c2l_scale_type='urbanf')
+    this%refd_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='REFD', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Nadir scattered flux above canopy (direct)', &
+         ptr_patch=this%refd_patch, default=defaultoutput, c2l_scale_type='urbanf')
+		 this%refi_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='REFI', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Nadir scattered flux above canopy (indirect)', &
+         ptr_patch=this%refi_patch, default=defaultoutput, c2l_scale_type='urbanf')
+		 this%refd_can_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='REFD_CAN', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Canopy contribution to nadir scattered flux above canopy  (direct)', &
+         ptr_patch=this%refd_can_patch, default=defaultoutput, c2l_scale_type='urbanf')
+		 this%refi_can_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='REFI_CAN', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Canopy contribution to nadir scattered flux above canopy  (indirect)', &
+         ptr_patch=this%refi_can_patch, default=defaultoutput, c2l_scale_type='urbanf')
+		 this%refd_gr_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='REFD_GR', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Ground contribution to nadir scattered flux above canopy (direct)', &
+         ptr_patch=this%refd_gr_patch, default=defaultoutput, c2l_scale_type='urbanf')
+		 this%refi_gr_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='REFI_GR', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Ground contribution to nadir scattered flux above canopy (indirect)', &
+         ptr_patch=this%refi_gr_patch, default=defaultoutput, c2l_scale_type='urbanf')
+		 this%ftnn_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='FTNN', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Nadir canopy transmittance', &
+         ptr_patch=this%ftnn_patch, default=defaultoutput, c2l_scale_type='urbanf')
+		 this%tii_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='TII', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Diffuse canopy transmittance', &
+         ptr_patch=this%tii_patch, default=defaultoutput, c2l_scale_type='urbanf')
 
+         ! for leaf APAR
+		 this%fabd_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='FABD', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Flux absorbed by canopy per unit direct flux', &
+         ptr_patch=this%fabd_patch, default=defaultoutput, c2l_scale_type='urbanf')		 
+		 this%fabd_sun_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='FABD_SUN', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Flux absorbed by sunlit canopy per unit direct flux', &
+         ptr_patch=this%fabd_sun_patch, default=defaultoutput, c2l_scale_type='urbanf')		 
+		 this%fabd_sha_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='FABD_SHA', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Flux absorbed by shaded canopy per unit direct flux', &
+         ptr_patch=this%fabd_sha_patch, default=defaultoutput, c2l_scale_type='urbanf')		 
+		 this%fabi_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='FABI', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Flux absorbed by canopy per unit diffuse flux', &
+         ptr_patch=this%fabi_patch, default=defaultoutput, c2l_scale_type='urbanf')		 
+		 this%fabi_sun_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='FABI_SUN', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Flux absorbed by sunlit canopy per unit diffuse flux', &
+         ptr_patch=this%fabi_sun_patch, default=defaultoutput, c2l_scale_type='urbanf')		 
+		 this%fabi_sha_patch(begp:endp,:) = spval
+	call hist_addfld2d (fname='FABI_SHA', units='proportion', type2d='numrad', &
+         avgflag='A', long_name='Flux absorbed by shaded canopy per unit diffuse flux', &
+         ptr_patch=this%fabi_sha_patch, default=defaultoutput, c2l_scale_type='urbanf')
+	
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -270,7 +408,17 @@ contains
     this%fabi_sha_patch (begp:endp, :) = 0.0_r8
     this%ftdd_patch     (begp:endp, :) = 1.0_r8
     this%ftid_patch     (begp:endp, :) = 0.0_r8
-    this%ftii_patch     (begp:endp, :) = 1.0_r8
+	this%ftii_patch     (begp:endp, :) = 1.0_r8
+    ! for nadir viewing
+    this%refd_patch 	(begp:endp, :) = 0.2_r8
+    this%refi_patch 	(begp:endp, :) = 0.2_r8
+    this%refd_can_patch (begp:endp, :) = 0.0_r8
+    this%refi_can_patch (begp:endp, :) = 0.0_r8
+    this%refd_gr_patch  (begp:endp, :) = 0.2_r8
+    this%refi_gr_patch  (begp:endp, :) = 0.2_r8
+    this%ftnn_patch		(begp:endp, :) = 1.0_r8
+    this%tii_patch		(begp:endp, :) = 1.0_r8
+    this%ftin_patch     (begp:endp, :) = 0.0_r8
  
   end subroutine InitCold
    
