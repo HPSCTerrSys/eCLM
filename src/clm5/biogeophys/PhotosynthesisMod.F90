@@ -49,7 +49,7 @@ module  PhotosynthesisMod
   public :: plc                           ! Return value of vulnerability curve at x
 
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: hybrid         ! hybrid solver for 
+  private :: hybrid         ! hybrid solver for ci
   private :: ci_func        ! ci function
   private :: brent          ! brent solver for root of a single variable function
   private :: ft             ! photosynthesis temperature response
