@@ -466,22 +466,14 @@ contains
 			ptr_patch=this%fxsat_patch, set_lake=0._r8, set_urb=0._r8)	 
 
 	   this%sifesc_patch(begp:endp) = spval
-	   call hist_addfld1d (fname='SIFESC', units='W/m2',  &
+	   call hist_addfld1d (fname='SIFESC', units='W/m2/um',  &
 			avgflag='A', long_name='fluorescence escaping canopy', &
 			ptr_patch=this%sifesc_patch, set_lake=0._r8, set_urb=0._r8)
 	   this%sifescn_patch(begp:endp) = spval
-	   call hist_addfld1d (fname='SIFESCN', units='W/m2',  &
-			avgflag='A', long_name='fluorescence escaping canopy', &
+	   call hist_addfld1d (fname='SIFESCN', units='W/m2/um',  &
+			avgflag='A', long_name='fluorescence escaping canopy (nadir)', &
 			ptr_patch=this%sifescn_patch, set_lake=0._r8, set_urb=0._r8)
 
-!	   this%psnsun_patch(begp:endp) = spval
-!       call hist_addfld1d (fname='PSNSUN', units='umolCO2/m^2/s', &
-!            avgflag='A', long_name='sunlit leaf photosynthesis', &
-!            ptr_patch=this%psnsun_patch)
-!       this%psnsha_patch(begp:endp) = spval
-!       call hist_addfld1d (fname='PSNSHA', units='umolCO2/m^2/s', &
-!            avgflag='A', long_name='shaded leaf photosynthesis', &
-!            ptr_patch=this%psnsha_patch)
 	   this%parsun_patch(begp:endp) = spval
        call hist_addfld1d (fname='PARSUN', units='W/m2',  &
 			avgflag='A', long_name='absorbed PAR sunlit', &
