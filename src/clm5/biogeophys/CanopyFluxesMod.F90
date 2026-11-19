@@ -1377,6 +1377,6 @@ contains
 
     end associate
 
-
   end subroutine CanopyFluxes
+
 end module CanopyFluxesMod
