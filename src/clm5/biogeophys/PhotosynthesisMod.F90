@@ -2178,7 +2178,7 @@ contains
 
          fpsn_wc     => photosyns_inst%fpsn_wc_patch     , & ! Output: [real(r8) (:) ]  Rubisco-limited photosynthesis (umol CO2 /m**2 /s)
          fpsn_wj     => photosyns_inst%fpsn_wj_patch     , & ! Output: [real(r8) (:) ]  RuBP-limited photosynthesis (umol CO2 /m**2 /s)
-         fpsn_wp     => photosyns_inst%fpsn_wp_patch      & ! Output: [real(r8) (:) ]  product-limited photosynthesis (umol CO2 /m**2 /s)
+         fpsn_wp     => photosyns_inst%fpsn_wp_patch       & ! Output: [real(r8) (:) ]  product-limited photosynthesis (umol CO2 /m**2 /s)
          )
 
       if ( use_c14 ) then
