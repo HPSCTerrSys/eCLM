@@ -528,7 +528,7 @@ contains
        ! Don't by default output this rate limiting step as only makes sense if you are outputing
        ! the others each time-step
        this%fpsn_wj_patch(begp:endp) = spval
-       call hist_addfld1d (fname='FPSN_WJ', units='umol/m2s',  &
+       call hist_addfld1d (fname='FPSN_WJ', units='umol m-2 s-1',  &
             avgflag='I', long_name='RuBP-limited photosynthesis', &
             ptr_patch=this%fpsn_wj_patch, set_lake=0._r8, set_urb=0._r8, &
             default='inactive')
